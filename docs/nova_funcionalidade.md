@@ -5,9 +5,11 @@ Padrão usado nas bandeiras tarifárias (pesquisa em `forecast-bandeiras-analyti
 
 ## 0. Antes de começar (na pesquisa)
 - Método validado com backtest sem vazamento, decisões registradas no `docs/metodologia.md` da pesquisa.
-- Leitores que a pesquisa criou e que são estáveis sobem primeiro para o `qe_core` (`core/src/qe_core/leitores/`),
-  como funções puras sobre o caminho do arquivo. A pesquisa passa a importá-los do `qe_core`.
-- Rodar a pesquisa com o `qe_core` atualizado e conferir que nada mudou.
+- Os repositórios de pesquisa são independentes do app (não importam o `qe_core`). Ao promover, os leitores
+  e cálculos da pesquisa são **reimplementados** aqui: leitores comuns a mais de uma funcionalidade no `qe_core`
+  (`core/src/qe_core/leitores/`, funções puras sobre o caminho do arquivo), o resto em `features/<nome>/`.
+- A pesquisa entrega resultados de referência reproduzíveis (tabelas tratadas e uma rodada de projeção), que
+  servem para conferir a reimplementação (seção 4).
 
 ## 1. Estrutura
 ```

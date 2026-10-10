@@ -12,8 +12,8 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Formato da pasta de origem da ingestão: `docs/entrada.md`.
 - Decisões de método continuam registradas em `docs/metodologia.md` do analytics.
 - Nova funcionalidade: seguir `docs/nova_funcionalidade.md`. Pesquisa do PLD horário em
-  `../risk-lab-dessem-analytics` (usa o `qe_core` daqui como dependência editável: mudanças no `qe_core`
-  afetam aquela pesquisa; rodar os testes dela também).
+  `../risk-lab-dessem-analytics` — repositório independente (não depende deste app, e este app não depende
+  dele): ao promover, o método é reimplementado aqui e conferido contra os resultados de referência de lá.
 
 ## Ambiente
 - uv workspace (raiz + `core`, `features/bandeiras`, `api`). Sempre `uv add --package <membro> <pacote>`
