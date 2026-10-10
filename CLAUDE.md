@@ -32,7 +32,8 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Testes de aceitação: tratamento idêntico à base do analytics (46 meses) e publicação de set/2026
   idêntica a `reports/pagina/produto_dados.js` do analytics. Qualquer mudança que quebre isso é
   mudança de método: decidir e registrar no analytics antes.
-- `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar.
+- `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
+  arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
 
 ## Regras herdadas do analytics (bandeiras)
 - PLD gatilho vem do deck do DECOMP da CCEE, nunca do CMO do ONS.

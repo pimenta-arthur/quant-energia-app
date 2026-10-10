@@ -71,3 +71,4 @@ publicam só resultados derivados.
 `serving/bandeiras/historico_projecoes.json` guarda cada rodada como foi publicada (data incluída).
 Publicar de novo no mesmo mês substitui só aquela rodada; as anteriores nunca são recalculadas.
 Não apagar: é o que mostra, na página, como a projeção de cada mês mudou de uma rodada para outra.
+É o único arquivo de `data/` versionado no git: depois de cada `publicar`, fazer commit dele.

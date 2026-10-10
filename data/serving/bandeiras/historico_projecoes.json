@@ -1,0 +1,70 @@
+{
+ "2026-09": [
+  {
+   "deck": "2026-09",
+   "alvo": "2026-10",
+   "h": 1,
+   "esp": "Verde",
+   "li": "Amarela",
+   "ls": "Verde",
+   "prob": "Vd 66% Am 31%",
+   "gp": "GSF 0,81 · R$ 86",
+   "publicada_em": "2026-10-09"
+  },
+  {
+   "deck": "2026-09",
+   "alvo": "2026-11",
+   "h": 2,
+   "esp": "Verde",
+   "li": "Verde",
+   "ls": "Verde",
+   "prob": "Vd 80% Am 19%",
+   "gp": "GSF 0,92 · R$ 63",
+   "publicada_em": "2026-10-09"
+  },
+  {
+   "deck": "2026-09",
+   "alvo": "2026-12",
+   "h": 3,
+   "esp": "Verde",
+   "li": "Verde",
+   "ls": "Verde",
+   "prob": "Vd 100%",
+   "gp": "GSF 0,98 · R$ 61",
+   "publicada_em": "2026-10-09"
+  },
+  {
+   "deck": "2026-09",
+   "alvo": "2027-01",
+   "h": 4,
+   "esp": "Verde",
+   "li": "Verde",
+   "ls": "Verde",
+   "prob": "Vd 100%",
+   "gp": "GSF 1,09 · R$ 65",
+   "publicada_em": "2026-10-09"
+  },
+  {
+   "deck": "2026-09",
+   "alvo": "2027-02",
+   "h": 5,
+   "esp": "Verde",
+   "li": "Verde",
+   "ls": "Verde",
+   "prob": "Vd 100%",
+   "gp": "GSF 1,10 · R$ 76",
+   "publicada_em": "2026-10-09"
+  },
+  {
+   "deck": "2026-09",
+   "alvo": "2027-03",
+   "h": 6,
+   "esp": "Verde",
+   "li": "Verde",
+   "ls": "Verde",
+   "prob": "Vd 100%",
+   "gp": "GSF 1,09 · R$ 64",
+   "publicada_em": "2026-10-09"
+  }
+ ]
+}

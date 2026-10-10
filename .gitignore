@@ -1,5 +1,12 @@
-# dados (imitam o bucket; nunca versionar)
-/data/
+# dados (imitam o bucket; nunca versionar)...
+/data/*
+# ...exceto o registro das rodadas publicadas de bandeiras (versionado até a fase AWS, onde o S3
+# com versionamento assume esse papel)
+!/data/serving/
+/data/serving/*
+!/data/serving/bandeiras/
+/data/serving/bandeiras/*
+!/data/serving/bandeiras/historico_projecoes.json
 .cache/
 .env
 
