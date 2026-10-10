@@ -20,12 +20,12 @@ def _por_periodo(df: pd.DataFrame, colunas: str = "periodo") -> pd.DataFrame:
     return t
 
 
-def preparar_deck(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> dict:
-    """ENA (série × período), GSF e PLD gatilho (série × mês-alvo) do deck, para M a M+6."""
-    gh = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, "gh")))
-    ena = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, "ena")))
-    cmo = ler_parquet(arm, chaves.proc_newave(deck, "cmo"))
-    ent = ler_parquet(arm, chaves.proc_newave(deck, "entradas"))
+def preparar_deck(arm: Armazenamento, deck: pd.Period, versao: str, base: pd.DataFrame) -> dict:
+    """ENA (série × período), GSF e PLD gatilho (série × mês-alvo) de uma versão do deck, M a M+6."""
+    gh = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, versao, "gh")))
+    ena = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, versao, "ena")))
+    cmo = ler_parquet(arm, chaves.proc_newave(deck, versao, "cmo"))
+    ent = ler_parquet(arm, chaves.proc_newave(deck, versao, "entradas"))
     ent["periodo"] = pd.PeriodIndex(ent.periodo, freq="M")
     ande = ent[ent.variavel == "ande"].set_index("periodo").valor
     carga = ent[ent.variavel == "carga"].pivot(
@@ -77,18 +77,19 @@ def preparar_deck(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> di
     }
 
 
-def series_do_deck(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> dict:
-    """`preparar_deck` com cache em processed/bandeiras/series/<deck>/ (GSF e PLD por série)."""
-    chave_gsf, chave_pld = chaves.proc_series(deck, "gsf"), chaves.proc_series(deck, "pld")
+def series_do_deck(arm: Armazenamento, deck: pd.Period, versao: str, base: pd.DataFrame) -> dict:
+    """`preparar_deck` com cache em processed/bandeiras/series/ (GSF e PLD por série e versão)."""
+    chave_gsf = chaves.proc_series(deck, versao, "gsf")
+    chave_pld = chaves.proc_series(deck, versao, "pld")
     if arm.existe(chave_gsf) and arm.existe(chave_pld):
-        prep = preparar_deck_leve(arm, deck, base)
+        prep = preparar_deck_leve(arm, deck, versao, base)
         for nome, chave in (("gsf", chave_gsf), ("pld", chave_pld)):
             t = ler_parquet(arm, chave)
             t.columns = pd.PeriodIndex(t.columns, freq="M")
             prep[nome] = t
         prep["alvos"] = list(prep["gsf"].columns)
         return prep
-    prep = preparar_deck(arm, deck, base)
+    prep = preparar_deck(arm, deck, versao, base)
     for nome, chave in (("gsf", chave_gsf), ("pld", chave_pld)):
         t = prep[nome].copy()
         t.columns = [str(c) for c in t.columns]
@@ -96,11 +97,13 @@ def series_do_deck(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> d
     return prep
 
 
-def preparar_deck_leve(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> dict:
+def preparar_deck_leve(
+    arm: Armazenamento, deck: pd.Period, versao: str, base: pd.DataFrame
+) -> dict:
     """As partes baratas do deck (ENA, geração e entradas), sem recalcular GSF e PLD."""
-    gh = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, "gh")))
-    ena = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, "ena")))
-    ent = ler_parquet(arm, chaves.proc_newave(deck, "entradas"))
+    gh = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, versao, "gh")))
+    ena = _por_periodo(ler_parquet(arm, chaves.proc_newave(deck, versao, "ena")))
+    ent = ler_parquet(arm, chaves.proc_newave(deck, versao, "entradas"))
     ent["periodo"] = pd.PeriodIndex(ent.periodo, freq="M")
     return {
         "inicio": deck,
@@ -116,11 +119,13 @@ def preparar_deck_leve(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) 
 
 
 def decks_disponiveis(arm: Armazenamento) -> list[pd.Period]:
-    """Meses com deck do NEWAVE tratado."""
+    """Meses com alguma versão de deck do NEWAVE tratada."""
+    import re
+
     return sorted(
         {
-            pd.Period(c.split("/")[3], "M")
+            pd.Period(m.group(1), "M")
             for c in arm.listar(f"{chaves.PROC}/newave")
-            if c.endswith("gh.parquet")
+            if (m := re.search(r"deck=(\d{4}-\d{2})/v=\w+/gh\.parquet$", c))
         }
     )

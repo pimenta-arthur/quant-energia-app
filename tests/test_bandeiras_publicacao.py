@@ -2,7 +2,8 @@
 set/2026 têm de ser iguais aos publicados pelo forecast-bandeiras-analytics
 (reports/pagina/produto_dados.js), exceto datas de geração.
 
-Precisa de `qe bandeiras backtest`, `projetar --mes 2026-09` e `publicar --mes 2026-09` já rodados.
+Precisa de `qe bandeiras backtest` e de a última rodada registrada ser a de set/2026 (deck 2026-09 com
+a emissão do ECMWF de 2026-09-01), com a página regravada (`qe bandeiras pagina`).
 """
 
 import json
@@ -21,7 +22,7 @@ REF = ANALYTICS / "reports/pagina/produto_dados.js"
 pytestmark = pytest.mark.skipif(
     not (APP.exists() and REF.exists()), reason="sem dados publicados da aplicação ou do analytics"
 )
-IGNORAR = {"gerado_em", "publicada_em"}
+IGNORAR = {"gerado_em", "publicada_em", "rodada", "tipo"}  # campos novos do app (rodadas por data)
 
 
 def _ler(caminho: Path) -> dict:

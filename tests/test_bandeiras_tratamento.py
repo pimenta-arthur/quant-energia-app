@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from qe_bandeiras import chaves, tratamento
+from qe_bandeiras import chaves, insumos, tratamento
 from qe_core.armazenamento import ArmazenamentoLocal, ler_parquet
 
 ANALYTICS = Path(
@@ -79,7 +79,7 @@ def test_gsf_reproduz_boletim(arm):
 
 def test_newave_deck_set26(arm):
     m = pd.Period("2026-09", "M")
-    ena = ler_parquet(arm, chaves.proc_newave(m, "ena"))
+    ena = ler_parquet(arm, chaves.proc_newave(m, insumos.versao_atual(arm, m), "ena"))
     assert ena.serie.nunique() == 2000
     sin = ena[ena.periodo == "2026-10"].groupby("serie").valor.sum()
     # mesma leitura do analytics: ENA do SIN por série no primeiro mês após o deck
@@ -101,8 +101,8 @@ def test_newave_deck_set26(arm):
 
 def test_ecmwf_rodada_set26(arm):
     m = pd.Period("2026-09", "M")
-    est = ler_parquet(arm, chaves.proc_ecmwf(m, "estatisticas"))
-    mem = ler_parquet(arm, chaves.proc_ecmwf(m, "membros"))
+    est = ler_parquet(arm, chaves.proc_ecmwf(f"{m}-01", "estatisticas"))
+    mem = ler_parquet(arm, chaves.proc_ecmwf(f"{m}-01", "membros"))
     assert mem.membro.nunique() == 51
     av = est.query("estatistica == 'av' and abordagem == 'precip'")
     assert set(av.subsistema) == {"SE", "S", "NE", "N"}

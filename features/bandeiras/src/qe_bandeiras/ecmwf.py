@@ -13,24 +13,28 @@ from qe_bandeiras import chaves
 from qe_core.armazenamento import Armazenamento, ler_parquet
 
 
-def _media(arm: Armazenamento, rodada: pd.Period) -> pd.Series:
-    est = ler_parquet(arm, chaves.proc_ecmwf(rodada, "estatisticas"))
+def _media(arm: Armazenamento, emissao: str) -> pd.Series:
+    est = ler_parquet(arm, chaves.proc_ecmwf(emissao, "estatisticas"))
     est = est[(est.estatistica == "av") & (est.abordagem == "precip") & (est.alvo >= est.emissao)]
     return est.set_index(["alvo", "subsistema"]).ena
 
 
-def referencia_media(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> pd.Series:
+def referencia_media(
+    arm: Armazenamento, deck: pd.Period, emissao: str, base: pd.DataFrame
+) -> pd.Series:
     """ENA do SIN de referência: PMO no mês do deck, média `precip` do ECMWF depois."""
-    sin = _media(arm, deck).groupby(level="alvo").sum()
+    sin = _media(arm, emissao).groupby(level="alvo").sum()
     sin.index = pd.PeriodIndex(sin.index, freq="M")
     return pd.concat([pd.Series({deck: base.loc[deck, "ena_sin"]}), sin[sin.index > deck]])
 
 
-def referencia_membros(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> pd.DataFrame:
+def referencia_membros(
+    arm: Armazenamento, deck: pd.Period, emissao: str, base: pd.DataFrame
+) -> pd.DataFrame:
     """ENA do SIN por membro recentrado (membro × período), do mês do deck em diante."""
-    mem = ler_parquet(arm, chaves.proc_ecmwf(deck, "membros"))
+    mem = ler_parquet(arm, chaves.proc_ecmwf(emissao, "membros"))
     mem = mem[mem.alvo >= mem.emissao]
-    media = _media(arm, deck)
+    media = _media(arm, emissao)
     chave = pd.MultiIndex.from_arrays([mem.alvo, mem.subsistema])
     media_membros = mem.groupby(["alvo", "subsistema"]).ena.transform("mean")
     mem = mem.assign(ena_recentrada=mem.ena * chave.map(media).to_numpy() / media_membros)
@@ -42,22 +46,24 @@ def referencia_membros(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) 
 
 
 def referencia_quantil(
-    arm: Armazenamento, deck: pd.Period, base: pd.DataFrame, q: float
+    arm: Armazenamento, deck: pd.Period, emissao: str, base: pd.DataFrame, q: float
 ) -> pd.Series:
     """Cenário de ENA do SIN = quantil q mês a mês dos membros (0,1: LI seco; 0,9: LS úmido)."""
-    return referencia_membros(arm, deck, base).quantile(q).rename(None)
+    return referencia_membros(arm, deck, emissao, base).quantile(q).rename(None)
 
 
-def referencia_climatologia(arm: Armazenamento, deck: pd.Period) -> pd.Series:
-    """MLT do SIN por mês-alvo (a que vem com a rodada do ECMWF), a partir de M+1."""
-    mem = ler_parquet(arm, chaves.proc_ecmwf(deck, "membros"))
-    m0 = mem[(mem.membro == 0) & (mem.alvo > mem.emissao)]
+def referencia_climatologia(arm: Armazenamento, deck: pd.Period, emissao: str) -> pd.Series:
+    """MLT do SIN por mês-alvo (a que vem com a emissão do ECMWF), a partir de M+1."""
+    mem = ler_parquet(arm, chaves.proc_ecmwf(emissao, "membros"))
+    m0 = mem[(mem.membro == 0) & (pd.PeriodIndex(mem.alvo, freq="M") > deck)]
     mlt = m0.groupby("alvo").mlt.sum()
     mlt.index = pd.PeriodIndex(mlt.index, freq="M")
     return mlt
 
 
-def rodada_disponivel(arm: Armazenamento, m: pd.Period) -> bool:
-    return arm.existe(chaves.proc_ecmwf(m, "estatisticas")) and arm.existe(
-        chaves.proc_ecmwf(m, "membros")
+def emissao_tratada(arm: Armazenamento, emissao: str | None) -> bool:
+    return (
+        emissao is not None
+        and arm.existe(chaves.proc_ecmwf(emissao, "estatisticas"))
+        and arm.existe(chaves.proc_ecmwf(emissao, "membros"))
     )

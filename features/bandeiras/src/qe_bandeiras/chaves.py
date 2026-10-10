@@ -2,6 +2,10 @@
 
 raw/ é organizado por fonte (compartilhado entre funcionalidades); processed/ e serving/ por
 funcionalidade. As mesmas chaves valem no disco local e no S3.
+
+Insumos que podem ter mais de uma versão no mesmo mês são versionados na chave:
+- deck do NEWAVE: deck=AAAA-MM/v=<hash do conteúdo> (uma republicação do deck vira nova versão);
+- ECMWF: emissao=AAAA-MM-DD (uma emissão extra no mês não sobrescreve a anterior).
 """
 
 import pandas as pd
@@ -21,12 +25,16 @@ def raw_patamares(ano: int) -> str:
     return f"raw/ccee_patamares/{ano}/AAC001.xlsx"
 
 
-def raw_newave(m: pd.Period, arquivo: str = "") -> str:
-    return f"raw/ccee_newave/{rotulo(m)}/{arquivo}"
+RAW_NEWAVE = "raw/ccee_newave"
+RAW_ECMWF = "raw/ecmwf"
 
 
-def raw_ecmwf(m: pd.Period, arquivo: str = "") -> str:
-    return f"raw/ecmwf/{rotulo(m)}/{arquivo}"
+def raw_newave(deck: pd.Period, versao: str, arquivo: str = "") -> str:
+    return f"{RAW_NEWAVE}/deck={rotulo(deck)}/v={versao}/{arquivo}"
+
+
+def raw_ecmwf(emissao: str, arquivo: str = "") -> str:
+    return f"{RAW_ECMWF}/emissao={emissao}/{arquivo}"
 
 
 RAW_HISTORICO = "raw/aneel_bandeiras/historico.csv"
@@ -42,24 +50,24 @@ def proc_mensal(m: pd.Period) -> str:
     return f"{PROC}/mensal/{rotulo(m)}.parquet"
 
 
-def proc_newave(m: pd.Period, tabela: str) -> str:
-    return f"{PROC}/newave/{rotulo(m)}/{tabela}.parquet"
+def proc_newave(deck: pd.Period, versao: str, tabela: str) -> str:
+    return f"{PROC}/newave/deck={rotulo(deck)}/v={versao}/{tabela}.parquet"
 
 
-def proc_ecmwf(m: pd.Period, tabela: str) -> str:
-    return f"{PROC}/ecmwf/{rotulo(m)}/{tabela}.parquet"
+def proc_ecmwf(emissao: str, tabela: str) -> str:
+    return f"{PROC}/ecmwf/emissao={emissao}/{tabela}.parquet"
 
 
 PROC_HISTORICO = f"{PROC}/historico_bandeiras.parquet"
 
 
-def proc_series(m: pd.Period, tabela: str) -> str:
+def proc_series(deck: pd.Period, versao: str, tabela: str) -> str:
     """GSF e PLD gatilho por série e mês-alvo do deck (cache da parte cara da projeção)."""
-    return f"{PROC}/series/{rotulo(m)}/{tabela}.parquet"
+    return f"{PROC}/series/deck={rotulo(deck)}/v={versao}/{tabela}.parquet"
 
 
-def proc_projecao(m: pd.Period) -> str:
-    return f"{PROC}/projecao/{rotulo(m)}.parquet"
+def proc_projecao(id_insumos: str) -> str:
+    return f"{PROC}/projecao/{id_insumos}.parquet"
 
 
 PROC_BACKTEST = f"{PROC}/backtest"  # referencia.parquet, oraculo.parquet, rodadas.parquet

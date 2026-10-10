@@ -163,12 +163,11 @@ def tratar_mensal(arm: Armazenamento, m: pd.Period) -> str:
 # --- deck do NEWAVE --------------------------------------------------------------------------------
 
 
-def tratar_newave(arm: Armazenamento, m: pd.Period) -> str:
-    if not arm.existe(chaves.raw_newave(m, "ghtotsin.out")):
-        return "sem bruto"
+def tratar_newave(arm: Armazenamento, deck: pd.Period, versao: str) -> str:
+    """Uma versão do deck: séries (gh, ena, cmo) e entradas em Parquet."""
 
     def arq(nome):
-        return arm.caminho_local(chaves.raw_newave(m, nome))
+        return arm.caminho_local(chaves.raw_newave(deck, versao, nome))
 
     gh = newave.para_periodos(newave.ler_nwlistop(arq("ghtotsin.out")))
     meses = set(gh.periodo)  # meses do estudo; vale para ENA e custo marginal
@@ -212,15 +211,16 @@ def tratar_newave(arm: Armazenamento, m: pd.Period) -> str:
         ignore_index=True,
     )
     for nome, df in (("gh", gh), ("ena", ena), ("cmo", cmo), ("entradas", entradas)):
-        gravar_parquet(arm, df, chaves.proc_newave(m, nome))
-    return f"ok ({gh.serie.nunique()} séries, {gh.periodo.min()} a {gh.periodo.max()})"
+        gravar_parquet(arm, df, chaves.proc_newave(deck, versao, nome))
+    return f"v={versao} ok ({gh.serie.nunique()} séries, {gh.periodo.min()} a {gh.periodo.max()})"
 
 
 # --- rodada do ECMWF -------------------------------------------------------------------------------
 
 
-def tratar_ecmwf(arm: Armazenamento, m: pd.Period) -> str:
-    arquivos = arm.listar(chaves.raw_ecmwf(m))
+def tratar_ecmwf(arm: Armazenamento, emissao: str) -> str:
+    """Uma emissão do ECMWF: estatísticas (média, percentis) e membros em Parquet."""
+    arquivos = [c for c in arm.listar(chaves.raw_ecmwf(emissao)) if c.endswith(".txt")]
     if not arquivos:
         return "sem bruto"
     est, mem = [], []
@@ -233,11 +233,15 @@ def tratar_ecmwf(arm: Armazenamento, m: pd.Period) -> str:
         else:
             est.append(df.assign(estatistica=p["estatistica"], abordagem=p["abordagem"]))
     if est:
-        gravar_parquet(arm, pd.concat(est, ignore_index=True), chaves.proc_ecmwf(m, "estatisticas"))
+        gravar_parquet(
+            arm, pd.concat(est, ignore_index=True), chaves.proc_ecmwf(emissao, "estatisticas")
+        )
     if mem:
-        gravar_parquet(arm, pd.concat(mem, ignore_index=True), chaves.proc_ecmwf(m, "membros"))
+        gravar_parquet(
+            arm, pd.concat(mem, ignore_index=True), chaves.proc_ecmwf(emissao, "membros")
+        )
     n_mem = len({d.membro.iloc[0] for d in mem})
-    return f"ok ({len(est)} estatísticas, {n_mem} membros)"
+    return f"{emissao} ok ({len(est)} estatísticas, {n_mem} membros)"
 
 
 # --- histórico ANEEL -------------------------------------------------------------------------------
@@ -251,13 +255,29 @@ def tratar_historico(arm: Armazenamento) -> str:
     return f"ok ({h.mes.min()} a {h.mes.max()})"
 
 
-def tratar_mes(arm: Armazenamento, m: pd.Period) -> dict:
-    """Todas as partes de um mês; devolve a situação de cada uma."""
+def tratar_mes(arm: Armazenamento, m: pd.Period, refazer: bool = False) -> dict:
+    """Todas as partes de um mês; versões de deck e emissões do ECMWF já tratadas são puladas
+    (a não ser com `refazer`). Devolve a situação de cada parte."""
+    from qe_bandeiras import insumos
+
+    decks = insumos.versoes_deck(arm)
+    situacao_deck = []
+    for versao in decks[decks.deck == str(m)].versao:
+        if refazer or not arm.existe(chaves.proc_newave(m, versao, "gh")):
+            situacao_deck.append(tratar_newave(arm, m, versao))
+        else:
+            situacao_deck.append(f"v={versao} já tratado")
+    situacao_ecmwf = []
+    for emissao in [e for e in insumos.emissoes_ecmwf(arm) if e.startswith(str(m))]:
+        if refazer or not arm.existe(chaves.proc_ecmwf(emissao, "membros")):
+            situacao_ecmwf.append(tratar_ecmwf(arm, emissao))
+        else:
+            situacao_ecmwf.append(f"{emissao} já tratado")
     return {
         "patamares": tratar_patamares(arm, m),
         "mensal": tratar_mensal(arm, m),
-        "newave": tratar_newave(arm, m),
-        "ecmwf": tratar_ecmwf(arm, m),
+        "newave": "; ".join(situacao_deck) or "sem bruto",
+        "ecmwf": "; ".join(situacao_ecmwf) or "sem bruto",
         "historico": tratar_historico(arm),
     }
 

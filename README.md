@@ -17,13 +17,16 @@ Roda local de forma simples e já usa as mesmas chaves e etapas que vão para a 
 uv sync                                   # instala tudo (Python 3.14 do Homebrew)
 cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 
-# bandeiras: rodada do mês (deck do NEWAVE + ECMWF de M)
-uv run qe bandeiras ingerir --origem ../forecast-bandeiras/data/raw --mes 2026-09   # bruto → raw/
-uv run qe bandeiras tratar --mes 2026-09                                            # raw/ → processed/ (Parquet)
-uv run qe bandeiras backtest                     # previsões passadas sem vazamento (σ e rodadas)
-uv run qe bandeiras projetar --mes 2026-09       # M+1 a M+6: esperado, seco, úmido e probabilidade
-uv run qe bandeiras publicar --mes 2026-09       # serving/bandeiras/ + registro da rodada publicada
-# tudo de uma vez: uv run qe bandeiras rodar --mes 2026-09 [--origem ...]
+# bandeiras: uma rodada sempre que algum insumo mudar (deck novo ou republicado, emissão do ECMWF…)
+uv run qe bandeiras ingerir --origem ../forecast-bandeiras/data/raw --mes 2026-10   # bruto → raw/ (versionado)
+uv run qe bandeiras tratar --mes 2026-10                                            # raw/ → processed/ (Parquet)
+uv run qe bandeiras backtest                     # previsões passadas sem vazamento (σ e rodadas reconstruídas)
+uv run qe bandeiras status                       # insumos vigentes × última rodada: vale publicar?
+uv run qe bandeiras projetar                     # prévia com os insumos vigentes (não publica)
+uv run qe bandeiras publicar --motivo "emissão extra do ECMWF"   # registra a rodada e atualiza a página
+uv run qe bandeiras pagina                       # só regrava a página da última rodada
+# tudo de uma vez: uv run qe bandeiras rodar --mes 2026-10 [--origem ...] [--motivo ...]
+# fixar insumos: --deck 2026-09 --versao <hash> --ecmwf 2026-09-01 (projetar/publicar)
 # primeira carga do histórico: ingerir e tratar com --mes 2023-01 --ate 2026-10
 
 uv run qe servir                          # http://localhost:8000 → /bandeiras/
@@ -46,7 +49,7 @@ data/                  (fora do git) imita o bucket: raw/ processed/ serving/
 
 | Camada | Conteúdo | Organização |
 |---|---|---|
-| `raw/` | arquivo original, imutável | por fonte: `raw/ccee_newave/2026-09/…`, `raw/ons_pmo/…`, `raw/ecmwf/…` |
+| `raw/` | arquivo original, imutável | por fonte e versão: `raw/ccee_newave/deck=2026-09/v=<hash>/…`, `raw/ecmwf/emissao=2026-09-01/…`, `raw/ons_pmo/2026-09/…` |
 | `processed/` | tabelas tratadas (Parquet) | por funcionalidade: `processed/bandeiras/mensal/2026-09.parquet` |
 | `serving/` | o que as páginas leem (JSON/JS) | por funcionalidade |
 
@@ -68,7 +71,9 @@ publicam só resultados derivados.
 
 ## Registro das rodadas publicadas
 
-`serving/bandeiras/historico_projecoes.json` guarda cada rodada como foi publicada (data incluída).
-Publicar de novo no mesmo mês substitui só aquela rodada; as anteriores nunca são recalculadas.
+`serving/bandeiras/historico_projecoes.json` guarda cada rodada como foi publicada: identificador
+(data e hora), motivo, insumos usados (mês e versão do deck, emissão do ECMWF) e as projeções.
+Pode haver várias rodadas no mesmo mês; nenhuma é recalculada ou apagada depois de publicada.
+`publicar` recusa repetir os insumos da última rodada, a não ser com `--forcar --motivo`.
 Não apagar: é o que mostra, na página, como a projeção de cada mês mudou de uma rodada para outra.
 É o único arquivo de `data/` versionado no git: depois de cada `publicar`, fazer commit dele.

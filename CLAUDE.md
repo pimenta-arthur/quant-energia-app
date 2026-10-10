@@ -28,7 +28,10 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - `data/` nunca vai para o git.
 
 ## Bandeiras: etapas e testes
-- `qe bandeiras ingerir | tratar | backtest | projetar | publicar | rodar`.
+- `qe bandeiras ingerir | tratar | backtest | status | projetar | publicar | pagina | rodar`.
+- Rodadas não são mensais: cada publicação é uma rodada (id = data e hora) com os insumos vigentes
+  (último deck com boletim do mês, versão mais recente; emissão mais recente do ECMWF). Deck e ECMWF
+  são versionados em raw/ (deck=AAAA-MM/v=<hash>, emissao=AAAA-MM-DD). O backtest segue mensal (D031).
 - Testes de aceitação: tratamento idêntico à base do analytics (46 meses) e publicação de set/2026
   idêntica a `reports/pagina/produto_dados.js` do analytics. Qualquer mudança que quebre isso é
   mudança de método: decidir e registrar no analytics antes.

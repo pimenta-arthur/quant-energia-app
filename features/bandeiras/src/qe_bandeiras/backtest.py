@@ -10,7 +10,7 @@ Saídas em processed/bandeiras/backtest/: referencia, oraculo e rodadas (Parquet
 import numpy as np
 import pandas as pd
 
-from qe_bandeiras import chaves, ecmwf, modelo, series, tratamento
+from qe_bandeiras import chaves, ecmwf, insumos, modelo, series, tratamento
 from qe_core.armazenamento import Armazenamento, gravar_parquet, ler_parquet
 
 AB = {"Verde": "Vd", "Amarela": "Am", "Vermelha 1": "V1", "Vermelha 2": "V2"}
@@ -36,22 +36,27 @@ def base_oficial(arm: Armazenamento) -> pd.DataFrame:
     return base
 
 
-def decks_com_rodada(arm: Armazenamento, base: pd.DataFrame) -> list[pd.Period]:
-    """Decks com rodada do ECMWF do mesmo mês e boletim do mês do deck."""
-    return [
-        d
-        for d in series.decks_disponiveis(arm)
-        if ecmwf.rodada_disponivel(arm, d)
-        and d in base.index
-        and pd.notna(base.loc[d, "gf_band_boletim"])
-    ]
+def decks_com_rodada(arm: Armazenamento, base: pd.DataFrame) -> list[insumos.Insumos]:
+    """Uma rodada histórica por mês de deck (pareamento mensal, D031): a versão mais recente do deck
+    de M com a emissão do ECMWF de M, se houver boletim do mês do deck."""
+    saida = []
+    for d in series.decks_disponiveis(arm):
+        emissao = insumos.emissao_do_mes(arm, d)
+        if (
+            ecmwf.emissao_tratada(arm, emissao)
+            and d in base.index
+            and pd.notna(base.loc[d, "gf_band_boletim"])
+        ):
+            saida.append(insumos.Insumos(str(d), insumos.versao_atual(arm, d), emissao))
+    return saida
 
 
-def referencias(arm: Armazenamento, deck: pd.Period, base: pd.DataFrame) -> dict:
+def referencias(arm: Armazenamento, ins: insumos.Insumos, base: pd.DataFrame) -> dict:
+    deck, emissao = ins.mes_deck, ins.ecmwf_emissao
     return {
-        "esp": ecmwf.referencia_media(arm, deck, base),
-        "li": ecmwf.referencia_quantil(arm, deck, base, 0.1),
-        "ls": ecmwf.referencia_quantil(arm, deck, base, 0.9),
+        "esp": ecmwf.referencia_media(arm, deck, emissao, base),
+        "li": ecmwf.referencia_quantil(arm, deck, emissao, base, 0.1),
+        "ls": ecmwf.referencia_quantil(arm, deck, emissao, base, 0.9),
     }
 
 
@@ -65,9 +70,9 @@ def rodar(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     base = base_oficial(arm)
     real_ena = base.ena_sin.dropna()
     ref_l, ora_l, cen_l = [], [], []
-    for deck in decks_com_rodada(arm, base):
-        prep = series.series_do_deck(arm, deck, base)
-        refs = referencias(arm, deck, base)
+    for ins in decks_com_rodada(arm, base):
+        prep = series.series_do_deck(arm, ins.mes_deck, ins.deck_versao, base)
+        refs = referencias(arm, ins, base)
         ref_l.append(modelo.prever(prep, refs["esp"]))
         ora_l.append(modelo.prever(prep, real_ena))  # ORÁCULO: ENA oficial no lugar da prevista
         cen = modelo.prever_cenarios(prep, refs)

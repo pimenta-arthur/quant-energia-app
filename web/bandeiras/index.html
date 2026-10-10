@@ -208,7 +208,7 @@
       <svg id="faixa-longa" viewBox="0 0 1040 88" role="img" aria-label="Bandeiras oficiais por mês desde 2015 e projeção"></svg>
       <div class="legenda-mini" id="leg-cores"></div>
     </div>
-    <p class="leg">Cada linha é uma rodada de projeção (deck do NEWAVE + ECMWF do mesmo mês), com a cor do cenário de referência e a probabilidade dela; lendo cada coluna de baixo para cima, vê-se como a projeção do mês mudou. ▲ cor mais cara e ▼ mais barata que na rodada anterior exibida; ✗ cor diferente da oficial. Rodadas marcadas como reconstruídas vêm do backtest, só com a informação disponível em cada data; não há decks de set e out/2025 nem de jun a ago/2026. Na faixa desde 2015, os meses projetados têm contorno tracejado.</p>
+    <p class="leg">Cada linha é uma rodada de projeção, publicada sempre que um insumo muda (deck do NEWAVE ou emissão do ECMWF), podendo haver várias no mesmo mês, com a cor do cenário de referência e a probabilidade dela; lendo cada coluna de baixo para cima, vê-se como a projeção do mês mudou. ▲ cor mais cara e ▼ mais barata que na rodada anterior exibida; ✗ cor diferente da oficial. Rodadas marcadas como reconstruídas vêm do backtest, só com a informação disponível em cada data; não há decks de set e out/2025 nem de jun a ago/2026. Na faixa desde 2015, os meses projetados têm contorno tracejado.</p>
   </section>
 
   <section aria-labelledby="s-adic">
@@ -261,6 +261,8 @@
   const MESL = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
   const rot = p => `${MES[+p.slice(5) - 1]}/${p.slice(2, 4)}`;
   const rotLongo = p => `${MESL[+p.slice(5) - 1]} de ${p.slice(0, 4)}`;
+  const dataBr = s => `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(2, 4)}`;
+  const dataHoraBr = s => dataBr(s) + (s.length > 10 && s.slice(11, 16) !== "00:00" ? " " + s.slice(11, 16) : "");
   const n = (v, c = 0) => v.toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
   const pct = v => n(v * 100) + "%";
   const P = D.projecoes;
@@ -276,7 +278,9 @@
   const fut = P.filter(p => !p.anunciada);
   document.getElementById("eyebrow").textContent = `Horizonte: ${rotLongo(P[0].alvo)} a ${rotLongo(P[P.length - 1].alvo)}`;
   document.getElementById("meta").innerHTML =
-    `<span>Premissas:</span><span>Deck NEWAVE ${rot(D.deck)}</span><span>ECMWF rodada ${rot(D.rodada_ecmwf)}</span><span class="atualizado">Atualizado em ${D.gerado_em.split("-").reverse().join("/")}</span>`;
+    `<span>Premissas:</span><span>Deck NEWAVE ${rot(D.deck)}${D.rodada ? " (v " + D.rodada.insumos.deck_versao + ")" : ""}</span>` +
+    `<span>ECMWF ${D.rodada ? "emissão " + dataBr(D.rodada.insumos.ecmwf_emissao) : "rodada " + rot(D.rodada_ecmwf)}</span>` +
+    `<span class="atualizado">${D.rodada ? "Rodada de " + dataHoraBr(D.rodada.publicada_em) : "Atualizado em " + dataBr(D.gerado_em)}</span>`;
 
   const painel = document.getElementById("painel");
   painel.style.gridTemplateColumns = `118px repeat(${P.length}, minmax(76px, 1fr))`;
@@ -330,14 +334,15 @@
   // ---------- Bandeiras acionadas e evolução das projeções por rodada ----------
   (function () {
     const RD = D.rodadas, NIV = { "Verde": 0, "Amarela": 1, "Vermelha 1": 2, "Vermelha 2": 3 };
-    const todosDecks = [...new Set(RD.map(r => r.deck))].sort().reverse();
+    const chaveR = r => r.rodada || r.deck;  // publicação (data e hora) ou mês reconstruído
+    const todosDecks = [...new Set(RD.map(chaveR))].sort().reverse();
     const box = document.getElementById("rodadas");
     let nRod = 6;
     function probDe(r) { const m = r.prob.match(new RegExp(AB[r.esp] + " (\\d+%)")); return m ? m[1] : ""; }
     function desenhar() {
       document.querySelectorAll("#abas-rod button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === nRod)));
       const decks = todosDecks.slice(0, nRod);
-      const dados = RD.filter(r => decks.includes(r.deck));
+      const dados = RD.filter(r => decks.includes(chaveR(r)));
       const cols = [...new Set(dados.map(r => r.alvo))].sort();
       const grade = `118px repeat(${cols.length}, minmax(0, 1fr))`;
       const curto = cols.length > 14; // muitas colunas: só a sigla na célula, probabilidade no tooltip
@@ -358,21 +363,25 @@
           (h && h.gsf != null ? `<br>GSF ${n(h.gsf, 2)} · PLD gatilho R$ ${n(h.pld, 2)}<br>boletim InfoBandeira (CCEE)` : "")); return c;
       });
       decks.forEach((dk, i) => {
-        const porAlvo = Object.fromEntries(dados.filter(r => r.deck === dk).map(r => [r.alvo, r]));
-        const atual = dk === D.deck;
-        const pub = dados.some(r => r.deck === dk && r.publicada);
-        linha(`<span>Rodada ${rot(dk)}<small>${atual ? "atual" : pub ? "publicada" : "reconstruída (backtest)"}</small></span>`, m => {
+        const daRodada = dados.filter(r => chaveR(r) === dk);
+        const porAlvo = Object.fromEntries(daRodada.map(r => [r.alvo, r]));
+        const pub = daRodada.some(r => r.publicada);
+        const atual = D.rodada ? dk === D.rodada.id : dk === D.deck;
+        const deckR = daRodada[0] ? daRodada[0].deck : dk;
+        const titulo = pub ? `Rodada ${dataHoraBr(dk)}` : `Rodada ${rot(dk)}`;
+        const sub = atual ? `atual · deck ${rot(deckR)}` : pub ? `publicada · deck ${rot(deckR)}` : "reconstruída (backtest)";
+        linha(`<span>${titulo}<small>${sub}</small></span>`, m => {
           const r = porAlvo[m];
           if (!r) return vazio();
           const c = document.createElement("div");
           c.className = "c " + CLS[r.esp] + (r.real && r.real !== r.esp ? " erro" : "") + (atual && !r.real ? " proj" : "");
           // compara com a rodada anterior exibida que também projetou este mês
-          const ant = decks.slice(i + 1).map(d => dados.find(x => x.deck === d && x.alvo === m)).find(Boolean);
+          const ant = decks.slice(i + 1).map(d => dados.find(x => chaveR(x) === d && x.alvo === m)).find(Boolean);
           let seta = "";
           if (ant && NIV[ant.esp] !== NIV[r.esp]) seta = NIV[r.esp] > NIV[ant.esp] ? "▲" : "▼";
           c.innerHTML = `<span>${AB[r.esp]}${probDe(r) && !curto ? " " + probDe(r) : ""}${seta ? `<span class="seta">${seta}</span>` : ""}</span>`;
-          dicaEm(c, `<b>${rot(m)}</b> · rodada ${rot(dk)} (M+${r.h})<br>esperado ${r.esp}${r.prob ? " · " + r.prob : ""}<br>${r.gp}<br>seco ${r.li} · úmido ${r.ls}` +
-            (ant ? `<br>rodada anterior (${rot(ant.deck)}): ${ant.esp}` : "") + (r.real ? `<br>oficial: ${r.real}` : ""));
+          dicaEm(c, `<b>${rot(m)}</b> · ${titulo.toLowerCase()} (M+${r.h})<br>esperado ${r.esp}${r.prob ? " · " + r.prob : ""}<br>${r.gp}<br>seco ${r.li} · úmido ${r.ls}` +
+            (ant ? `<br>rodada anterior (${ant.publicada ? dataHoraBr(chaveR(ant)) : rot(ant.deck)}): ${ant.esp}` : "") + (r.real ? `<br>oficial: ${r.real}` : ""));
           return c;
         });
       });
@@ -679,7 +688,7 @@
   })();
 
   document.getElementById("fontes").innerHTML =
-    `Fontes: deck do NEWAVE da CCEE (${rot(D.deck)}), previsão sazonal do ECMWF SEAS5 (rodada ${rot(D.rodada_ecmwf)}), histórico de bandeiras da ANEEL, boletins InfoBandeira da CCEE e REH ANEEL 3.306/2024. ` +
+    `Fontes: deck do NEWAVE da CCEE (${rot(D.deck)}), previsão sazonal do ECMWF SEAS5 (${D.rodada ? "emissão " + dataBr(D.rodada.insumos.ecmwf_emissao) : "rodada " + rot(D.rodada_ecmwf)}), histórico de bandeiras da ANEEL, boletins InfoBandeira da CCEE e REH ANEEL 3.306/2024. ` +
     `Adicionais vigentes: amarela R$ ${n(D.adicional_vigente.Amarela / 10, 3)}, vermelha 1 R$ ${n(D.adicional_vigente["Vermelha 1"] / 10, 3)} e vermelha 2 R$ ${n(D.adicional_vigente["Vermelha 2"] / 10, 3)} por 100 kWh. ` +
     `Patamares de carga de 2027 aproximados pelos de 2026. Método completo em <a href="metodologia.html">Metodologia</a>.`;
 })();
