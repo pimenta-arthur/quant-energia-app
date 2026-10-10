@@ -38,6 +38,13 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Testes: `tests/referencias/<versão>/` (modelo) e `tests/referencias/tratamento/` (dados tratados), regerados
   com `qe bandeiras congelar`. A paridade da publicação com o analytics é opt-in (`QE_PARIDADE_ANALYTICS=1`).
 - Nunca regenerar referências para "fazer o teste passar" sem entender a diferença.
+- Checklist ao criar uma versão nova do modelo (ex.: v2):
+  1. decisão registrada no analytics; nova instância de `Modelo` e `MODELO` apontando para ela;
+  2. `qe bandeiras congelar`, revisar a diferença e commitar; tag `modelo-<versão>`;
+  3. guardar a metodologia anterior como `web/bandeiras/metodologia-<versão anterior>.html`, com aviso
+     "versão anterior; em uso de … a …", e atualizar `metodologia.html` e o rótulo do topo para a versão nova;
+  4. nessa hora, criar: seletor de versões na Metodologia, link de cada rodada para a metodologia da sua
+     versão, quadro de parâmetros gerado de `MODELO` e teste que exige a página de cada versão.
 - `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
   arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
 
