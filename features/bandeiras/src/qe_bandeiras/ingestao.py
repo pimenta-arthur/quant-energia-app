@@ -1,7 +1,7 @@
 """Ingestão: leva os arquivos brutos de uma pasta de origem para raw/ do armazenamento.
 
-Fase local: a origem é uma pasta com os arquivos baixados manualmente, no layout do
-forecast-bandeiras-analytics (data/raw). Fase AWS: um worker baixa das fontes e grava nas mesmas
+Fase local: a origem é uma pasta com os arquivos baixados manualmente, no formato descrito em
+docs/entrada.md (hoje, a data/raw do forecast-bandeiras-analytics segue esse formato). Fase AWS: um worker baixa das fontes e grava nas mesmas
 chaves. raw/ é imutável: arquivo já gravado e diferente do novo não é sobrescrito sem pedido
 explícito (exceto o histórico da ANEEL, que é um conjunto atualizado pela fonte).
 

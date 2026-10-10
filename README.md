@@ -18,7 +18,7 @@ uv sync                                   # instala tudo (Python 3.14 do Homebre
 cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 
 # bandeiras: uma rodada sempre que algum insumo mudar (deck novo ou republicado, emissão do ECMWF…)
-uv run qe bandeiras ingerir --origem ../forecast-bandeiras/data/raw --mes 2026-10   # bruto → raw/ (versionado)
+uv run qe bandeiras ingerir --origem <pasta no formato de docs/entrada.md> --mes 2026-10   # bruto → raw/ (versionado)
 uv run qe bandeiras tratar --mes 2026-10                                            # raw/ → processed/ (Parquet)
 uv run qe bandeiras backtest                     # previsões passadas sem vazamento (σ e rodadas reconstruídas)
 uv run qe bandeiras status                       # insumos vigentes × última rodada: vale publicar?
@@ -30,7 +30,7 @@ uv run qe bandeiras pagina                       # só regrava a página da últ
 # primeira carga do histórico: ingerir e tratar com --mes 2023-01 --ate 2026-10
 
 uv run qe servir                          # http://localhost:8000 → /bandeiras/
-uv run pytest                             # testes (comparam com o analytics, se disponível)
+uv run pytest                             # testes contra as referências congeladas (tests/referencias)
 ```
 
 ## Organização

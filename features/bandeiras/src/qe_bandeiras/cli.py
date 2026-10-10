@@ -34,7 +34,7 @@ def _insumos(arm, deck: str | None, versao: str | None, ecmwf: str | None) -> in
 @app.command()
 def ingerir(
     origem: Path = typer.Option(
-        ..., help="Pasta com os arquivos brutos (layout data/raw do analytics)."
+        ..., help="Pasta com os arquivos brutos no formato de docs/entrada.md."
     ),
     mes_ini: str = typer.Option(..., "--mes", help="Mês AAAA-MM."),
     ate: str | None = typer.Option(None, help="Último mês AAAA-MM, para ingerir um intervalo."),
@@ -180,9 +180,11 @@ def congelar(
     """Grava as referências da versão do modelo em uso (rodar só quando a mudança for intencional)."""
     from qe_bandeiras import modelo, referencias
 
-    p = referencias.congelar(armazenamento(), destino)
+    arm = armazenamento()
+    p = referencias.congelar(arm, destino)
+    q = referencias.congelar_tratamento(arm, destino)
     typer.echo(
-        f"referências do modelo {modelo.MODELO.versao} gravadas em {p} — revise a diferença no git"
+        f"referências gravadas em {p} (modelo {modelo.MODELO.versao}) e {q} — revise a diferença no git"
     )
 
 

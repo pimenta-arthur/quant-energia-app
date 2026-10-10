@@ -7,8 +7,9 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 ## Pesquisa × produto
 - A pesquisa (EDA, notebooks, backtest, decisões de método) fica nos repositórios de análise, como
   `../forecast-bandeiras` (GitHub `forecast-bandeiras-analytics`). Aqui entra só código validado lá.
-- **Não mudar o método ao portar.** Toda migração tem teste de aceitação comparando com o analytics
-  (`tests/`, variável `QE_ANALYTICS`, padrão `../forecast-bandeiras`).
+- **Não mudar o método ao portar.** A migração foi validada contra o analytics; hoje os testes usam
+  referências congeladas do próprio app (`tests/referencias/`). O app não depende do analytics para rodar.
+- Formato da pasta de origem da ingestão: `docs/entrada.md`.
 - Decisões de método continuam registradas em `docs/metodologia.md` do analytics.
 
 ## Ambiente
@@ -34,8 +35,8 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
   são versionados em raw/ (deck=AAAA-MM/v=<hash>, emissao=AAAA-MM-DD). O backtest segue mensal (D031).
 - Modelo versionado em `qe_bandeiras.modelo.MODELO` (hoje `v1`). Mudar parâmetro ou lógica do método
   = versão nova: decisão no analytics, `qe bandeiras congelar`, tag `modelo-<versão>` no git.
-- Testes: `tests/referencias/<versão>/` (referências congeladas, a proteção principal) e tratamento idêntico
-  à base do analytics. A paridade da publicação com o analytics é opt-in (`QE_PARIDADE_ANALYTICS=1`).
+- Testes: `tests/referencias/<versão>/` (modelo) e `tests/referencias/tratamento/` (dados tratados), regerados
+  com `qe bandeiras congelar`. A paridade da publicação com o analytics é opt-in (`QE_PARIDADE_ANALYTICS=1`).
 - Nunca regenerar referências para "fazer o teste passar" sem entender a diferença.
 - `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
   arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
