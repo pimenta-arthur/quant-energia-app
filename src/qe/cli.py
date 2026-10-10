@@ -1,0 +1,27 @@
+"""Linha de comando da aplicação: `qe <funcionalidade> <etapa>` e `qe servir`."""
+
+import typer
+
+from qe_bandeiras.cli import app as bandeiras
+
+app = typer.Typer(
+    help="quant-energia-app: pipelines e páginas por funcionalidade.", no_args_is_help=True
+)
+app.add_typer(bandeiras, name="bandeiras")
+
+
+@app.command()
+def servir(porta: int = typer.Option(8000, help="Porta local."), recarregar: bool = False):
+    """Sobe a API e as páginas em http://localhost:<porta>."""
+    import uvicorn
+
+    uvicorn.run("qe_api.app:app", host="127.0.0.1", port=porta, reload=recarregar)
+
+
+@app.command()
+def config():
+    """Mostra a configuração em uso (variáveis QE_*)."""
+    from qe_core.config import configuracao
+
+    for k, v in configuracao().model_dump().items():
+        typer.echo(f"{k}: {v}")

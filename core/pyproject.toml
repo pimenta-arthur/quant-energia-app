@@ -1,0 +1,17 @@
+[project]
+name = "qe-core"
+version = "0.1.0"
+description = "Base comum: configuração, armazenamento (local/S3), leitores das fontes do setor elétrico e calendário"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.5.3",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.6",
+    "pdfplumber>=0.11.10",
+    "pyarrow>=26.0.0",
+    "pydantic-settings>=2.15.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"

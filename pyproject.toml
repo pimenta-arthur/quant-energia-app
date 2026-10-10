@@ -1,0 +1,48 @@
+[project]
+name = "quant-energia-app"
+version = "0.1.0"
+description = "Aplicação quant de energia: funcionalidades independentes (bandeiras tarifárias, PLD horário, descolamento entre submercados) com pipelines que rodam local e, depois, na AWS"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "qe-api",
+    "qe-bandeiras",
+    "qe-core",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+qe = "qe.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.workspace]
+members = ["core", "features/bandeiras", "api"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.uv.build-backend]
+module-name = "qe"
+
+[tool.uv.sources]
+qe-core = { workspace = true }
+qe-bandeiras = { workspace = true }
+qe-api = { workspace = true }
+
+[tool.ruff.lint.isort]
+known-first-party = ["qe", "qe_core", "qe_bandeiras", "qe_api"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/cli.py" = ["B008"]  # padrão do Typer: typer.Option nos valores padrão

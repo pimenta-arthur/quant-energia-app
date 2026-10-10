@@ -1,0 +1,14 @@
+# dados (imitam o bucket; nunca versionar)
+/data/
+.cache/
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# sistema
+.DS_Store
