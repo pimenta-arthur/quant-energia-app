@@ -1,0 +1,857 @@
+[
+ {
+  "deck": "2025-01",
+  "alvo": "2025-02",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-03",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-04",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-05",
+  "h": 4,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-06",
+  "h": 5,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-07",
+  "h": 6,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 1",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-03",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-04",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-05",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-06",
+  "h": 4,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-07",
+  "h": 5,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-08",
+  "h": 6,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-04",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-05",
+  "h": 2,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-06",
+  "h": 3,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 1",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-07",
+  "h": 4,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-08",
+  "h": 5,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-09",
+  "h": 6,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-05",
+  "h": 1,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-06",
+  "h": 2,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 1",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-07",
+  "h": 3,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-08",
+  "h": 4,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-09",
+  "h": 5,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-10",
+  "h": 6,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-06",
+  "h": 1,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 1",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-07",
+  "h": 2,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-08",
+  "h": 3,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-09",
+  "h": 4,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-10",
+  "h": 5,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-11",
+  "h": 6,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-07",
+  "h": 1,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-08",
+  "h": 2,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-09",
+  "h": 3,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-10",
+  "h": 4,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-11",
+  "h": 5,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-12",
+  "h": 6,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-08",
+  "h": 1,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-09",
+  "h": 2,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-10",
+  "h": 3,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-11",
+  "h": 4,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-12",
+  "h": 5,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-09",
+  "h": 1,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 2",
+  "prob": "V1 22% V2 77%"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-10",
+  "h": 2,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "V1 43% V2 53%"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-11",
+  "h": 3,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 23% V1 58% V2 20%"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-12",
+  "h": 4,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-01",
+  "h": 5,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-02",
+  "h": 6,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "sem histórico para a probabilidade"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2025-12",
+  "h": 1,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 54% V1 42%"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-01",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-02",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-03",
+  "h": 4,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-04",
+  "h": 5,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-05",
+  "h": 6,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 72% Am 26%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-01",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-02",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-03",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-04",
+  "h": 4,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-05",
+  "h": 5,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 69% Am 29%"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-06",
+  "h": 6,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 35% Am 55% V1 9%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-02",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-03",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-04",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-05",
+  "h": 4,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 65% Am 33%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-06",
+  "h": 5,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 48% Am 46% V1 5%"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-07",
+  "h": 6,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Am 36% V1 38% V2 23%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-03",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-04",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-05",
+  "h": 3,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 30% Am 69%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-06",
+  "h": 4,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 10% Am 53% V1 28% V2 9%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-07",
+  "h": 5,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 13% V1 33% V2 54%"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-08",
+  "h": 6,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "V2 96%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-04",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-05",
+  "h": 2,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 39% Am 60%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-06",
+  "h": 3,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Am 57% V1 40%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-07",
+  "h": 4,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 16% V1 35% V2 48%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-08",
+  "h": 5,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 9% V1 28% V2 63%"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-09",
+  "h": 6,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Am 27% V1 39% V2 33%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-05",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 60% Am 40%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-06",
+  "h": 2,
+  "cor_esp": "Amarela",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 11% Am 83% V1 6%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-07",
+  "h": 3,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 46% V1 49%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-08",
+  "h": 4,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 26% V1 39% V2 34%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-09",
+  "h": 5,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Vd 10% Am 53% V1 28% V2 9%"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-10",
+  "h": 6,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 30% Am 56% V1 12%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-06",
+  "h": 1,
+  "cor_esp": "Vermelha 1",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 10% V1 58% V2 32%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-07",
+  "h": 2,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "V2 95%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-08",
+  "h": 3,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Vermelha 1",
+  "prob": "V2 97%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-09",
+  "h": 4,
+  "cor_esp": "Vermelha 2",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Amarela",
+  "prob": "Am 8% V1 27% V2 65%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-10",
+  "h": 5,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 10% Am 53% V1 28% V2 9%"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-11",
+  "h": 6,
+  "cor_esp": "Amarela",
+  "cor_li": "Vermelha 2",
+  "cor_ls": "Verde",
+  "prob": "Vd 17% Am 58% V1 21%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2026-10",
+  "h": 1,
+  "cor_esp": "Verde",
+  "cor_li": "Amarela",
+  "cor_ls": "Verde",
+  "prob": "Vd 66% Am 31%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2026-11",
+  "h": 2,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 80% Am 19%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2026-12",
+  "h": 3,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2027-01",
+  "h": 4,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2027-02",
+  "h": 5,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2027-03",
+  "h": 6,
+  "cor_esp": "Verde",
+  "cor_li": "Verde",
+  "cor_ls": "Verde",
+  "prob": "Vd 100%"
+ }
+]

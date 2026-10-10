@@ -280,6 +280,7 @@
   document.getElementById("meta").innerHTML =
     `<span>Premissas:</span><span>Deck NEWAVE ${rot(D.deck)}${D.rodada ? " (v " + D.rodada.insumos.deck_versao + ")" : ""}</span>` +
     `<span>ECMWF ${D.rodada ? "emissão " + dataBr(D.rodada.insumos.ecmwf_emissao) : "rodada " + rot(D.rodada_ecmwf)}</span>` +
+    (D.modelo ? `<span title="${D.modelo.decisoes || ""}">Modelo ${D.modelo.versao}</span>` : "") +
     `<span class="atualizado">${D.rodada ? "Rodada de " + dataHoraBr(D.rodada.publicada_em) : "Atualizado em " + dataBr(D.gerado_em)}</span>`;
 
   const painel = document.getElementById("painel");
@@ -369,7 +370,12 @@
         const atual = D.rodada ? dk === D.rodada.id : dk === D.deck;
         const deckR = daRodada[0] ? daRodada[0].deck : dk;
         const titulo = pub ? `Rodada ${dataHoraBr(dk)}` : `Rodada ${rot(dk)}`;
-        const sub = atual ? `atual · deck ${rot(deckR)}` : pub ? `publicada · deck ${rot(deckR)}` : "reconstruída (backtest)";
+        // versão do modelo; marca quando muda em relação à rodada publicada anterior
+        const modR = daRodada[0] && daRodada[0].modelo;
+        const prox = todosDecks.slice(todosDecks.indexOf(dk) + 1).map(d => RD.find(x => chaveR(x) === d && x.publicada)).find(Boolean);
+        const mudou = pub && prox && prox.modelo && modR !== prox.modelo;
+        const sufixo = pub && modR ? ` · modelo ${modR}${mudou ? " (novo)" : ""}` : "";
+        const sub = (atual ? `atual · deck ${rot(deckR)}` : pub ? `publicada · deck ${rot(deckR)}` : "reconstruída (backtest)") + sufixo;
         linha(`<span>${titulo}<small>${sub}</small></span>`, m => {
           const r = porAlvo[m];
           if (!r) return vazio();

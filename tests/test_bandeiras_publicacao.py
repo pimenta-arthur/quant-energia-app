@@ -20,7 +20,10 @@ APP = Path(__file__).resolve().parents[1] / "data/serving/bandeiras/produto_dado
 REF = ANALYTICS / "reports/pagina/produto_dados.js"
 
 pytestmark = pytest.mark.skipif(
-    not (APP.exists() and REF.exists()), reason="sem dados publicados da aplicação ou do analytics"
+    os.environ.get("QE_PARIDADE_ANALYTICS") != "1" or not (APP.exists() and REF.exists()),
+    reason="paridade com o analytics: validou a migração (2026-10-09); hoje a proteção é "
+    "tests/referencias. Para rodar: QE_PARIDADE_ANALYTICS=1, com a página regravada para a "
+    "rodada de set/2026 (deck 2026-09 + ECMWF 2026-09-01)",
 )
 IGNORAR = {"gerado_em", "publicada_em", "rodada", "tipo"}  # campos novos do app (rodadas por data)
 

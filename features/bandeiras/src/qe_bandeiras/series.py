@@ -7,11 +7,11 @@ GF_band e PLD mínimo/máximo do boletim do mês do deck. Mesma conta do analyti
 
 import pandas as pd
 
-from qe_bandeiras import chaves, regra, tratamento
+from qe_bandeiras import chaves, modelo, regra, tratamento
 from qe_core.armazenamento import Armazenamento, gravar_parquet, ler_parquet
 from qe_core.leitores.newave import SUBMERCADOS
 
-HORIZONTE = 6  # M+1 a M+6 (alcance da rodada do ECMWF pareada com o deck, D031)
+HORIZONTE = modelo.MODELO.horizonte  # M+1 a M+6 (alcance da emissão do ECMWF)
 
 
 def _por_periodo(df: pd.DataFrame, colunas: str = "periodo") -> pd.DataFrame:

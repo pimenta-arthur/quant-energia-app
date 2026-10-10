@@ -12,7 +12,9 @@ from qe_bandeiras.insumos import Insumos
 from qe_core.armazenamento import Armazenamento, gravar_parquet
 
 
-def projetar(arm: Armazenamento, ins: Insumos, historico: pd.DataFrame) -> pd.DataFrame:
+def projetar(
+    arm: Armazenamento, ins: Insumos, historico: pd.DataFrame, gravar: bool = True
+) -> pd.DataFrame:
     """`historico` = previsões passadas com erro_x (backtest.referencia)."""
     base = backtest.base_oficial(arm)
     deck = ins.mes_deck
@@ -22,14 +24,15 @@ def projetar(arm: Armazenamento, ins: Insumos, historico: pd.DataFrame) -> pd.Da
         raise ValueError(f"emissão do ECMWF {ins.ecmwf_emissao} não tratada")
     prep = series.series_do_deck(arm, deck, ins.deck_versao, base)
     cen = modelo.prever_cenarios(prep, backtest.referencias(arm, ins, base))
-    cen = cen[(cen.h >= 1) & (cen.h <= 6)].reset_index(drop=True)
+    cen = cen[(cen.h >= 1) & (cen.h <= modelo.MODELO.horizonte)].reset_index(drop=True)
     for i, r in cen.iterrows():
         p = modelo.probabilidade_por_grupo(historico, deck, r.h, r.x_esp, r.gsf_esp)
         for c in regra.CORES:
             cen.loc[i, f"p_{c}"] = float(p[c])
-    gravar_parquet(
-        arm,
-        cen.assign(deck=cen.deck.astype(str), alvo=cen.alvo.astype(str)),
-        chaves.proc_projecao(ins.identificador()),
-    )
+    if gravar:
+        gravar_parquet(
+            arm,
+            cen.assign(deck=cen.deck.astype(str), alvo=cen.alvo.astype(str)),
+            chaves.proc_projecao(ins.identificador()),
+        )
     return cen

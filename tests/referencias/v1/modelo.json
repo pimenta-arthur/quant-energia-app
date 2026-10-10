@@ -1,0 +1,23 @@
+{
+ "versao": "v1",
+ "decisoes": "D029 (k=15, peso igual), D030 (ECMWF média precip + membros recentrados), D031/D033 (pareamento deck × ECMWF), D032 (patamares), σ por grupo M+1–3/M+4–6 (9.3), LI/LS pelo P10/P90 mensal dos membros (9.5)",
+ "k": 15,
+ "meia_vida": "inf",
+ "grupos_horizonte": [
+  [
+   1,
+   2,
+   3
+  ],
+  [
+   4,
+   5,
+   6
+  ]
+ ],
+ "minimo_erros_sigma": 8,
+ "gsf_verde": 0.96,
+ "quantil_li": 0.1,
+ "quantil_ls": 0.9,
+ "horizonte": 6
+}

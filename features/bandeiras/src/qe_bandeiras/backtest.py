@@ -55,18 +55,20 @@ def referencias(arm: Armazenamento, ins: insumos.Insumos, base: pd.DataFrame) ->
     deck, emissao = ins.mes_deck, ins.ecmwf_emissao
     return {
         "esp": ecmwf.referencia_media(arm, deck, emissao, base),
-        "li": ecmwf.referencia_quantil(arm, deck, emissao, base, 0.1),
-        "ls": ecmwf.referencia_quantil(arm, deck, emissao, base, 0.9),
+        "li": ecmwf.referencia_quantil(arm, deck, emissao, base, modelo.MODELO.quantil_li),
+        "ls": ecmwf.referencia_quantil(arm, deck, emissao, base, modelo.MODELO.quantil_ls),
     }
 
 
 def _com_oficial(p: pd.DataFrame, base: pd.DataFrame) -> pd.DataFrame:
     cols = ["cor_oficial", "x_real", "gsf_band_boletim", "pld_gatilho_boletim"]
-    p = p[(p.h >= 1) & (p.h <= 6)].merge(base[cols], left_on="alvo", right_index=True)
+    p = p[(p.h >= 1) & (p.h <= modelo.MODELO.horizonte)].merge(
+        base[cols], left_on="alvo", right_index=True
+    )
     return p.assign(erro_x=p.x_real - p.x_medio).reset_index(drop=True)
 
 
-def rodar(arm: Armazenamento) -> dict[str, pd.DataFrame]:
+def rodar(arm: Armazenamento, gravar: bool = True) -> dict[str, pd.DataFrame]:
     base = base_oficial(arm)
     real_ena = base.ena_sin.dropna()
     ref_l, ora_l, cen_l = [], [], []
@@ -76,7 +78,7 @@ def rodar(arm: Armazenamento) -> dict[str, pd.DataFrame]:
         ref_l.append(modelo.prever(prep, refs["esp"]))
         ora_l.append(modelo.prever(prep, real_ena))  # ORÁCULO: ENA oficial no lugar da prevista
         cen = modelo.prever_cenarios(prep, refs)
-        cen_l.append(cen[(cen.h >= 1) & (cen.h <= 6)])
+        cen_l.append(cen[(cen.h >= 1) & (cen.h <= modelo.MODELO.horizonte)])
     referencia = _com_oficial(pd.concat(ref_l, ignore_index=True), base)
     oraculo = _com_oficial(pd.concat(ora_l, ignore_index=True), base)
 
@@ -97,7 +99,7 @@ def rodar(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     ]
 
     saida = {"referencia": referencia, "oraculo": oraculo, "rodadas": rodadas}
-    for nome, df in saida.items():
+    for nome, df in saida.items() if gravar else ():
         gravar_parquet(
             arm,
             df.assign(deck=df.deck.astype(str), alvo=df.alvo.astype(str)),

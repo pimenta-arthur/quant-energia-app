@@ -174,6 +174,19 @@ def pagina():
 
 
 @app.command()
+def congelar(
+    destino: Path = typer.Option(Path("tests/referencias"), help="Pasta das referências."),
+):
+    """Grava as referências da versão do modelo em uso (rodar só quando a mudança for intencional)."""
+    from qe_bandeiras import modelo, referencias
+
+    p = referencias.congelar(armazenamento(), destino)
+    typer.echo(
+        f"referências do modelo {modelo.MODELO.versao} gravadas em {p} — revise a diferença no git"
+    )
+
+
+@app.command()
 def rodar(
     mes_ini: str = typer.Option(..., "--mes", help="Mês dos insumos novos (AAAA-MM)."),
     origem: Path | None = typer.Option(None, help="Se informada, ingere antes de tratar."),

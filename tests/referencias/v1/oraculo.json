@@ -1,0 +1,722 @@
+[
+ {
+  "deck": "2025-01",
+  "alvo": "2025-02",
+  "h": 1,
+  "gsf_medio": 1.08,
+  "pld_medio": 58.6,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-03",
+  "h": 2,
+  "gsf_medio": 1.04,
+  "pld_medio": 59.117124,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-04",
+  "h": 3,
+  "gsf_medio": 1.0,
+  "pld_medio": 71.176551,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-05",
+  "h": 4,
+  "gsf_medio": 0.87,
+  "pld_medio": 115.737226,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-06",
+  "h": 5,
+  "gsf_medio": 0.76,
+  "pld_medio": 153.020127,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-07",
+  "h": 6,
+  "gsf_medio": 0.69,
+  "pld_medio": 144.030766,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-03",
+  "h": 1,
+  "gsf_medio": 1.04,
+  "pld_medio": 88.988851,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-04",
+  "h": 2,
+  "gsf_medio": 0.99,
+  "pld_medio": 135.226788,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-05",
+  "h": 3,
+  "gsf_medio": 0.89,
+  "pld_medio": 141.556848,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-06",
+  "h": 4,
+  "gsf_medio": 0.77,
+  "pld_medio": 215.957656,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-07",
+  "h": 5,
+  "gsf_medio": 0.69,
+  "pld_medio": 232.892414,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-08",
+  "h": 6,
+  "gsf_medio": 0.67,
+  "pld_medio": 276.278122,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-04",
+  "h": 1,
+  "gsf_medio": 0.99,
+  "pld_medio": 146.156697,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-05",
+  "h": 2,
+  "gsf_medio": 0.88,
+  "pld_medio": 228.919236,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-06",
+  "h": 3,
+  "gsf_medio": 0.76,
+  "pld_medio": 282.440469,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-07",
+  "h": 4,
+  "gsf_medio": 0.68,
+  "pld_medio": 281.559399,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-08",
+  "h": 5,
+  "gsf_medio": 0.68,
+  "pld_medio": 297.421054,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-09",
+  "h": 6,
+  "gsf_medio": 0.68,
+  "pld_medio": 302.115464,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-05",
+  "h": 1,
+  "gsf_medio": 0.88,
+  "pld_medio": 175.41221,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-06",
+  "h": 2,
+  "gsf_medio": 0.77,
+  "pld_medio": 225.55103,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-07",
+  "h": 3,
+  "gsf_medio": 0.69,
+  "pld_medio": 229.152411,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-08",
+  "h": 4,
+  "gsf_medio": 0.68,
+  "pld_medio": 279.85747,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-09",
+  "h": 5,
+  "gsf_medio": 0.68,
+  "pld_medio": 285.219262,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-10",
+  "h": 6,
+  "gsf_medio": 0.73,
+  "pld_medio": 322.276777,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-06",
+  "h": 1,
+  "gsf_medio": 0.8,
+  "pld_medio": 276.841887,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-07",
+  "h": 2,
+  "gsf_medio": 0.72,
+  "pld_medio": 279.244944,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-08",
+  "h": 3,
+  "gsf_medio": 0.69,
+  "pld_medio": 320.589911,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-09",
+  "h": 4,
+  "gsf_medio": 0.68,
+  "pld_medio": 331.145132,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-10",
+  "h": 5,
+  "gsf_medio": 0.74,
+  "pld_medio": 324.506535,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-11",
+  "h": 6,
+  "gsf_medio": 0.77,
+  "pld_medio": 352.555751,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-07",
+  "h": 1,
+  "gsf_medio": 0.67,
+  "pld_medio": 276.043873,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-08",
+  "h": 2,
+  "gsf_medio": 0.67,
+  "pld_medio": 309.578731,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-09",
+  "h": 3,
+  "gsf_medio": 0.69,
+  "pld_medio": 323.370841,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-10",
+  "h": 4,
+  "gsf_medio": 0.74,
+  "pld_medio": 332.109882,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-11",
+  "h": 5,
+  "gsf_medio": 0.8,
+  "pld_medio": 345.889933,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-12",
+  "h": 6,
+  "gsf_medio": 0.84,
+  "pld_medio": 372.779986,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-08",
+  "h": 1,
+  "gsf_medio": 0.62,
+  "pld_medio": 232.221482,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-09",
+  "h": 2,
+  "gsf_medio": 0.71,
+  "pld_medio": 266.45907,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-10",
+  "h": 3,
+  "gsf_medio": 0.75,
+  "pld_medio": 279.096893,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-11",
+  "h": 4,
+  "gsf_medio": 0.81,
+  "pld_medio": 312.768954,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-12",
+  "h": 5,
+  "gsf_medio": 0.85,
+  "pld_medio": 340.461238,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2026-01",
+  "h": 6,
+  "gsf_medio": 1.03,
+  "pld_medio": 331.039919,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-09",
+  "h": 1,
+  "gsf_medio": 0.65,
+  "pld_medio": 294.881531,
+  "cor_media": "Vermelha 2"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-10",
+  "h": 2,
+  "gsf_medio": 0.73,
+  "pld_medio": 318.738886,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-11",
+  "h": 3,
+  "gsf_medio": 0.79,
+  "pld_medio": 331.034531,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-12",
+  "h": 4,
+  "gsf_medio": 0.84,
+  "pld_medio": 328.16248,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-01",
+  "h": 5,
+  "gsf_medio": 1.02,
+  "pld_medio": 336.801988,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-02",
+  "h": 6,
+  "gsf_medio": 1.05,
+  "pld_medio": 264.173073,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2025-12",
+  "h": 1,
+  "gsf_medio": 0.81,
+  "pld_medio": 319.807806,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-01",
+  "h": 2,
+  "gsf_medio": 1.0,
+  "pld_medio": 301.629693,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-02",
+  "h": 3,
+  "gsf_medio": 1.05,
+  "pld_medio": 196.136736,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-03",
+  "h": 4,
+  "gsf_medio": 1.07,
+  "pld_medio": 202.331033,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-04",
+  "h": 5,
+  "gsf_medio": 0.99,
+  "pld_medio": 159.861241,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-05",
+  "h": 6,
+  "gsf_medio": 0.88,
+  "pld_medio": 141.463911,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-01",
+  "h": 1,
+  "gsf_medio": 0.96,
+  "pld_medio": 204.594536,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-02",
+  "h": 2,
+  "gsf_medio": 1.06,
+  "pld_medio": 184.665713,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-03",
+  "h": 3,
+  "gsf_medio": 1.07,
+  "pld_medio": 169.592827,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-04",
+  "h": 4,
+  "gsf_medio": 0.99,
+  "pld_medio": 170.896235,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-05",
+  "h": 5,
+  "gsf_medio": 0.87,
+  "pld_medio": 153.769381,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-06",
+  "h": 6,
+  "gsf_medio": 0.78,
+  "pld_medio": 223.040546,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-02",
+  "h": 1,
+  "gsf_medio": 1.07,
+  "pld_medio": 119.816983,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-03",
+  "h": 2,
+  "gsf_medio": 1.09,
+  "pld_medio": 108.198569,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-04",
+  "h": 3,
+  "gsf_medio": 1.0,
+  "pld_medio": 153.555468,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-05",
+  "h": 4,
+  "gsf_medio": 0.88,
+  "pld_medio": 124.941877,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-06",
+  "h": 5,
+  "gsf_medio": 0.76,
+  "pld_medio": 234.766608,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-07",
+  "h": 6,
+  "gsf_medio": 0.69,
+  "pld_medio": 138.854596,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-03",
+  "h": 1,
+  "gsf_medio": 1.08,
+  "pld_medio": 201.059124,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-04",
+  "h": 2,
+  "gsf_medio": 1.0,
+  "pld_medio": 181.069531,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-05",
+  "h": 3,
+  "gsf_medio": 0.88,
+  "pld_medio": 173.817742,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-06",
+  "h": 4,
+  "gsf_medio": 0.76,
+  "pld_medio": 271.618848,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-07",
+  "h": 5,
+  "gsf_medio": 0.68,
+  "pld_medio": 156.058572,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-08",
+  "h": 6,
+  "gsf_medio": 0.66,
+  "pld_medio": 133.577685,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-04",
+  "h": 1,
+  "gsf_medio": 0.99,
+  "pld_medio": 129.817261,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-05",
+  "h": 2,
+  "gsf_medio": 0.88,
+  "pld_medio": 133.33162,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-06",
+  "h": 3,
+  "gsf_medio": 0.74,
+  "pld_medio": 269.665806,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-07",
+  "h": 4,
+  "gsf_medio": 0.68,
+  "pld_medio": 178.3038,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-08",
+  "h": 5,
+  "gsf_medio": 0.65,
+  "pld_medio": 148.192967,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-09",
+  "h": 6,
+  "gsf_medio": 0.73,
+  "pld_medio": 122.921433,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-05",
+  "h": 1,
+  "gsf_medio": 0.82,
+  "pld_medio": 107.211415,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-06",
+  "h": 2,
+  "gsf_medio": 0.77,
+  "pld_medio": 213.485656,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-07",
+  "h": 3,
+  "gsf_medio": 0.69,
+  "pld_medio": 165.141471,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-08",
+  "h": 4,
+  "gsf_medio": 0.69,
+  "pld_medio": 149.68117,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-09",
+  "h": 5,
+  "gsf_medio": 0.74,
+  "pld_medio": 112.378341,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-10",
+  "h": 6,
+  "gsf_medio": 0.8,
+  "pld_medio": 65.957788,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-06",
+  "h": 1,
+  "gsf_medio": 0.73,
+  "pld_medio": 333.316117,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-07",
+  "h": 2,
+  "gsf_medio": 0.66,
+  "pld_medio": 243.24931,
+  "cor_media": "Vermelha 1"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-08",
+  "h": 3,
+  "gsf_medio": 0.68,
+  "pld_medio": 195.042351,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-09",
+  "h": 4,
+  "gsf_medio": 0.72,
+  "pld_medio": 171.117976,
+  "cor_media": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-10",
+  "h": 5,
+  "gsf_medio": 0.77,
+  "pld_medio": 111.633524,
+  "cor_media": "Verde"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2026-10",
+  "h": 1,
+  "gsf_medio": 0.81,
+  "pld_medio": 101.62991,
+  "cor_media": "Verde"
+ }
+]

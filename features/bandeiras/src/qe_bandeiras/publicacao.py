@@ -184,6 +184,10 @@ def carregar_registro(arm: Armazenamento) -> dict:
             }
         registro = convertido
         gravar_json(arm, dict(sorted(registro.items())), chaves.SERVING_REGISTRO)
+    if any("modelo" not in e for e in registro.values()):
+        for e in registro.values():  # rodadas anteriores à versão no registro foram feitas com a v1
+            e.setdefault("modelo", "v1")
+        gravar_json(arm, dict(sorted(registro.items())), chaves.SERVING_REGISTRO)
     return dict(sorted(registro.items()))
 
 
@@ -195,6 +199,7 @@ def _entrada_registro(ins: Insumos, projecoes: list[dict], ident: str, motivo: s
     return {
         "publicada_em": ident,
         "motivo": motivo or "insumos atualizados",
+        "modelo": modelo.MODELO.versao,
         "insumos": ins.como_dict(),
         "projecoes": [
             {
@@ -281,6 +286,7 @@ def montar_dados(
                 "rodada": rid,
                 "tipo": "publicada",
                 "deck": e["insumos"]["deck"],
+                "modelo": e["modelo"],
                 **x,
                 "publicada_em": e["publicada_em"][:10],
                 "real": oficial(x["alvo"]),
@@ -293,6 +299,9 @@ def montar_dados(
     return {
         "gerado_em": ident[:10],
         "rodada": rodada,
+        "modelo": modelo.MODELO.como_dict()
+        if rodada["modelo"] == modelo.MODELO.versao
+        else {"versao": rodada["modelo"]},
         "deck": str(dk),
         "rodada_ecmwf": ins.ecmwf_emissao[:7],
         "adicional_vigente": vigente,
@@ -349,7 +358,12 @@ def publicar(
     """
     registro = carregar_registro(arm)
     ultima = ultima_rodada(registro)
-    if ultima and ultima[1]["insumos"] == ins.como_dict() and not forcar:
+    mesma = (
+        ultima
+        and ultima[1]["insumos"] == ins.como_dict()
+        and ultima[1]["modelo"] == modelo.MODELO.versao
+    )
+    if mesma and not forcar:
         raise RodadaRepetida(f"insumos iguais aos da rodada {ultima[0]}; use --forcar com --motivo")
     if forcar and not motivo:
         raise ValueError("republicar sem mudança de insumo exige motivo")

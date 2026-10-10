@@ -1,0 +1,803 @@
+[
+ {
+  "deck": "2025-01",
+  "alvo": "2025-02",
+  "h": 1,
+  "gsf_medio": 1.08,
+  "pld_medio": 58.6,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-03",
+  "h": 2,
+  "gsf_medio": 1.05,
+  "pld_medio": 60.708908,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-04",
+  "h": 3,
+  "gsf_medio": 1.0,
+  "pld_medio": 60.456034,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-05",
+  "h": 4,
+  "gsf_medio": 0.9,
+  "pld_medio": 69.846151,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-06",
+  "h": 5,
+  "gsf_medio": 0.79,
+  "pld_medio": 85.45795,
+  "cor_media": "Verde",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-01",
+  "alvo": "2025-07",
+  "h": 6,
+  "gsf_medio": 0.69,
+  "pld_medio": 158.313571,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-03",
+  "h": 1,
+  "gsf_medio": 1.04,
+  "pld_medio": 66.539869,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-04",
+  "h": 2,
+  "gsf_medio": 1.01,
+  "pld_medio": 77.891823,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-05",
+  "h": 3,
+  "gsf_medio": 0.9,
+  "pld_medio": 84.06495,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-06",
+  "h": 4,
+  "gsf_medio": 0.79,
+  "pld_medio": 158.166078,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-07",
+  "h": 5,
+  "gsf_medio": 0.7,
+  "pld_medio": 216.937165,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-02",
+  "alvo": "2025-08",
+  "h": 6,
+  "gsf_medio": 0.69,
+  "pld_medio": 243.58814,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-04",
+  "h": 1,
+  "gsf_medio": 0.98,
+  "pld_medio": 186.344624,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-05",
+  "h": 2,
+  "gsf_medio": 0.88,
+  "pld_medio": 230.637898,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-06",
+  "h": 3,
+  "gsf_medio": 0.75,
+  "pld_medio": 293.88255,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-07",
+  "h": 4,
+  "gsf_medio": 0.67,
+  "pld_medio": 327.603793,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-08",
+  "h": 5,
+  "gsf_medio": 0.67,
+  "pld_medio": 353.83794,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-03",
+  "alvo": "2025-09",
+  "h": 6,
+  "gsf_medio": 0.67,
+  "pld_medio": 355.261797,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-05",
+  "h": 1,
+  "gsf_medio": 0.87,
+  "pld_medio": 216.813392,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-06",
+  "h": 2,
+  "gsf_medio": 0.77,
+  "pld_medio": 255.632382,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-07",
+  "h": 3,
+  "gsf_medio": 0.68,
+  "pld_medio": 252.456195,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-08",
+  "h": 4,
+  "gsf_medio": 0.67,
+  "pld_medio": 324.681058,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-09",
+  "h": 5,
+  "gsf_medio": 0.68,
+  "pld_medio": 319.994577,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-04",
+  "alvo": "2025-10",
+  "h": 6,
+  "gsf_medio": 0.72,
+  "pld_medio": 333.170847,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-06",
+  "h": 1,
+  "gsf_medio": 0.78,
+  "pld_medio": 301.397121,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-07",
+  "h": 2,
+  "gsf_medio": 0.7,
+  "pld_medio": 319.664651,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-08",
+  "h": 3,
+  "gsf_medio": 0.68,
+  "pld_medio": 344.265645,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-09",
+  "h": 4,
+  "gsf_medio": 0.66,
+  "pld_medio": 346.395927,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-10",
+  "h": 5,
+  "gsf_medio": 0.71,
+  "pld_medio": 356.59361,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-05",
+  "alvo": "2025-11",
+  "h": 6,
+  "gsf_medio": 0.75,
+  "pld_medio": 405.677594,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-07",
+  "h": 1,
+  "gsf_medio": 0.67,
+  "pld_medio": 297.517456,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-08",
+  "h": 2,
+  "gsf_medio": 0.65,
+  "pld_medio": 335.848999,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-09",
+  "h": 3,
+  "gsf_medio": 0.67,
+  "pld_medio": 335.00137,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-10",
+  "h": 4,
+  "gsf_medio": 0.74,
+  "pld_medio": 331.730563,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-11",
+  "h": 5,
+  "gsf_medio": 0.79,
+  "pld_medio": 351.332127,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-06",
+  "alvo": "2025-12",
+  "h": 6,
+  "gsf_medio": 0.83,
+  "pld_medio": 430.914857,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-08",
+  "h": 1,
+  "gsf_medio": 0.62,
+  "pld_medio": 259.467065,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-09",
+  "h": 2,
+  "gsf_medio": 0.7,
+  "pld_medio": 287.490428,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-10",
+  "h": 3,
+  "gsf_medio": 0.75,
+  "pld_medio": 265.884877,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-11",
+  "h": 4,
+  "gsf_medio": 0.81,
+  "pld_medio": 321.911641,
+  "cor_media": "Amarela",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-07",
+  "alvo": "2025-12",
+  "h": 5,
+  "gsf_medio": 0.85,
+  "pld_medio": 337.916289,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-09",
+  "h": 1,
+  "gsf_medio": 0.65,
+  "pld_medio": 306.274904,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 2"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-10",
+  "h": 2,
+  "gsf_medio": 0.72,
+  "pld_medio": 343.445396,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-11",
+  "h": 3,
+  "gsf_medio": 0.78,
+  "pld_medio": 369.126421,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Vermelha 1"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2025-12",
+  "h": 4,
+  "gsf_medio": 0.8,
+  "pld_medio": 388.06817,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-01",
+  "h": 5,
+  "gsf_medio": 1.03,
+  "pld_medio": 290.155163,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-08",
+  "alvo": "2026-02",
+  "h": 6,
+  "gsf_medio": 1.08,
+  "pld_medio": 142.967647,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2025-12",
+  "h": 1,
+  "gsf_medio": 0.8,
+  "pld_medio": 336.266776,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-01",
+  "h": 2,
+  "gsf_medio": 1.01,
+  "pld_medio": 291.190035,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-02",
+  "h": 3,
+  "gsf_medio": 1.07,
+  "pld_medio": 112.545009,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-03",
+  "h": 4,
+  "gsf_medio": 1.08,
+  "pld_medio": 118.779388,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-04",
+  "h": 5,
+  "gsf_medio": 1.0,
+  "pld_medio": 100.832501,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-11",
+  "alvo": "2026-05",
+  "h": 6,
+  "gsf_medio": 0.89,
+  "pld_medio": 106.668125,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-01",
+  "h": 1,
+  "gsf_medio": 0.97,
+  "pld_medio": 162.880804,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-02",
+  "h": 2,
+  "gsf_medio": 1.06,
+  "pld_medio": 144.331962,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-03",
+  "h": 3,
+  "gsf_medio": 1.07,
+  "pld_medio": 174.498055,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-04",
+  "h": 4,
+  "gsf_medio": 0.99,
+  "pld_medio": 170.697519,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-05",
+  "h": 5,
+  "gsf_medio": 0.88,
+  "pld_medio": 124.766478,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2025-12",
+  "alvo": "2026-06",
+  "h": 6,
+  "gsf_medio": 0.79,
+  "pld_medio": 176.750258,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-02",
+  "h": 1,
+  "gsf_medio": 1.07,
+  "pld_medio": 150.581532,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-03",
+  "h": 2,
+  "gsf_medio": 1.09,
+  "pld_medio": 167.088952,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-04",
+  "h": 3,
+  "gsf_medio": 0.99,
+  "pld_medio": 217.868703,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-05",
+  "h": 4,
+  "gsf_medio": 0.88,
+  "pld_medio": 146.300048,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-06",
+  "h": 5,
+  "gsf_medio": 0.79,
+  "pld_medio": 136.747249,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-01",
+  "alvo": "2026-07",
+  "h": 6,
+  "gsf_medio": 0.66,
+  "pld_medio": 224.822058,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-03",
+  "h": 1,
+  "gsf_medio": 1.07,
+  "pld_medio": 236.351329,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-04",
+  "h": 2,
+  "gsf_medio": 1.0,
+  "pld_medio": 203.307987,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-05",
+  "h": 3,
+  "gsf_medio": 0.86,
+  "pld_medio": 252.866233,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-06",
+  "h": 4,
+  "gsf_medio": 0.76,
+  "pld_medio": 250.348716,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-07",
+  "h": 5,
+  "gsf_medio": 0.65,
+  "pld_medio": 278.486158,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-02",
+  "alvo": "2026-08",
+  "h": 6,
+  "gsf_medio": 0.6,
+  "pld_medio": 350.995634,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-04",
+  "h": 1,
+  "gsf_medio": 0.98,
+  "pld_medio": 250.942217,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-05",
+  "h": 2,
+  "gsf_medio": 0.86,
+  "pld_medio": 225.346413,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-06",
+  "h": 3,
+  "gsf_medio": 0.75,
+  "pld_medio": 265.324549,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-07",
+  "h": 4,
+  "gsf_medio": 0.64,
+  "pld_medio": 260.687756,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-08",
+  "h": 5,
+  "gsf_medio": 0.62,
+  "pld_medio": 271.903585,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-03",
+  "alvo": "2026-09",
+  "h": 6,
+  "gsf_medio": 0.69,
+  "pld_medio": 270.726532,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-05",
+  "h": 1,
+  "gsf_medio": 0.82,
+  "pld_medio": 131.849323,
+  "cor_media": "Verde",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-06",
+  "h": 2,
+  "gsf_medio": 0.77,
+  "pld_medio": 199.952356,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-07",
+  "h": 3,
+  "gsf_medio": 0.68,
+  "pld_medio": 220.033447,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-08",
+  "h": 4,
+  "gsf_medio": 0.67,
+  "pld_medio": 255.840276,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-09",
+  "h": 5,
+  "gsf_medio": 0.72,
+  "pld_medio": 215.657989,
+  "cor_media": "Amarela",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-04",
+  "alvo": "2026-10",
+  "h": 6,
+  "gsf_medio": 0.77,
+  "pld_medio": 179.409055,
+  "cor_media": "Amarela",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-06",
+  "h": 1,
+  "gsf_medio": 0.73,
+  "pld_medio": 325.722132,
+  "cor_media": "Vermelha 1",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-07",
+  "h": 2,
+  "gsf_medio": 0.65,
+  "pld_medio": 342.003915,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-08",
+  "h": 3,
+  "gsf_medio": 0.65,
+  "pld_medio": 350.230065,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-09",
+  "h": 4,
+  "gsf_medio": 0.67,
+  "pld_medio": 317.936438,
+  "cor_media": "Vermelha 2",
+  "cor_oficial": "Amarela"
+ },
+ {
+  "deck": "2026-05",
+  "alvo": "2026-10",
+  "h": 5,
+  "gsf_medio": 0.74,
+  "pld_medio": 230.851155,
+  "cor_media": "Amarela",
+  "cor_oficial": "Verde"
+ },
+ {
+  "deck": "2026-09",
+  "alvo": "2026-10",
+  "h": 1,
+  "gsf_medio": 0.81,
+  "pld_medio": 86.378817,
+  "cor_media": "Verde",
+  "cor_oficial": "Verde"
+ }
+]
