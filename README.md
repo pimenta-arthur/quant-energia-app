@@ -6,10 +6,11 @@ independente das outras:
 | Funcionalidade | Situação | Pesquisa (repositório de análise) |
 |---|---|---|
 | Bandeiras tarifárias | pipeline completo (ingestão → publicação) e página | `forecast-bandeiras-analytics` |
-| PLD horário | análise exploratória | (a criar) |
+| PLD horário | análise exploratória | `risk-lab-dessem-analytics` |
 | Descolamento entre submercados | planejado | (a criar) |
 
 Roda local de forma simples e já usa as mesmas chaves e etapas que vão para a AWS.
+Nova funcionalidade a partir de uma pesquisa: `docs/nova_funcionalidade.md`.
 
 ## Rodar local
 

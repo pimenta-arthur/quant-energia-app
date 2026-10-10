@@ -11,6 +11,9 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
   referências congeladas do próprio app (`tests/referencias/`). O app não depende do analytics para rodar.
 - Formato da pasta de origem da ingestão: `docs/entrada.md`.
 - Decisões de método continuam registradas em `docs/metodologia.md` do analytics.
+- Nova funcionalidade: seguir `docs/nova_funcionalidade.md`. Pesquisa do PLD horário em
+  `../risk-lab-dessem-analytics` (usa o `qe_core` daqui como dependência editável: mudanças no `qe_core`
+  afetam aquela pesquisa; rodar os testes dela também).
 
 ## Ambiente
 - uv workspace (raiz + `core`, `features/bandeiras`, `api`). Sempre `uv add --package <membro> <pacote>`
