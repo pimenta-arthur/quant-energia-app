@@ -77,3 +77,17 @@ Pode haver várias rodadas no mesmo mês; nenhuma é recalculada ou apagada depo
 `publicar` recusa repetir os insumos da última rodada, a não ser com `--forcar --motivo`.
 Não apagar: é o que mostra, na página, como a projeção de cada mês mudou de uma rodada para outra.
 É o único arquivo de `data/` versionado no git: depois de cada `publicar`, fazer commit dele.
+
+## Versões do modelo e testes
+
+- Os parâmetros do modelo ficam em `qe_bandeiras.modelo` como uma versão nomeada (`MODELO`, hoje `v1`:
+  k = 15, peso igual na trajetória, σ por grupo M+1–3/M+4–6, LI/LS pelo P10/P90 dos membros do ECMWF…).
+  Cada rodada publicada grava a versão usada, e a página mostra "Modelo v1".
+- `tests/referencias/<versão>/` guarda os resultados esperados (backtest, oráculo, rodadas reconstruídas e a
+  projeção da rodada de referência de set/2026). `uv run pytest` recalcula e compara.
+- **Mudança sem querer** → o teste falha → corrigir o código.
+- **Mudança intencional** (dados novos no histórico, ou versão nova do modelo decidida no analytics) →
+  `uv run qe bandeiras congelar`, revisar a diferença no git e commitar. Versão nova do modelo: nova
+  instância de `Modelo`, `MODELO` apontando para ela, decisão registrada no analytics e tag `modelo-<versão>`.
+- A paridade com o forecast-bandeiras-analytics validou a migração; para rodar de novo:
+  `QE_PARIDADE_ANALYTICS=1 uv run pytest` (com a página regravada para a rodada de set/2026).

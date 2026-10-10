@@ -32,9 +32,11 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Rodadas não são mensais: cada publicação é uma rodada (id = data e hora) com os insumos vigentes
   (último deck com boletim do mês, versão mais recente; emissão mais recente do ECMWF). Deck e ECMWF
   são versionados em raw/ (deck=AAAA-MM/v=<hash>, emissao=AAAA-MM-DD). O backtest segue mensal (D031).
-- Testes de aceitação: tratamento idêntico à base do analytics (46 meses) e publicação de set/2026
-  idêntica a `reports/pagina/produto_dados.js` do analytics. Qualquer mudança que quebre isso é
-  mudança de método: decidir e registrar no analytics antes.
+- Modelo versionado em `qe_bandeiras.modelo.MODELO` (hoje `v1`). Mudar parâmetro ou lógica do método
+  = versão nova: decisão no analytics, `qe bandeiras congelar`, tag `modelo-<versão>` no git.
+- Testes: `tests/referencias/<versão>/` (referências congeladas, a proteção principal) e tratamento idêntico
+  à base do analytics. A paridade da publicação com o analytics é opt-in (`QE_PARIDADE_ANALYTICS=1`).
+- Nunca regenerar referências para "fazer o teste passar" sem entender a diferença.
 - `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
   arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
 
