@@ -171,9 +171,12 @@ def tratar_newave(arm: Armazenamento, m: pd.Period) -> str:
         return arm.caminho_local(chaves.raw_newave(m, nome))
 
     gh = newave.para_periodos(newave.ler_nwlistop(arq("ghtotsin.out")))
+    meses = set(gh.periodo)  # meses do estudo; vale para ENA e custo marginal
     ena = pd.concat(
         [
-            newave.para_periodos(newave.ler_nwlistop(arq(f"eafbm00{i}.out"))).assign(submercado=s)
+            newave.para_periodos(newave.ler_nwlistop(arq(f"eafbm00{i}.out")), meses).assign(
+                submercado=s
+            )
             for s, i in newave.SUBMERCADOS.items()
         ],
         ignore_index=True,
@@ -181,7 +184,7 @@ def tratar_newave(arm: Armazenamento, m: pd.Period) -> str:
     cmo = pd.concat(
         [
             newave.para_periodos(
-                newave.ler_nwlistop(arq(f"cmarg00{i}.out"), somar_patamares=False)
+                newave.ler_nwlistop(arq(f"cmarg00{i}.out"), somar_patamares=False), meses
             ).assign(submercado=s)
             for s, i in newave.SUBMERCADOS.items()
         ],

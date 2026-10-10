@@ -5,7 +5,7 @@ independente das outras:
 
 | Funcionalidade | Situação | Pesquisa (repositório de análise) |
 |---|---|---|
-| Bandeiras tarifárias | ingestão e tratamento prontos; projeção e publicação em migração | `forecast-bandeiras-analytics` |
+| Bandeiras tarifárias | pipeline completo (ingestão → publicação) e página | `forecast-bandeiras-analytics` |
 | PLD horário | análise exploratória | (a criar) |
 | Descolamento entre submercados | planejado | (a criar) |
 
@@ -17,12 +17,16 @@ Roda local de forma simples e já usa as mesmas chaves e etapas que vão para a 
 uv sync                                   # instala tudo (Python 3.14 do Homebrew)
 cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 
-# bandeiras: do bruto ao tratado
-uv run qe bandeiras ingerir --origem ../forecast-bandeiras/data/raw --mes 2026-09
-uv run qe bandeiras tratar --mes 2026-09
-# intervalo: --mes 2023-01 --ate 2026-10
+# bandeiras: rodada do mês (deck do NEWAVE + ECMWF de M)
+uv run qe bandeiras ingerir --origem ../forecast-bandeiras/data/raw --mes 2026-09   # bruto → raw/
+uv run qe bandeiras tratar --mes 2026-09                                            # raw/ → processed/ (Parquet)
+uv run qe bandeiras backtest                     # previsões passadas sem vazamento (σ e rodadas)
+uv run qe bandeiras projetar --mes 2026-09       # M+1 a M+6: esperado, seco, úmido e probabilidade
+uv run qe bandeiras publicar --mes 2026-09       # serving/bandeiras/ + registro da rodada publicada
+# tudo de uma vez: uv run qe bandeiras rodar --mes 2026-09 [--origem ...]
+# primeira carga do histórico: ingerir e tratar com --mes 2023-01 --ate 2026-10
 
-uv run qe servir                          # http://localhost:8000
+uv run qe servir                          # http://localhost:8000 → /bandeiras/
 uv run pytest                             # testes (comparam com o analytics, se disponível)
 ```
 
@@ -61,3 +65,9 @@ As etapas só acessam dados pelo módulo de armazenamento. Na AWS, `QE_ARMAZENAM
 
 Dados de terceiros (curvas Dcide, ECMWF) têm licença: o bucket de `raw/` é privado e as páginas
 publicam só resultados derivados.
+
+## Registro das rodadas publicadas
+
+`serving/bandeiras/historico_projecoes.json` guarda cada rodada como foi publicada (data incluída).
+Publicar de novo no mesmo mês substitui só aquela rodada; as anteriores nunca são recalculadas.
+Não apagar: é o que mostra, na página, como a projeção de cada mês mudou de uma rodada para outra.

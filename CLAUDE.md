@@ -27,6 +27,13 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Configuração só por variáveis `QE_*` (ou `.env`).
 - `data/` nunca vai para o git.
 
+## Bandeiras: etapas e testes
+- `qe bandeiras ingerir | tratar | backtest | projetar | publicar | rodar`.
+- Testes de aceitação: tratamento idêntico à base do analytics (46 meses) e publicação de set/2026
+  idêntica a `reports/pagina/produto_dados.js` do analytics. Qualquer mudança que quebre isso é
+  mudança de método: decidir e registrar no analytics antes.
+- `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar.
+
 ## Regras herdadas do analytics (bandeiras)
 - PLD gatilho vem do deck do DECOMP da CCEE, nunca do CMO do ONS.
 - Backtest e calibração só com informação disponível na data do deck.

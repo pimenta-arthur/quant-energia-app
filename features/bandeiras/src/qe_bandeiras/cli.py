@@ -58,14 +58,57 @@ def tratar(
 
 
 @app.command()
+def backtest():
+    """Refaz o backtest sem vazamento de todos os decks com rodada do ECMWF (σ e rodadas passadas)."""
+    from qe_bandeiras import backtest as bt
+
+    r = bt.rodar(armazenamento())
+    a = r["referencia"]
+    typer.echo(
+        f"backtest: {a.deck.nunique()} decks, {len(a)} previsões com bandeira oficial; "
+        f"acerto {(a.cor_media == a.cor_oficial).mean():.0%} (M+1 a M+6)"
+    )
+
+
+@app.command()
 def projetar(mes_ini: str = typer.Option(..., "--mes", help="Mês do deck AAAA-MM.")):
-    """Projeção do deck + ECMWF do mês (próxima etapa da migração)."""
-    typer.echo("projetar: em construção (fase 2 — projeção e publicação)")
-    raise typer.Exit(1)
+    """Projeção da rodada (deck do NEWAVE + ECMWF do mês): M+1 a M+6, três cenários e probabilidade."""
+    from qe_bandeiras import backtest as bt
+    from qe_bandeiras import projecao
+
+    arm = armazenamento()
+    cen = projecao.projetar(arm, mes(mes_ini), bt.carregar(arm)["referencia"])
+    for r in cen.itertuples():
+        typer.echo(f"{r.alvo} (M+{r.h}): {r.cor_esp} · seco {r.cor_li} · úmido {r.cor_ls}")
 
 
 @app.command()
 def publicar(mes_ini: str = typer.Option(..., "--mes", help="Mês do deck AAAA-MM.")):
-    """Gera o JSON da página e registra a rodada (próxima etapa da migração)."""
-    typer.echo("publicar: em construção (fase 2 — projeção e publicação)")
-    raise typer.Exit(1)
+    """Gera os dados da página (serving/bandeiras) e registra a rodada publicada."""
+    from qe_bandeiras import backtest as bt
+    from qe_bandeiras import chaves, publicacao
+    from qe_core.armazenamento import ler_parquet
+
+    arm = armazenamento()
+    m = mes(mes_ini)
+    cen = ler_parquet(arm, chaves.proc_projecao(m))
+    cen["deck"] = pd.PeriodIndex(cen.deck, freq="M")
+    cen["alvo"] = pd.PeriodIndex(cen.alvo, freq="M")
+    dados = publicacao.publicar(arm, m, cen, bt.carregar(arm))
+    typer.echo(
+        f"publicado: {chaves.SERVING_DADOS} (rodada {dados['deck']}, {len(dados['projecoes'])} meses)"
+    )
+
+
+@app.command()
+def rodar(
+    mes_ini: str = typer.Option(..., "--mes", help="Mês do deck AAAA-MM."),
+    origem: Path | None = typer.Option(None, help="Se informada, ingere antes de tratar."),
+):
+    """Sequência completa do mês: [ingerir] → tratar → backtest → projetar → publicar."""
+    if origem:
+        ingerir(origem=origem, mes_ini=mes_ini, ate=None, sobrescrever=False)
+    tratar(mes_ini=mes_ini, ate=None)
+    backtest()
+    projetar(mes_ini=mes_ini)
+    publicar(mes_ini=mes_ini)

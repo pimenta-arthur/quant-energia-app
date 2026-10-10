@@ -52,6 +52,23 @@ def proc_ecmwf(m: pd.Period, tabela: str) -> str:
 
 PROC_HISTORICO = f"{PROC}/historico_bandeiras.parquet"
 
+
+def proc_series(m: pd.Period, tabela: str) -> str:
+    """GSF e PLD gatilho por série e mês-alvo do deck (cache da parte cara da projeção)."""
+    return f"{PROC}/series/{rotulo(m)}/{tabela}.parquet"
+
+
+def proc_projecao(m: pd.Period) -> str:
+    return f"{PROC}/projecao/{rotulo(m)}.parquet"
+
+
+PROC_BACKTEST = f"{PROC}/backtest"  # referencia.parquet, oraculo.parquet, rodadas.parquet
+
+SERVING = "serving/bandeiras"
+SERVING_DADOS = f"{SERVING}/produto_dados.js"
+# Registro das rodadas publicadas, como foram publicadas (não apagar nem recalcular).
+SERVING_REGISTRO = f"{SERVING}/historico_projecoes.json"
+
 ARQUIVOS_NEWAVE = (
     ["ghtotsin.out", "sistema.dat", "c_adic.dat"]
     + [f"eafbm00{i}.out" for i in range(1, 5)]

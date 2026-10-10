@@ -47,11 +47,18 @@ def ler_nwlistop(caminho: Path, somar_patamares: bool = True) -> pd.DataFrame:
     return df
 
 
-def para_periodos(df: pd.DataFrame) -> pd.DataFrame:
-    """Formato longo com coluna `periodo` (AAAA-MM), sem os meses zerados antes do estudo."""
+def para_periodos(df: pd.DataFrame, validos=None) -> pd.DataFrame:
+    """Formato longo com coluna `periodo` (AAAA-MM), só com os meses do estudo.
+
+    Sem `validos`, descarta os meses zerados (anteriores ao início do estudo). Para o custo
+    marginal, passar os meses válidos do deck (os da geração hidráulica): um submercado pode ter
+    custo marginal zero em todas as séries num mês do estudo (ex.: NE e N em abr/2025), e esse mês
+    não pode ser descartado.
+    """
     df = df.assign(periodo=[f"{a}-{m:02d}" for a, m in zip(df.ano, df.mes)])
-    soma = df.groupby("periodo").valor.apply(lambda v: v.abs().sum())
-    validos = soma[soma > 0].index
+    if validos is None:
+        soma = df.groupby("periodo").valor.apply(lambda v: v.abs().sum())
+        validos = soma[soma > 0].index
     return df[df.periodo.isin(validos)].drop(columns=["ano", "mes"]).reset_index(drop=True)
 
 
