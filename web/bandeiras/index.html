@@ -108,7 +108,17 @@
   #rodadas .c { white-space: nowrap; overflow: hidden; font-size: 0.62rem; }
   #rodadas .cab { font-size: 0.6rem; overflow: hidden; }
   .tempo .c .seta { font-size: 0.6rem; margin-left: 2px; }
+  #rodadas.num .c { height: 32px; color: var(--ink); line-height: 1.1; text-align: center; }
+  #rodadas.num .c small { display: block; font-size: 0.56rem; color: var(--ink-2); }
+  #rodadas.num .c.ofi { font-weight: 600; background: none; border: 1px solid var(--rule); }
   .tempo .rot small { display: block; font-size: 0.66rem; color: var(--ink-3); }
+  #rodadas .rot > span { min-width: 0; }
+  #rodadas .rot b, #rodadas .rot small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #rodadas .rot b { font-family: var(--f-data); font-weight: 400; font-size: 0.72rem; color: var(--ink-2); }
+  #rodadas .rot.recon b, #rodadas .rot.recon small { color: var(--ink-3); }
+  #rodadas .rot .novo { color: var(--accent); font-weight: 600; }
+  #rodadas .rot .hora { font-size: 0.6rem; font-weight: 400; color: var(--ink-3); }
+  #rodadas .rot.titulo-col { font-size: 0.6rem; color: var(--ink-3); }
   .barra-abas { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
   #leg-traj, #leg-gsf { display: grid; gap: 10px; }
   .leg { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); margin: 0; }
@@ -195,20 +205,28 @@
   <section aria-labelledby="s-tempo">
     <h2 id="s-tempo">Histórico e projeção</h2>
     <div class="bloco">
-      <div class="ttl">Bandeiras acionadas e evolução das projeções</div>
+      <div class="barra-abas">
+        <div class="ttl" id="tt-rod">Bandeiras acionadas e evolução das projeções</div>
+        <div class="abas" id="abas-var" role="group" aria-label="Variável">
+          <button type="button" data-v="cor">Bandeira</button>
+          <button type="button" data-v="gsf">GSF</button>
+          <button type="button" data-v="pld">PLD gatilho</button>
+        </div>
+      </div>
       <div class="abas" id="abas-rod" role="group" aria-label="Quantidade de rodadas">
         <button type="button" id="rod-6" data-n="6">Últimas 6 rodadas</button>
         <button type="button" id="rod-12" data-n="12">Últimas 12</button>
         <button type="button" id="rod-todas" data-n="99">Todas</button>
       </div>
       <div class="rolagem"><div class="tempo" id="rodadas"></div></div>
+      <p class="leg" id="leg-var" hidden></p>
     </div>
     <div class="bloco">
       <div class="ttl">Histórico de bandeiras tarifárias, 2015–2026</div>
       <svg id="faixa-longa" viewBox="0 0 1040 88" role="img" aria-label="Bandeiras oficiais por mês desde 2015 e projeção"></svg>
       <div class="legenda-mini" id="leg-cores"></div>
     </div>
-    <p class="leg">Cada linha é uma rodada de projeção, publicada sempre que um insumo muda (deck do NEWAVE ou emissão do ECMWF), podendo haver várias no mesmo mês, com a cor do cenário de referência e a probabilidade dela; lendo cada coluna de baixo para cima, vê-se como a projeção do mês mudou. ▲ cor mais cara e ▼ mais barata que na rodada anterior exibida; ✗ cor diferente da oficial. Rodadas marcadas como reconstruídas vêm do backtest, só com a informação disponível em cada data; não há decks de set e out/2025 nem de jun a ago/2026. Na faixa desde 2015, os meses projetados têm contorno tracejado.</p>
+    <p class="leg">Cada linha é uma rodada de projeção, publicada sempre que um insumo muda (deck do NEWAVE ou emissão do ECMWF), podendo haver várias no mesmo mês, com a cor do cenário de referência e a probabilidade dela; lendo cada coluna de baixo para cima, vê-se como a projeção do mês mudou. ▲ cor mais cara e ▼ mais barata que na rodada anterior exibida; ✗ cor diferente da oficial. Abaixo da data, o insumo que mudou em relação à rodada publicada anterior (detalhes no tooltip). Rodadas marcadas como Backtest foram reconstruídas só com a informação disponível em cada data; não há decks de set e out/2025 nem de jun a ago/2026. Na faixa desde 2015, os meses projetados têm contorno tracejado.</p>
   </section>
 
   <section aria-labelledby="s-adic">
@@ -338,25 +356,48 @@
     const chaveR = r => r.rodada || r.deck;  // publicação (data e hora) ou mês reconstruído
     const todosDecks = [...new Set(RD.map(chaveR))].sort().reverse();
     const box = document.getElementById("rodadas");
-    let nRod = 6;
+    let nRod = 6, vr = "cor";
+    // GSF e PLD: valor do cenário de referência; cor da célula pelo erro (projetado − oficial)
+    const VAR = {
+      gsf: { tit: "GSF oficial e evolução das projeções", fmt: v => n(v, 2), erro: v => (v > 0 ? "+" : v < 0 ? "−" : "") + n(Math.abs(v), 2), escala: 0.15, limiar: 0.02, nome: "GSF" },
+      pld: { tit: "PLD gatilho oficial e evolução das projeções (R$/MWh)", fmt: v => n(v), erro: v => (v > 0 ? "+" : v < 0 ? "−" : "") + n(Math.abs(v)), escala: 100, limiar: 10, nome: "PLD gatilho R$" },
+    };
+    const fundoErro = (e, esc) => {
+      const f = Math.round(Math.min(1, Math.abs(e) / esc) * 70);
+      return `color-mix(in srgb, ${e >= 0 ? "var(--accent)" : "var(--v1)"} ${f}%, var(--vazio))`;
+    };
+    const oficialNum = m => { const h = H.find(x => x.mes === m); return h && h.gsf != null ? (vr === "gsf" ? h.gsf : h.pld) : null; };
     function probDe(r) { const m = r.prob.match(new RegExp(AB[r.esp] + " (\\d+%)")); return m ? m[1] : ""; }
     function desenhar() {
       document.querySelectorAll("#abas-rod button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === nRod)));
+      document.querySelectorAll("#abas-var button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === vr)));
+      const V = VAR[vr];
+      box.classList.toggle("num", !!V);
+      document.getElementById("tt-rod").textContent = V ? V.tit : "Bandeiras acionadas e evolução das projeções";
+      const leg = document.getElementById("leg-var");
+      leg.hidden = !V;
+      if (V) leg.textContent = `Valor do cenário de referência; embaixo, o erro (projetado − oficial). Azul: projeção acima do oficial; vermelho: abaixo; quanto mais forte, maior o erro. ▲▼ mudança de pelo menos ${V.fmt(V.limiar)} em relação à rodada anterior exibida. As rodadas publicadas até 09/10/26 guardaram só o cenário de referência, com o PLD em reais inteiros.`;
       const decks = todosDecks.slice(0, nRod);
       const dados = RD.filter(r => decks.includes(chaveR(r)));
       const cols = [...new Set(dados.map(r => r.alvo))].sort();
       const grade = `118px repeat(${cols.length}, minmax(0, 1fr))`;
       const curto = cols.length > 14; // muitas colunas: só a sigla na célula, probabilidade no tooltip
       box.replaceChildren();
-      const linha = (rotulo, celula) => {
+      const linha = (rotulo, celula, classe = "", dica = "") => {
         const l = document.createElement("div"); l.className = "lin"; l.style.gridTemplateColumns = grade;
-        l.innerHTML = `<span class="rot">${rotulo}</span>`; cols.forEach(m => l.appendChild(celula(m))); box.appendChild(l);
+        l.innerHTML = `<span class="rot ${classe}"${dica ? ` title="${dica}"` : ""}>${rotulo}</span>`; cols.forEach(m => l.appendChild(celula(m))); box.appendChild(l);
       };
       const cab = document.createElement("div"); cab.className = "lin"; cab.style.gridTemplateColumns = grade;
-      cab.innerHTML = '<span class="rot"></span>' + cols.map(m => `<span class="cab${m.endsWith("-01") ? " ano" : ""}">${rot(m)}</span>`).join("");
+      cab.innerHTML = '<span class="rot titulo-col">Rodada</span>' + cols.map(m => `<span class="cab${m.endsWith("-01") ? " ano" : ""}">${rot(m)}</span>`).join("");
       box.appendChild(cab);
       const vazio = () => { const c = document.createElement("div"); c.className = "c"; return c; };
-      linha("Oficial", m => {
+      linha("Oficial CCEE", m => {
+        if (V) {
+          const v = oficialNum(m);
+          if (v == null) return vazio();
+          const c = document.createElement("div"); c.className = "c ofi"; c.textContent = V.fmt(v);
+          dicaEm(c, `<b>${rot(m)}</b> · oficial: ${V.nome} ${V.fmt(v)}${real[m] ? ` · ${real[m]}` : ""}<br>boletim InfoBandeira (CCEE)`); return c;
+        }
         if (!real[m]) return vazio();
         const c = document.createElement("div"); c.className = "c " + CLS[real[m]]; c.textContent = AB[real[m]];
         const h = H.find(x => x.mes === m);
@@ -368,17 +409,30 @@
         const porAlvo = Object.fromEntries(daRodada.map(r => [r.alvo, r]));
         const pub = daRodada.some(r => r.publicada);
         const atual = D.rodada ? dk === D.rodada.id : dk === D.deck;
-        const deckR = daRodada[0] ? daRodada[0].deck : dk;
-        const titulo = pub ? `Rodada ${dataHoraBr(dk)}` : `Rodada ${rot(dk)}`;
-        // versão do modelo; marca quando muda em relação à rodada publicada anterior
-        const modR = daRodada[0] && daRodada[0].modelo;
-        const prox = todosDecks.slice(todosDecks.indexOf(dk) + 1).map(d => RD.find(x => chaveR(x) === d && x.publicada)).find(Boolean);
-        const mudou = pub && prox && prox.modelo && modR !== prox.modelo;
-        const sufixo = pub && modR ? ` · modelo ${modR}${mudou ? " (novo)" : ""}` : "";
-        const sub = (atual ? `atual · deck ${rot(deckR)}` : pub ? `publicada · deck ${rot(deckR)}` : "reconstruída (backtest)") + sufixo;
-        linha(`<span>${titulo}<small>${sub}</small></span>`, m => {
+        // rótulo em duas linhas que sempre cabem: data (e hora, se publicada) / o que mudou
+        const r0 = daRodada[0] || {};
+        const antPub = todosDecks.slice(todosDecks.indexOf(dk) + 1).map(d => RD.find(x => chaveR(x) === d && x.publicada)).find(Boolean);
+        let mudanca = "Backtest";
+        if (pub && !antPub) mudanca = "1ª publicação";
+        else if (pub) {
+          const m = [];
+          if (r0.deck !== antPub.deck) m.push(`DECK ${rot(r0.deck)}`);
+          else if (r0.deck_versao !== antPub.deck_versao) m.push("DECK republicado");
+          if (r0.ecmwf !== antPub.ecmwf) m.push(m.length ? "ECMWF" : `ECMWF ${dataBr(r0.ecmwf).slice(0, 5)}`);
+          if (r0.modelo !== antPub.modelo) m.push(`<span class="novo">Modelo ${r0.modelo}</span>`);
+          mudanca = m.join(" + ") || "Republicada";
+        }
+        const quando = pub ? `${dataBr(dk)} <span class="hora">${dk.slice(11, 16)}</span>` : (r0.ecmwf ? dataBr(r0.ecmwf) : rot(dk));
+        const completo = pub
+          ? `Rodada publicada em ${dataBr(dk)} às ${dk.slice(11, 16)} · DECK ${rot(r0.deck)} (versão ${r0.deck_versao}) · ECMWF ${dataBr(r0.ecmwf)} · modelo ${r0.modelo} · ${r0.motivo}`
+          : `Rodada reconstruída pelo backtest · DECK ${rot(r0.deck)} · ECMWF ${r0.ecmwf ? dataBr(r0.ecmwf) : "–"}`;
+        const titulo = pub ? `rodada de ${dataBr(dk)} ${dk.slice(11, 16)}` : `backtest de ${r0.ecmwf ? dataBr(r0.ecmwf) : rot(dk)}`;
+        const rotulo = `<span><b>${quando}</b><small>${mudanca}</small></span>`;
+        const fimLinha = celula => linha(rotulo, celula, atual ? "atual" : pub ? "" : "recon", completo);
+        fimLinha(m => {
           const r = porAlvo[m];
           if (!r) return vazio();
+          if (V) return celulaNum(r, m, i, decks, dados, titulo, atual, curto);
           const c = document.createElement("div");
           c.className = "c " + CLS[r.esp] + (r.real && r.real !== r.esp ? " erro" : "") + (atual && !r.real ? " proj" : "");
           // compara com a rodada anterior exibida que também projetou este mês
@@ -386,12 +440,30 @@
           let seta = "";
           if (ant && NIV[ant.esp] !== NIV[r.esp]) seta = NIV[r.esp] > NIV[ant.esp] ? "▲" : "▼";
           c.innerHTML = `<span>${AB[r.esp]}${probDe(r) && !curto ? " " + probDe(r) : ""}${seta ? `<span class="seta">${seta}</span>` : ""}</span>`;
-          dicaEm(c, `<b>${rot(m)}</b> · ${titulo.toLowerCase()} (M+${r.h})<br>esperado ${r.esp}${r.prob ? " · " + r.prob : ""}<br>${r.gp}<br>seco ${r.li} · úmido ${r.ls}` +
-            (ant ? `<br>rodada anterior (${ant.publicada ? dataHoraBr(chaveR(ant)) : rot(ant.deck)}): ${ant.esp}` : "") + (r.real ? `<br>oficial: ${r.real}` : ""));
+          dicaEm(c, `<b>${rot(m)}</b> · ${titulo} (M+${r.h})<br>esperado ${r.esp}${r.prob ? " · " + r.prob : ""}<br>${r.gp}<br>seco ${r.li} · úmido ${r.ls}` +
+            (ant ? `<br>rodada anterior (${ant.publicada ? dataHoraBr(chaveR(ant)) : ant.ecmwf ? dataBr(ant.ecmwf) : rot(ant.deck)}): ${ant.esp}` : "") + (r.real ? `<br>oficial: ${r.real}` : ""));
           return c;
         });
       });
     }
+    function celulaNum(r, m, i, decks, dados, titulo, atual, curto) {
+      const V = VAR[vr], v = r[vr + "_esp"], ofi = oficialNum(m);
+      const c = document.createElement("div"); c.className = "c" + (atual && ofi == null ? " proj" : "");
+      if (v == null) return c;
+      const e = ofi != null ? v - ofi : null;
+      if (e != null) c.style.background = fundoErro(e, V.escala);
+      const ant = decks.slice(i + 1).map(d => dados.find(x => chaveR(x) === d && x.alvo === m)).find(Boolean);
+      const va = ant && ant[vr + "_esp"];
+      const seta = va != null && Math.abs(v - va) >= V.limiar ? (v > va ? "▲" : "▼") : "";
+      c.innerHTML = `<span>${V.fmt(v)}${seta ? `<span class="seta">${seta}</span>` : ""}${e != null && !curto ? `<small>${V.erro(e)}</small>` : ""}</span>`;
+      const li = r[vr + "_li"], ls = r[vr + "_ls"];
+      dicaEm(c, `<b>${rot(m)}</b> · ${titulo} (M+${r.h})<br>${V.nome} projetado ${V.fmt(v)} · bandeira ${r.esp}` +
+        (li != null ? `<br>seco ${V.fmt(li)} · úmido ${V.fmt(ls)}` : "") +
+        (va != null ? `<br>rodada anterior (${ant.publicada ? dataHoraBr(chaveR(ant)) : ant.ecmwf ? dataBr(ant.ecmwf) : rot(ant.deck)}): ${V.fmt(va)}` : "") +
+        (ofi != null ? `<br>oficial ${V.fmt(ofi)} · erro ${V.erro(e)}` : ""));
+      return c;
+    }
+    document.getElementById("abas-var").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { vr = b.dataset.v; desenhar(); } });
     document.getElementById("abas-rod").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { nRod = +b.dataset.n; desenhar(); } });
     desenhar();
   })();

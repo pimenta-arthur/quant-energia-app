@@ -13,9 +13,20 @@ app.add_typer(bandeiras, name="bandeiras")
 @app.command()
 def servir(porta: int = typer.Option(8000, help="Porta local."), recarregar: bool = False):
     """Sobe a API e as páginas em http://localhost:<porta>."""
+    from pathlib import Path
+
     import uvicorn
 
-    uvicorn.run("qe_api.app:app", host="127.0.0.1", port=porta, reload=recarregar)
+    # recarrega só quando o código Python muda; data/ e web/ são lidos a cada requisição
+    raiz = Path(__file__).resolve().parents[2]
+    pastas = [str(raiz / p) for p in ("core", "features", "api", "src")]
+    uvicorn.run(
+        "qe_api.app:app",
+        host="127.0.0.1",
+        port=porta,
+        reload=recarregar,
+        reload_dirs=pastas if recarregar else None,
+    )
 
 
 @app.command()

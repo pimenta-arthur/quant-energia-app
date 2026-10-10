@@ -10,6 +10,7 @@ Saídas em serving/bandeiras/:
 """
 
 import json
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -195,6 +196,22 @@ def ultima_rodada(registro: dict) -> tuple[str, dict] | None:
     return next(reversed(registro.items()), None) if registro else None
 
 
+def _numeros(x: dict) -> dict:
+    """GSF e PLD numéricos da rodada (esperado, seco, úmido) para a tabela por variável.
+
+    Rodadas publicadas antes de o registro guardar os números só têm o texto `gp`
+    ("GSF 0,82 · R$ 67"): lê dali o esperado (PLD em reais inteiros) e deixa seco e úmido vazios.
+    """
+    chaves_ = [f"{k}_{n}" for n in ("esp", "li", "ls") for k in ("gsf", "pld")]
+    if all(c in x and x[c] is not None for c in chaves_):
+        return {c: round(float(x[c]), 3 if c.startswith("gsf") else 2) for c in chaves_}
+    m = re.search(r"GSF ([\d,]+) · R\$ ([\d.,]+)", x.get("gp", ""))
+    if not m:
+        return dict.fromkeys(chaves_)
+    gsf, pld = (float(t.replace(".", "").replace(",", ".")) for t in m.groups())
+    return dict.fromkeys(chaves_) | {"gsf_esp": gsf, "pld_esp": pld}
+
+
 def _entrada_registro(ins: Insumos, projecoes: list[dict], ident: str, motivo: str | None) -> dict:
     return {
         "publicada_em": ident,
@@ -210,6 +227,11 @@ def _entrada_registro(ins: Insumos, projecoes: list[dict], ident: str, motivo: s
                 "ls": p["cor_ls"],
                 "prob": " ".join(f"{AB[c]} {v:.0%}" for c, v in p["prob"].items() if v >= 0.05),
                 "gp": f"GSF {br(p['gsf_esp'], 2)} · R$ {br(p['pld_esp'])}",
+                **{
+                    f"{k}_{n}": round(float(p[f"{k}_{n}"]), 3 if k == "gsf" else 2)
+                    for n in ("esp", "li", "ls")
+                    for k in ("gsf", "pld")
+                },
             }
             for p in projecoes
         ],
@@ -269,6 +291,7 @@ def montar_dados(
             "rodada": str(r.deck),
             "tipo": "backtest",
             "deck": str(r.deck),
+            "ecmwf": insumos.emissao_do_mes(arm, r.deck),  # data da previsão simulada
             "alvo": str(r.alvo),
             "h": int(r.h),
             "real": r.real if isinstance(r.real, str) else None,
@@ -277,6 +300,7 @@ def montar_dados(
             "ls": r.cor_ls,
             "prob": r.prob,
             "gp": r.gp,
+            **_numeros(r._asdict()),
         }
         for r in rec[~rec.deck.astype(str).isin(publicados)].itertuples()
     ]
@@ -286,8 +310,12 @@ def montar_dados(
                 "rodada": rid,
                 "tipo": "publicada",
                 "deck": e["insumos"]["deck"],
+                "deck_versao": e["insumos"]["deck_versao"],
+                "ecmwf": e["insumos"]["ecmwf_emissao"],
+                "motivo": e["motivo"],
                 "modelo": e["modelo"],
                 **x,
+                **_numeros(x),
                 "publicada_em": e["publicada_em"][:10],
                 "real": oficial(x["alvo"]),
                 "publicada": True,
