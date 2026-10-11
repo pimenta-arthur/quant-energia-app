@@ -1,18 +1,26 @@
-"""Ingestão: leva os arquivos brutos de uma pasta de origem para raw/ do armazenamento.
+"""Ingestão: da caixa de entrada (data/entrada/<fonte>/) para raw/ do armazenamento.
 
-Fase local: a origem é uma pasta com os arquivos baixados manualmente, no formato descrito em
-docs/entrada.md (hoje, a data/raw do forecast-bandeiras-analytics segue esse formato). Fase AWS: um worker baixa das fontes e grava nas mesmas
-chaves. raw/ é imutável: arquivo já gravado e diferente do novo não é sobrescrito sem pedido
-explícito (exceto o histórico da ANEEL, que é um conjunto atualizado pela fonte).
+Você solta os arquivos como baixou (zip, PDF, txt, xlsx, csv; soltos ou numa pasta) na pasta da
+fonte, e a ingestão:
+1. identifica o mês (ou a emissão, ou o ano) pelo conteúdo, e na falta dele por uma subpasta AAAA-MM;
+2. grava em raw/ só os arquivos que o modelo usa, idênticos aos originais (tirados do zip, se for o caso);
+3. relê o que gravou e confere o hash;
+4. só então apaga o original da entrada. Se algo falhar, o original fica onde está, com o motivo.
 
-Versões: o deck do NEWAVE é guardado por mês e versão (hash do conteúdo), e o ECMWF por data de
-emissão. Uma republicação do deck ou uma emissão extra do ECMWF entram como versões novas, ao lado
-das anteriores.
+raw/ é imutável: arquivo já gravado e diferente do novo não é sobrescrito sem `sobrescrever`
+(exceto o histórico da ANEEL, que é um conjunto atualizado pela fonte). O deck do NEWAVE é guardado
+por mês e versão (hash do conteúdo) e o ECMWF por data de emissão, então uma republicação do deck ou
+uma emissão extra entram ao lado das anteriores. Formato de cada fonte: docs/entrada.md.
 """
 
 import hashlib
+import io
 import re
-from dataclasses import dataclass
+import shutil
+import tempfile
+import unicodedata
+import zipfile
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -20,105 +28,340 @@ import pandas as pd
 
 from qe_bandeiras import chaves
 from qe_core.armazenamento import Armazenamento, gravar_json
+from qe_core.leitores import aneel, ccee, ons
+
+FONTES = {
+    "ccee_newave": "zip (ou arquivos) do deck do NEWAVE da CCEE",
+    "ons_pmo": "PMO do ONS: relato.rv0, PDF da ENA (Tabela 6) e renovaveis.csv",
+    "ccee_infobandeira": "PDF do boletim InfoBandeira da CCEE",
+    "ecmwf": "arquivos .txt de ENA do ECMWF (média, percentis e membros)",
+    "ccee_patamares": "AAC001 (xlsx) dos patamares de carga do ano",
+    "aneel_bandeiras": "csv do histórico de bandeiras da ANEEL (dados abertos)",
+}
+_NOMES_MES = (
+    "JANEIRO FEVEREIRO MARCO ABRIL MAIO JUNHO JULHO AGOSTO SETEMBRO OUTUBRO NOVEMBRO DEZEMBRO"
+)
+MESES = {n: i for i, n in enumerate(_NOMES_MES.split(), 1)}
+_RE_MES = "|".join(MESES)
+
+
+class NaoReconhecido(Exception):
+    """O pacote fica na entrada; a mensagem diz o que faltou."""
 
 
 @dataclass
-class Item:
+class Pacote:
+    """O que foi solto na pasta da fonte: um arquivo, um zip ou uma pasta (com zips dentro, se houver)."""
+
+    origem: Path
+    arquivos: dict[str, bytes]  # nome do arquivo (sem pasta) → conteúdo
+    mes_pasta: pd.Period | None = None  # subpasta AAAA-MM, usada quando o conteúdo não diz o mês
+
+
+@dataclass
+class Resultado:
     fonte: str
-    chave: str
-    situacao: str  # novo | igual | divergente (mantido) | sobrescrito | ausente na origem
+    origem: str
+    removido: bool
+    mensagem: str
+    gravados: dict[str, str] = field(default_factory=dict)  # chave → novo | igual | sobrescrito
+    meses: set[pd.Period] = field(default_factory=set)  # meses cujo tratamento muda
+
+    @property
+    def novo(self) -> bool:
+        return any(s in ("novo", "sobrescrito") for s in self.gravados.values())
 
 
-def _hash(caminho: Path) -> str:
-    return hashlib.sha256(Path(caminho).read_bytes()).hexdigest()
+# --- leitura dos pacotes --------------------------------------------------------------------------
 
 
-def _copiar(
-    arm: Armazenamento, origem: Path | None, chave: str, fonte: str, sobrescrever: bool
-) -> Item:
-    if origem is None or not Path(origem).exists():
-        return Item(fonte, chave, "ausente na origem")
-    if arm.existe(chave):
-        if _hash(arm.caminho_local(chave)) == _hash(origem):
-            return Item(fonte, chave, "igual")
-        if not sobrescrever:
-            return Item(fonte, chave, "divergente (mantido)")
-        arm.gravar_arquivo(Path(origem), chave)
-        return Item(fonte, chave, "sobrescrito")
-    arm.gravar_arquivo(Path(origem), chave)
-    return Item(fonte, chave, "novo")
+def _sha(dados: bytes) -> str:
+    return hashlib.sha256(dados).hexdigest()
 
 
-def _primeiro(padrao: str, pasta: Path) -> Path | None:
-    return next(iter(sorted(pasta.glob(padrao))), None) if pasta.exists() else None
+def _sem_acento(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().upper()
 
 
-def versao_deck(pasta: Path) -> str:
+def _mes(ano: str, nome: str) -> pd.Period:
+    return pd.Period(f"{ano}-{MESES[nome]:02d}", "M")
+
+
+def _abrir_zip(dados: bytes, arquivos: dict[str, bytes]) -> None:
+    with zipfile.ZipFile(io.BytesIO(dados)) as z:
+        for info in z.infolist():
+            nome = Path(info.filename).name
+            if info.is_dir() or nome.startswith(".") or "__MACOSX" in info.filename:
+                continue
+            conteudo = z.read(info)
+            if nome.lower().endswith(".zip"):
+                _abrir_zip(conteudo, arquivos)
+            elif nome in arquivos and arquivos[nome] != conteudo:
+                raise NaoReconhecido(f"dois arquivos diferentes com o nome {nome}")
+            else:
+                arquivos[nome] = conteudo
+
+
+def _ler_pacote(item: Path) -> Pacote:
+    arquivos: dict[str, bytes] = {}
+    caminhos = [p for p in sorted(item.rglob("*")) if p.is_file()] if item.is_dir() else [item]
+    for p in caminhos:
+        if p.name.startswith("."):
+            continue
+        dados = p.read_bytes()
+        if p.suffix.lower() == ".zip":
+            try:
+                _abrir_zip(dados, arquivos)
+            except zipfile.BadZipFile as e:
+                raise NaoReconhecido(f"{p.name}: zip inválido ou ainda sendo copiado") from e
+        else:
+            arquivos[p.name] = dados
+    mes_pasta = None
+    if item.is_dir() and re.fullmatch(r"\d{4}-\d{2}", item.name):
+        mes_pasta = pd.Period(item.name, "M")
+    return Pacote(item, arquivos, mes_pasta)
+
+
+def _achar(p: Pacote, nome: str) -> bytes | None:
+    """Arquivo pelo nome, sem diferenciar maiúsculas."""
+    return next((d for n, d in p.arquivos.items() if n.lower() == nome.lower()), None)
+
+
+def _mes_conferido(p: Pacote, mes_conteudo: pd.Period | None, o_que: str) -> pd.Period:
+    if mes_conteudo and p.mes_pasta and mes_conteudo != p.mes_pasta:
+        raise NaoReconhecido(f"{o_que} é de {mes_conteudo}, mas está na subpasta {p.mes_pasta}")
+    m = mes_conteudo or p.mes_pasta
+    if m is None:
+        raise NaoReconhecido(f"não achei o mês em {o_que}; ponha o arquivo numa subpasta AAAA-MM")
+    return m
+
+
+def _texto_pdf(dados: bytes) -> str:
+    import pdfplumber
+
+    try:
+        with pdfplumber.open(io.BytesIO(dados)) as pdf:
+            return pdf.pages[0].extract_text() or ""
+    except Exception:  # noqa: BLE001 — PDF que não abre simplesmente não é reconhecido
+        return ""
+
+
+def _validar(leitor, dados: bytes, sufixo: str, *args):
+    """Roda o leitor do qe_core sobre o arquivo antes de aceitá-lo (os leitores recebem caminho)."""
+    with tempfile.TemporaryDirectory() as d:
+        caminho = Path(d) / f"arquivo{sufixo}"
+        caminho.write_bytes(dados)
+        try:
+            return leitor(caminho, *args)
+        except Exception as e:  # qualquer falha do leitor recusa o arquivo
+            raise NaoReconhecido(f"arquivo não passou na leitura: {e}") from e
+
+
+# --- reconhecimento por fonte: {chave em raw/: conteúdo}, meses afetados e marca da ingestão ----
+
+
+def versao_deck(conteudo: dict[str, bytes]) -> str:
     """Versão do deck = 8 primeiros caracteres do hash do conteúdo dos arquivos usados."""
     h = hashlib.sha256()
     for arq in chaves.ARQUIVOS_NEWAVE:
-        caminho = Path(pasta) / arq
         h.update(arq.encode())
-        h.update(_hash(caminho).encode() if caminho.exists() else b"-")
+        h.update(_sha(conteudo[arq]).encode() if arq in conteudo else b"-")
     return h.hexdigest()[:8]
 
 
-def ingerir_deck(arm: Armazenamento, pasta: Path, deck: pd.Period) -> list[Item]:
-    """Um deck do NEWAVE como nova versão (ou 'igual', se o conteúdo já foi ingerido)."""
-    versao = versao_deck(pasta)
-    itens = [
-        _copiar(arm, Path(pasta) / arq, chaves.raw_newave(deck, versao, arq), "ccee_newave", False)
-        for arq in chaves.ARQUIVOS_NEWAVE
+def _newave(p: Pacote, arm: Armazenamento):
+    gh = _achar(p, "ghtotsin.out")
+    if gh is None:
+        raise NaoReconhecido("não achei ghtotsin.out (deck do NEWAVE)")
+    faltam = [a for a in chaves.ARQUIVOS_NEWAVE if _achar(p, a) is None]
+    if faltam:
+        raise NaoReconhecido("deck incompleto, faltam: " + ", ".join(faltam))
+    m = re.search(
+        rf"PMO\s*-\s*({_RE_MES})\s*-\s*(\d{{4}})", _sem_acento(gh[:400].decode("latin-1"))
+    )
+    deck = _mes_conferido(p, _mes(m[2], m[1]) if m else None, "ghtotsin.out")
+    conteudo = {a: _achar(p, a) for a in chaves.ARQUIVOS_NEWAVE}
+    versao = versao_deck(conteudo)
+    marca = {
+        "chave": chaves.raw_newave(deck, versao, "_ingestao.json"),
+        "origem": p.origem.name,
+        "origem_sha256": _sha(p.origem.read_bytes()) if p.origem.is_file() else None,
+    }
+    return {chaves.raw_newave(deck, versao, a): d for a, d in conteudo.items()}, {deck}, marca
+
+
+def _pmo(p: Pacote, arm: Armazenamento):
+    relato = _achar(p, "relato.rv0")
+    ena = next(
+        (
+            d
+            for n, d in p.arquivos.items()
+            if n.lower().endswith(".pdf") and "TABELA 6" in _texto_pdf(d)
+        ),
+        None,
+    )
+    renov = _achar(p, "renovaveis.csv") or next(
+        (d for d in p.arquivos.values() if b"PEE-GER-PER-PAT-CEN" in d[:200_000]), None
+    )
+    if relato is None and ena is None and renov is None:
+        raise NaoReconhecido("não achei relato.rv0, PDF da ENA (Tabela 6) nem renovaveis.csv")
+    meses = set()
+    if relato is not None:
+        m = re.search(
+            rf"PMO\s*-\s*({_RE_MES})/(\d{{2}})", _sem_acento(relato[:20_000].decode("latin-1"))
+        )
+        if m:
+            meses.add(_mes("20" + m[2], m[1]))
+    if ena is not None:
+        _validar(ons.ler_ena, ena, ".pdf")
+        m = re.search(rf"({_RE_MES})/(\d{{4}})", _sem_acento(_texto_pdf(ena)))
+        if m:
+            meses.add(_mes(m[2], m[1]))
+    if len(meses) > 1:
+        raise NaoReconhecido(f"relato e ENA de meses diferentes: {sorted(map(str, meses))}")
+    # o renovaveis.csv não traz o mês: só entra junto do relato/ENA ou numa subpasta AAAA-MM
+    m = _mes_conferido(p, next(iter(meses), None), "relato.rv0/ENA")
+    saida = {
+        chaves.raw_pmo(m, nome): d
+        for nome, d in (("relato.rv0", relato), ("ena.pdf", ena), ("renovaveis.csv", renov))
+        if d is not None
+    }
+    return saida, {m}, None
+
+
+def _infobandeira(p: Pacote, arm: Armazenamento):
+    pdfs = [d for n, d in p.arquivos.items() if n.lower().endswith(".pdf")]
+    if len(pdfs) != 1:
+        raise NaoReconhecido(f"esperado um PDF do boletim por pacote, achados {len(pdfs)}")
+    m = re.search(rf"N\S?\s*\d+\s*-\s*({_RE_MES})/(\d{{4}})", _sem_acento(_texto_pdf(pdfs[0])))
+    mes_bol = _mes_conferido(p, _mes(m[2], m[1]) if m else None, "boletim")
+    _validar(ccee.ler_boletim, pdfs[0], ".pdf", mes_bol.year)
+    return {chaves.raw_boletim(mes_bol): pdfs[0]}, {mes_bol}, None
+
+
+def _ecmwf(p: Pacote, arm: Armazenamento):
+    saida, meses = {}, set()
+    for nome, d in p.arquivos.items():
+        m = re.fullmatch(r"ENA_MLT_SUBSISTEMA_MENSAL_ECENSLT.*_(\d{8})\.txt", nome)
+        if m:
+            emissao = f"{m[1][:4]}-{m[1][4:6]}-{m[1][6:]}"
+            saida[chaves.raw_ecmwf(emissao, nome)] = d
+            meses.add(pd.Period(emissao[:7], "M"))
+    if not saida:
+        raise NaoReconhecido("não achei arquivos ENA_MLT_SUBSISTEMA_MENSAL_ECENSLT…_AAAAMMDD.txt")
+    return saida, meses, None
+
+
+def _patamares(p: Pacote, arm: Armazenamento):
+    xls = [
+        d
+        for n, d in p.arquivos.items()
+        if n.upper().startswith("AAC001") and n.lower().endswith(".xlsx")
     ]
-    marca = chaves.raw_newave(deck, versao, "_ingestao.json")
-    if not arm.existe(marca):
+    if len(xls) != 1:
+        raise NaoReconhecido(f"esperado um arquivo AAC001…xlsx por pacote, achados {len(xls)}")
+    ano = int(_validar(ccee.ler_patamares, xls[0], ".xlsx").ts.dt.year.mode()[0])
+    # muda o tratamento dos meses desse ano que já têm PMO
+    meses = {
+        pd.Period(c.split("/")[2], "M")
+        for c in arm.listar("raw/ons_pmo")
+        if c.split("/")[2].startswith(str(ano))
+    }
+    return {chaves.raw_patamares(ano): xls[0]}, meses, None
+
+
+def _aneel(p: Pacote, arm: Armazenamento):
+    csvs = [d for n, d in p.arquivos.items() if n.lower().endswith(".csv")]
+    if len(csvs) != 1:
+        raise NaoReconhecido(f"esperado um csv por pacote, achados {len(csvs)}")
+    _validar(aneel.ler_historico_bandeiras, csvs[0], ".csv")
+    return {chaves.RAW_HISTORICO: csvs[0]}, set(), None
+
+
+RECONHECER = {
+    "ccee_newave": _newave,
+    "ons_pmo": _pmo,
+    "ccee_infobandeira": _infobandeira,
+    "ecmwf": _ecmwf,
+    "ccee_patamares": _patamares,
+    "aneel_bandeiras": _aneel,
+}
+
+
+# --- gravação e laço principal ---------------------------------------------------------------------
+
+
+def _gravar(arm: Armazenamento, chave: str, dados: bytes, sobrescrever: bool) -> str:
+    if arm.existe(chave):
+        if _sha(arm.ler_bytes(chave)) == _sha(dados):
+            return "igual"
+        if not sobrescrever:
+            return "divergente"
+        situacao = "sobrescrito"
+    else:
+        situacao = "novo"
+    arm.gravar_bytes(dados, chave)
+    if _sha(arm.ler_bytes(chave)) != _sha(dados):
+        raise OSError(f"conferência falhou ao gravar {chave}")
+    return situacao
+
+
+def preparar_entrada(entrada: Path) -> None:
+    for fonte in FONTES:
+        (entrada / fonte).mkdir(parents=True, exist_ok=True)
+    (entrada / "relatorios").mkdir(parents=True, exist_ok=True)
+
+
+def _ingerir_pacote(arm: Armazenamento, fonte: str, item: Path, sobrescrever: bool) -> Resultado:
+    try:
+        arquivos, meses, marca = RECONHECER[fonte](_ler_pacote(item), arm)
+    except NaoReconhecido as e:
+        return Resultado(fonte, item.name, False, f"mantido na entrada: {e}")
+    sobrescreve = sobrescrever or fonte == "aneel_bandeiras"  # conjunto atualizado pela fonte
+    gravados = {c: _gravar(arm, c, d, sobrescreve) for c, d in arquivos.items()}
+    if marca and not arm.existe(marca["chave"]):
+        info = {k: v for k, v in marca.items() if k != "chave"}
         gravar_json(
             arm,
-            {"ingerido_em": datetime.now().isoformat(timespec="seconds"), "origem": str(pasta)},
-            marca,
+            {"ingerido_em": datetime.now().isoformat(timespec="seconds")} | info,
+            marca["chave"],
         )
-    return itens
-
-
-def emissao_do_arquivo(caminho: Path) -> str:
-    """Data de emissão do ECMWF (AAAA-MM-DD) a partir do fim do nome do arquivo (…_AAAAMMDD.txt)."""
-    data = re.search(r"_(\d{8})\.txt$", Path(caminho).name).group(1)
-    return f"{data[:4]}-{data[4:6]}-{data[6:]}"
-
-
-def ingerir_mes(
-    arm: Armazenamento, origem: Path, m: pd.Period, sobrescrever: bool = False
-) -> list[Item]:
-    """Arquivos de um mês: PMO, boletim, deck do NEWAVE, emissões do ECMWF do mês e patamares do ano."""
-    origem = Path(origem)
-    a, mm = m.year, f"{m.month:02d}"
-    itens = []
-    pmo = origem / "ons_decomp" / str(a) / f"{a}_{mm}"
-    for arq in chaves.ARQUIVOS_PMO:
-        itens.append(_copiar(arm, pmo / arq, chaves.raw_pmo(m, arq), "ons_pmo", sobrescrever))
-    boletim = _primeiro(f"*_{a}_{mm}.pdf", origem / "ccee_calculo_bandeira" / str(a))
-    itens.append(_copiar(arm, boletim, chaves.raw_boletim(m), "ccee_boletim", sobrescrever))
-    deck = origem / "ccee_newave" / str(a) / f"{a}_{mm}"
-    if (deck / "ghtotsin.out").exists():  # há pastas de mês vazias na origem
-        itens += ingerir_deck(arm, deck, m)
-    else:
-        itens.append(Item("ccee_newave", f"{chaves.RAW_NEWAVE}/deck={m}", "ausente na origem"))
-    # todas as emissões com data dentro do mês (a habitual, no dia 1, e eventuais extras)
-    ecmwf = sorted((origem / "ecmwf_ena" / "ECENSLT_estat").glob(f"ECENSLT*_*/*_{a}{mm}??.txt"))
-    ecmwf += sorted((origem / "ecmwf_ena" / "ECENSLTm" / f"{a}-{mm}").glob("*.txt"))
-    for arq in ecmwf:
-        chave = chaves.raw_ecmwf(emissao_do_arquivo(arq), arq.name)
-        itens.append(_copiar(arm, arq, chave, "ecmwf", sobrescrever))
-    if not ecmwf:
-        itens.append(Item("ecmwf", f"{chaves.RAW_ECMWF}/{m}", "ausente na origem"))
-    if not arm.existe(chaves.raw_patamares(a)):
-        pat = _primeiro("AAC001*.xlsx", origem / "patamar" / str(a))
-        itens.append(_copiar(arm, pat, chaves.raw_patamares(a), "ccee_patamares", sobrescrever))
-    return itens
-
-
-def ingerir_historico(arm: Armazenamento, origem: Path) -> Item:
-    """Histórico oficial de bandeiras (ANEEL): sempre atualiza, é um conjunto mantido pela fonte."""
-    return _copiar(
-        arm, Path(origem) / "bandeiras" / "historico.csv", chaves.RAW_HISTORICO, "aneel", True
+    novos = sum(s in ("novo", "sobrescrito") for s in gravados.values())
+    divergentes = [c for c, s in gravados.items() if s == "divergente"]
+    if divergentes:
+        return Resultado(
+            fonte,
+            item.name,
+            False,
+            "mantido na entrada: já existe em raw/ com conteúdo diferente ("
+            + ", ".join(divergentes)
+            + "); para substituir, rode com --sobrescrever",
+            gravados,
+            meses if novos else set(),
+        )
+    shutil.rmtree(item) if item.is_dir() else item.unlink()
+    texto = f"{novos} arquivo(s) novo(s) em raw/" if novos else "já estava em raw/ (nada novo)"
+    return Resultado(
+        fonte, item.name, True, f"ingerido: {texto}", gravados, meses if novos else set()
     )
+
+
+def ingerir_entrada(
+    arm: Armazenamento, entrada: Path, sobrescrever: bool = False
+) -> list[Resultado]:
+    """Ingere tudo o que estiver em entrada/<fonte>/ e grava um relatório em entrada/relatorios/."""
+    preparar_entrada(entrada)
+    resultados = [
+        _ingerir_pacote(arm, fonte, item, sobrescrever)
+        for fonte in FONTES
+        for item in sorted((entrada / fonte).iterdir())
+        if not item.name.startswith(".")
+    ]
+    if resultados:
+        linhas = []
+        for r in resultados:
+            linhas.append(f"{r.fonte}/{r.origem}: {r.mensagem}")
+            linhas += [f"    {s}: {c}" for c, s in r.gravados.items() if s != "igual"]
+        nome = datetime.now().strftime("%Y-%m-%dT%H-%M-%S") + ".txt"
+        (entrada / "relatorios" / nome).write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    return resultados

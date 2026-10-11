@@ -9,7 +9,8 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
   `../forecast-bandeiras` (GitHub `forecast-bandeiras-analytics`). Aqui entra só código validado lá.
 - **Não mudar o método ao portar.** A migração foi validada contra o analytics; hoje os testes usam
   referências congeladas do próprio app (`tests/referencias/`). O app não depende do analytics para rodar.
-- Formato da pasta de origem da ingestão: `docs/entrada.md`.
+- **Nenhuma dependência de execução de outro repositório:** os dados entram só pela caixa de entrada
+  `data/entrada/<fonte>/` (formato em `docs/entrada.md`); nada de ler pastas do analytics.
 - Decisões de método continuam registradas em `docs/metodologia.md` do analytics.
 - Nova funcionalidade: seguir `docs/nova_funcionalidade.md`. Pesquisa do PLD horário em
   `../risk-lab-dessem-analytics` — repositório independente (não depende deste app, e este app não depende
@@ -30,16 +31,22 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
 - Leitores (`qe_core.leitores`) são funções puras sobre o caminho do arquivo.
 - Configuração só por variáveis `QE_*` (ou `.env`).
 - `data/` nunca vai para o git.
+- **Pendência da fase AWS:** até lá, `data/raw/` existe só na máquina local (sem backup, por escolha do
+  Arthur: arquivos pesados). Na AWS, o bucket com versionamento passa a ser a cópia de segurança.
 
 ## Bandeiras: etapas e testes
-- `qe bandeiras ingerir | tratar | backtest | status | projetar | publicar | pagina | rodar`.
+- Dia a dia: arquivo baixado em `data/entrada/<fonte>/` → `qe bandeiras atualizar` (ingere, trata os meses
+  afetados, refaz o backtest, mostra status e prévia; não publica) → `qe bandeiras publicar --motivo …`.
+- Etapas avulsas: `qe bandeiras ingerir | tratar | backtest | status | projetar | publicar | pagina | congelar`.
+- A ingestão grava em `raw/` só o que o modelo usa, confere o hash e apaga o original da entrada (sem
+  segunda cópia). O que não for reconhecido fica na entrada, com o motivo.
 - Rodadas não são mensais: cada publicação é uma rodada (id = data e hora) com os insumos vigentes
   (último deck com boletim do mês, versão mais recente; emissão mais recente do ECMWF). Deck e ECMWF
   são versionados em raw/ (deck=AAAA-MM/v=<hash>, emissao=AAAA-MM-DD). O backtest segue mensal (D031).
 - Modelo versionado em `qe_bandeiras.modelo.MODELO` (hoje `v1`). Mudar parâmetro ou lógica do método
   = versão nova: decisão no analytics, `qe bandeiras congelar`, tag `modelo-<versão>` no git.
 - Testes: `tests/referencias/<versão>/` (modelo) e `tests/referencias/tratamento/` (dados tratados), regerados
-  com `qe bandeiras congelar`. A paridade da publicação com o analytics é opt-in (`QE_PARIDADE_ANALYTICS=1`).
+  com `qe bandeiras congelar`.
 - Nunca regenerar referências para "fazer o teste passar" sem entender a diferença.
 - Checklist ao criar uma versão nova do modelo (ex.: v2):
   1. decisão registrada no analytics; nova instância de `Modelo` e `MODELO` apontando para ela;

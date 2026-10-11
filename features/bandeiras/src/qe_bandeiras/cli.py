@@ -1,7 +1,8 @@
 """Comandos da funcionalidade de bandeiras: `qe bandeiras <etapa>`.
 
-Fluxo de uma rodada (sempre que algum insumo mudar, não necessariamente uma vez por mês):
-    ingerir → tratar → status → publicar
+Dia a dia (sempre que algum insumo mudar, não necessariamente uma vez por mês):
+    arquivos baixados em data/entrada/<fonte>/ → `qe bandeiras atualizar` → `qe bandeiras publicar`
+`atualizar` = ingerir → tratar (meses afetados) → backtest → status → projetar (prévia).
 """
 
 from pathlib import Path
@@ -31,29 +32,30 @@ def _insumos(arm, deck: str | None, versao: str | None, ecmwf: str | None) -> in
     return insumos.Insumos(d, v, ecmwf or vig.ecmwf_emissao)
 
 
+def _entrada() -> Path:
+    from qe_core.config import configuracao
+
+    return Path(configuracao().dados) / "entrada"
+
+
+def _ingerir(arm, sobrescrever: bool) -> list[ingestao.Resultado]:
+    entrada = _entrada()
+    resultados = ingestao.ingerir_entrada(arm, entrada, sobrescrever)
+    if not resultados:
+        typer.echo(f"entrada vazia ({entrada}/<fonte>/)")
+    for r in resultados:
+        typer.echo(f"{r.fonte}/{r.origem}: {r.mensagem}")
+    return resultados
+
+
 @app.command()
 def ingerir(
-    origem: Path = typer.Option(
-        ..., help="Pasta com os arquivos brutos no formato de docs/entrada.md."
-    ),
-    mes_ini: str = typer.Option(..., "--mes", help="Mês AAAA-MM."),
-    ate: str | None = typer.Option(None, help="Último mês AAAA-MM, para ingerir um intervalo."),
     sobrescrever: bool = typer.Option(
-        False, help="Substitui arquivos já gravados que estejam diferentes."
+        False, help="Substitui arquivos de raw/ que estejam diferentes dos novos."
     ),
 ):
-    """Copia os arquivos brutos da origem para raw/ (imutável; deck e ECMWF versionados)."""
-    arm = armazenamento()
-    contagem: dict[str, int] = {}
-    for m in _meses(mes_ini, ate):
-        for item in ingestao.ingerir_mes(arm, origem, m, sobrescrever):
-            contagem[item.situacao] = contagem.get(item.situacao, 0) + 1
-            if item.situacao in ("divergente (mantido)", "sobrescrito"):
-                typer.echo(f"  {item.situacao}: {item.chave}")
-        typer.echo(f"{rotulo(m)}: ingerido")
-    h = ingestao.ingerir_historico(arm, origem)
-    typer.echo(f"histórico ANEEL: {h.situacao}")
-    typer.echo("arquivos: " + ", ".join(f"{k} {v}" for k, v in sorted(contagem.items())))
+    """Leva o que estiver em data/entrada/<fonte>/ para raw/ e apaga os originais conferidos."""
+    _ingerir(armazenamento(), sobrescrever)
 
 
 @app.command()
@@ -189,14 +191,30 @@ def congelar(
 
 
 @app.command()
-def rodar(
-    mes_ini: str = typer.Option(..., "--mes", help="Mês dos insumos novos (AAAA-MM)."),
-    origem: Path | None = typer.Option(None, help="Se informada, ingere antes de tratar."),
-    motivo: str | None = typer.Option(None, help="Motivo da rodada."),
+def atualizar(
+    sobrescrever: bool = typer.Option(
+        False, help="Substitui arquivos de raw/ que estejam diferentes dos novos."
+    ),
 ):
-    """Sequência completa: [ingerir] → tratar → backtest → publicar (se algum insumo mudou)."""
-    if origem:
-        ingerir(origem=origem, mes_ini=mes_ini, ate=None, sobrescrever=False)
-    tratar(mes_ini=mes_ini, ate=None, refazer=False)
+    """Entrada → raw/ → tratamento dos meses afetados → backtest → status e prévia. Não publica."""
+    arm = armazenamento()
+    novos = [r for r in _ingerir(arm, sobrescrever) if r.novo]
+    if not novos:
+        typer.echo("nada novo: projeção inalterada")
+        return
+    for m in sorted(set().union(*(r.meses for r in novos))):
+        r = tratamento.tratar_mes(arm, m)
+        typer.echo(
+            f"tratado {rotulo(m)}: "
+            + " · ".join(f"{k} {v}" for k, v in r.items() if k != "historico")
+        )
+    if any(r.fonte == "aneel_bandeiras" for r in novos):
+        typer.echo(f"histórico ANEEL: {tratamento.tratar_historico(arm)}")
     backtest()
-    publicar(motivo=motivo, forcar=False, deck=None, versao=None, ecmwf=None)
+    try:
+        status()
+        projetar(deck=None, versao=None, ecmwf=None)
+    except ValueError as e:
+        typer.echo(f"sem prévia: {e}")
+        return
+    typer.echo('para publicar: uv run qe bandeiras publicar --motivo "<o que mudou>"')

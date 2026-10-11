@@ -18,17 +18,12 @@ Nova funcionalidade a partir de uma pesquisa: `docs/nova_funcionalidade.md`.
 uv sync                                   # instala tudo (Python 3.14 do Homebrew)
 cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 
-# bandeiras: uma rodada sempre que algum insumo mudar (deck novo ou republicado, emissão do ECMWF…)
-uv run qe bandeiras ingerir --origem <pasta no formato de docs/entrada.md> --mes 2026-10   # bruto → raw/ (versionado)
-uv run qe bandeiras tratar --mes 2026-10                                            # raw/ → processed/ (Parquet)
-uv run qe bandeiras backtest                     # previsões passadas sem vazamento (σ e rodadas reconstruídas)
-uv run qe bandeiras status                       # insumos vigentes × última rodada: vale publicar?
-uv run qe bandeiras projetar                     # prévia com os insumos vigentes (não publica)
-uv run qe bandeiras publicar --motivo "emissão extra do ECMWF"   # registra a rodada e atualiza a página
-uv run qe bandeiras pagina                       # só regrava a página da última rodada
-# tudo de uma vez: uv run qe bandeiras rodar --mes 2026-10 [--origem ...] [--motivo ...]
+# bandeiras: sempre que algum insumo mudar (deck novo ou republicado, PMO, boletim, emissão do ECMWF…)
+# 1. solte o arquivo como baixou em data/entrada/<fonte>/ (formato e fontes: docs/entrada.md)
+uv run qe bandeiras atualizar                    # entrada → raw/ → tratamento → backtest → status e prévia
+uv run qe bandeiras publicar --motivo "deck do NEWAVE de out/26"   # registra a rodada e atualiza a página
+# etapas avulsas: ingerir | tratar --mes AAAA-MM [--ate AAAA-MM] | backtest | status | projetar | pagina
 # fixar insumos: --deck 2026-09 --versao <hash> --ecmwf 2026-09-01 (projetar/publicar)
-# primeira carga do histórico: ingerir e tratar com --mes 2023-01 --ate 2026-10
 
 uv run qe servir                          # http://localhost:8000 → /bandeiras/
 uv run pytest                             # testes contra as referências congeladas (tests/referencias)
@@ -50,6 +45,7 @@ data/                  (fora do git) imita o bucket: raw/ processed/ serving/
 
 | Camada | Conteúdo | Organização |
 |---|---|---|
+| `entrada/` | arquivos como baixados, até a ingestão (fica vazia) | por fonte: `entrada/ccee_newave/`, `entrada/ecmwf/`… |
 | `raw/` | arquivo original, imutável | por fonte e versão: `raw/ccee_newave/deck=2026-09/v=<hash>/…`, `raw/ecmwf/emissao=2026-09-01/…`, `raw/ons_pmo/2026-09/…` |
 | `processed/` | tabelas tratadas (Parquet) | por funcionalidade: `processed/bandeiras/mensal/2026-09.parquet` |
 | `serving/` | o que as páginas leem (JSON/JS) | por funcionalidade |
@@ -90,5 +86,5 @@ Não apagar: é o que mostra, na página, como a projeção de cada mês mudou d
 - **Mudança intencional** (dados novos no histórico, ou versão nova do modelo decidida no analytics) →
   `uv run qe bandeiras congelar`, revisar a diferença no git e commitar. Versão nova do modelo: nova
   instância de `Modelo`, `MODELO` apontando para ela, decisão registrada no analytics e tag `modelo-<versão>`.
-- A paridade com o forecast-bandeiras-analytics validou a migração; para rodar de novo:
-  `QE_PARIDADE_ANALYTICS=1 uv run pytest` (com a página regravada para a rodada de set/2026).
+- A paridade com o forecast-bandeiras-analytics validou a migração (2026-10-09); desde então a proteção
+  são as referências congeladas, e o app não lê nada do analytics.
