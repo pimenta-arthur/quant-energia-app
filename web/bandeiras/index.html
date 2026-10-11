@@ -68,6 +68,9 @@
   .duas { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
   @media (max-width: 760px) { .duas { grid-template-columns: 1fr; } }
   /* v2: cores dos cenários (não usam as cores das bandeiras) */
+  .legenda-mini i.cen-marca { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 1.5px solid #1b2226; color: #1b2226; font: 600 0.55rem var(--f-data); font-style: normal; }
+  .cen-marca-svg circle { fill: #fff; stroke: #1b2226; stroke-width: 1.5; }
+  .cen-marca-svg text { font: 600 9px var(--f-data); fill: #1b2226; pointer-events: none; }
   :root { --cen-esp: var(--accent); --cen-li: #a8592a; --cen-ls: #1d8a84; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cen-li: #e3a06c; --cen-ls: #5ccac3; } }
   :root[data-theme="dark"] { --cen-li: #e3a06c; --cen-ls: #5ccac3; }
@@ -195,10 +198,10 @@
 
   <section aria-labelledby="s-abaco">
     <h2 id="s-abaco">Posicionamento no ábaco regulatório</h2>
-    <div class="legenda-mini"><span><i style="background:var(--accent);border-radius:50%"></i>Esperado</span><span><i style="background:var(--cen-li);border-radius:50%"></i>Seco (LI)</span><span><i style="background:var(--cen-ls);border-radius:50%"></i>Úmido (LS)</span><span><i class="l" style="border-color:var(--accent)"></i>Mesmo mês nos três cenários</span></div>
+    <div class="legenda-mini"><span><i style="background:var(--accent);border-radius:50%"></i>Esperado</span><span><i class="cen-marca">S</i>Seco (LI)</span><span><i class="cen-marca">U</i>Úmido (LS)</span><span><i class="t" style="border-color:var(--ink-3)"></i>Mesmo mês nos três cenários</span></div>
     <div class="bloco">
       <svg id="abaco" viewBox="0 0 1040 340" role="img" aria-label="Ábaco GSF por PLD com os meses projetados"></svg>
-      <p class="leg">A cor é dada por X = PLD × (1 − GSF). Cada faixa colorida é uma cor. Os pontos azuis são os meses projetados (esperado), com traço até os cenários seco e úmido.</p>
+      <p class="leg">A cor é dada por X = PLD × (1 − GSF). Cada faixa colorida é uma cor. Os pontos azuis são os meses projetados (esperado), ligados aos cenários seco (S) e úmido (U) do mesmo mês.</p>
     </div>
   </section>
 
@@ -536,7 +539,7 @@
     S(svg, "polyline", { points: pts(R.map((r, i) => [i, val(r, campo)])), fill: "none", stroke: "var(--ink)", "stroke-width": 2 });
     S(svg, "polyline", { points: pts([[i0, ultimo], ...Q.map((q, j) => [i0 + 1 + j, val(q, campo + "_esp")])]), fill: "none", stroke: "var(--accent)", "stroke-width": 2.2 });
     meses.forEach((mm, i) => {
-      if (i % 3 === 0 || i === meses.length - 1) S(svg, "text", { x: x(i), y: h - 8, "text-anchor": "middle" }, rot(mm));
+      if (/-(01|07)$/.test(mm)) S(svg, "text", { x: x(i), y: h - 8, "text-anchor": "middle" }, rot(mm));  // jan e jul: cabem no painel
       const alvo = S(svg, "rect", { x: x(i) - 6, y: m.t, width: 12, height: h - m.t - m.b, fill: "transparent" });
       const o = i <= i0 ? R[i] : Q[i - i0 - 1];
       dicaEm(alvo, i <= i0 ? `${rot(mm)} · oficial ${opts.fmtD(val(o, campo))}` :
@@ -565,23 +568,33 @@
     passo(0.6, 1.1, 0.05).forEach(t => S(svg, "text", { x: x(t), y: h - 12, "text-anchor": "middle" }, n(t, 2)));
     S(svg, "text", { x: w - m.r, y: h - 0, "text-anchor": "end" }, "GSF →");
     [["Verde", 0.97, 360], ["Amarela", 0.84, 300], ["Vermelha 1", 0.72, 300], ["Vermelha 2", 0.62, 470]].forEach(([c, g, pl]) => S(svg, "text", { x: x(g), y: y(Math.min(pl, p1 - 20)), class: "forte", "text-anchor": "middle" }, c));
-    const grupos = [];
+    const grupos = [], rotulos = [];
     P.forEach(p => {
       const cl = v => Math.max(g0, Math.min(g1, v)), cp = v => Math.min(p1, v);
       const g = S(svg, "g", {}); grupos.push(g);
       const pt = k => [x(cl(p["gsf_" + k])), y(cp(p["pld_" + k]))];
-      S(g, "polyline", { points: ["ls", "esp", "li"].map(k => pt(k).join(",")).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, opacity: 0.7 });
-      [["ls", "var(--cen-ls)", "úmido"], ["li", "var(--cen-li)", "seco"]].forEach(([k, cor, nome]) => {
+      S(g, "polyline", { points: ["ls", "esp", "li"].map(k => pt(k).join(",")).join(" "), fill: "none", stroke: "var(--ink-3)", "stroke-width": 1.2, "stroke-dasharray": "3 3" });
+      // seco e úmido sem cor de preenchimento: no ábaco, a cor é da faixa (bandeira)
+      [["ls", "U", "úmido"], ["li", "S", "seco"]].forEach(([k, letra, nome]) => {
         const [cx, cy] = pt(k);
-        const c = S(g, "circle", { cx, cy, r: 5, fill: cor, stroke: "var(--surface)", "stroke-width": 1.5 });
+        const c = S(g, "g", { class: "cen-marca-svg" });
+        S(c, "circle", { cx, cy, r: 7 });
+        S(c, "text", { x: cx, y: cy + 3, "text-anchor": "middle" }, letra);
         dicaEm(c, `${rot(p.alvo)} · ${nome}: ${p["cor_" + k]}<br>GSF ${n(p["gsf_" + k], 2)} · PLD R$ ${n(p["pld_" + k])}`);
       });
       const [ex, ey] = pt("esp");
       const c = S(g, "circle", { cx: ex, cy: ey, r: 7, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2 });
-      S(g, "text", { x: ex, y: ey - 11, "text-anchor": "middle", class: "forte" }, rot(p.alvo));
+      rotulos.push({ el: S(g, "text", { x: ex, y: ey - 11, "text-anchor": "middle", class: "forte" }, rot(p.alvo)), x: ex, y: ey - 11 });
       dicaEm(c, `${rot(p.alvo)} · esperado ${p.cor_esp}<br>GSF ${n(p.gsf_esp, 2)} · PLD R$ ${n(p.pld_esp)}<br>seco: GSF ${n(p.gsf_li, 2)}, R$ ${n(p.pld_li)} (${p.cor_li})<br>úmido: GSF ${n(p.gsf_ls, 2)}, R$ ${n(p.pld_ls)} (${p.cor_ls})`);
       g.addEventListener("pointerenter", () => grupos.forEach(o => o.setAttribute("opacity", o === g ? 1 : 0.15)));
       g.addEventListener("pointerleave", () => grupos.forEach(o => o.removeAttribute("opacity")));
+    });
+    // meses que caem quase no mesmo ponto: empilha os rótulos para cima em vez de sobrepor
+    const postos = [];
+    rotulos.forEach(r => {  // em ordem cronológica: o mês mais próximo fica embaixo
+      let yy = r.y;
+      while (postos.some(q => Math.abs(q.x - r.x) < 46 && Math.abs(q.y - yy) < 12)) yy -= 12;
+      r.el.setAttribute("y", yy); postos.push({ x: r.x, y: yy });
     });
   })();
 
