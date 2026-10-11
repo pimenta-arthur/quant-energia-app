@@ -130,5 +130,107 @@
    }
   ],
   "modelo": "v1"
+ },
+ "2026-10-10T21:24:24": {
+  "publicada_em": "2026-10-10T21:24:24",
+  "motivo": "insumos atualizados",
+  "modelo": "v1",
+  "insumos": {
+   "deck": "2026-10",
+   "deck_versao": "02a3e9c2",
+   "ecmwf_emissao": "2026-10-01"
+  },
+  "projecoes": [
+   {
+    "alvo": "2026-11",
+    "h": 1,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 81% Am 18%",
+    "gp": "GSF 0,93 · R$ 57",
+    "gsf_esp": 0.93,
+    "pld_esp": 57.31,
+    "gsf_li": 0.93,
+    "pld_li": 64.22,
+    "gsf_ls": 0.93,
+    "pld_ls": 57.31
+   },
+   {
+    "alvo": "2026-12",
+    "h": 2,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 100%",
+    "gp": "GSF 0,97 · R$ 57",
+    "gsf_esp": 0.97,
+    "pld_esp": 57.31,
+    "gsf_li": 0.96,
+    "pld_li": 125.26,
+    "gsf_ls": 0.97,
+    "pld_ls": 57.31
+   },
+   {
+    "alvo": "2027-01",
+    "h": 3,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 100%",
+    "gp": "GSF 1,09 · R$ 57",
+    "gsf_esp": 1.09,
+    "pld_esp": 57.31,
+    "gsf_li": 1.06,
+    "pld_li": 190.38,
+    "gsf_ls": 1.09,
+    "pld_ls": 57.31
+   },
+   {
+    "alvo": "2027-02",
+    "h": 4,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 100%",
+    "gp": "GSF 1,10 · R$ 57",
+    "gsf_esp": 1.1,
+    "pld_esp": 57.31,
+    "gsf_li": 1.05,
+    "pld_li": 213.07,
+    "gsf_ls": 1.1,
+    "pld_ls": 57.31
+   },
+   {
+    "alvo": "2027-03",
+    "h": 5,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 100%",
+    "gp": "GSF 1,09 · R$ 57",
+    "gsf_esp": 1.09,
+    "pld_esp": 57.36,
+    "gsf_li": 1.05,
+    "pld_li": 209.97,
+    "gsf_ls": 1.09,
+    "pld_ls": 57.31
+   },
+   {
+    "alvo": "2027-04",
+    "h": 6,
+    "esp": "Verde",
+    "li": "Verde",
+    "ls": "Verde",
+    "prob": "Vd 100%",
+    "gp": "GSF 1,03 · R$ 57",
+    "gsf_esp": 1.03,
+    "pld_esp": 57.31,
+    "gsf_li": 1.02,
+    "pld_li": 130.15,
+    "gsf_ls": 1.03,
+    "pld_ls": 57.31
+   }
+  ]
  }
 }
