@@ -1,0 +1,16 @@
+[project]
+name = "qe-risk-lab-dessem"
+version = "0.1.0"
+description = "Funcionalidade Risk Lab DESSEM: PLD horário (acompanhamento do DESSEM sobre o DECOMP e simulador do PLD médio do mês)"
+requires-python = ">=3.14"
+dependencies = [
+    "qe-core",
+    "typer>=0.27.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+qe-core = { workspace = true }

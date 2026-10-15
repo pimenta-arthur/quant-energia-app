@@ -6,8 +6,8 @@ suas fontes (bandeiras abaixo; PLD horário na seção própria). Você solta o 
 da fonte e roda:
 
 ```bash
-uv run qe bandeiras atualizar      # entrada → raw/ → tratamento → backtest → status e prévia (não publica)
-uv run qe bandeiras ingerir        # só a primeira parte: entrada → raw/
+uv run qe forecast_bandeiras atualizar      # entrada → raw/ → tratamento → backtest → status e prévia (não publica)
+uv run qe forecast_bandeiras ingerir        # só a primeira parte: entrada → raw/
 ```
 
 As pastas são criadas na primeira execução. Na ingestão, para cada item da pasta da fonte:
@@ -50,9 +50,9 @@ da ANEEL: arquivo que não passa na leitura fica na entrada.
 ## PLD horário
 
 ```bash
-uv run qe pld_horario atualizar    # entrada → raw/ → tratamento do que mudou → status (não publica)
-uv run qe pld_horario publicar     # regrava os dados da página (sem registro de rodada)
-uv run qe pld_horario status       # último deck, último PLD publicado, dias calculados e lacunas
+uv run qe risk_lab_dessem atualizar    # entrada → raw/ → tratamento do que mudou → status (não publica)
+uv run qe risk_lab_dessem publicar     # regrava os dados da página (sem registro de rodada)
+uv run qe risk_lab_dessem status       # último deck, último PLD publicado, dias calculados e lacunas
 ```
 
 | Pasta | O que soltar | Vai para `raw/` | Como é identificado |

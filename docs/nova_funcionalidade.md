@@ -1,7 +1,7 @@
 # Como levar uma pesquisa para o app (nova funcionalidade)
 
 Padrão usado nas bandeiras tarifárias (pesquisa em `forecast-bandeiras-analytics`, produto em
-`features/bandeiras/`) e a seguir nas próximas (ex.: PLD horário, pesquisa em `risk-lab-dessem-analytics`).
+`features/forecast_bandeiras/`) e a seguir nas próximas (ex.: PLD horário, pesquisa em `risk-lab-dessem-analytics`).
 
 ## 0. Antes de começar (na pesquisa)
 - Método validado com backtest sem vazamento, decisões registradas no `docs/metodologia.md` da pesquisa.
@@ -53,7 +53,7 @@ tests/referencias/<nome>/     # resultados esperados
    Um teste de paridade com a pesquisa pode ficar opt-in (variável de ambiente).
 
 ## 5. Página
-- Mesmo visual (`web/bandeiras/estilo.css` como base): IBM Plex Sans/Mono, títulos institucionais, legendas
+- Mesmo visual (`web/forecast_bandeiras/estilo.css` como base): IBM Plex Sans/Mono, títulos institucionais, legendas
   curtas embaixo dos gráficos, premissas (insumos, versão do modelo, data da rodada) no topo.
 - Metodologia da funcionalidade em `web/<nome>/metodologia.html`, identificando a versão do modelo.
 

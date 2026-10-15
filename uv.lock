@@ -10,9 +10,9 @@ resolution-markers = [
 [manifest]
 members = [
     "qe-api",
-    "qe-bandeiras",
     "qe-core",
-    "qe-pld-horario",
+    "qe-forecast-bandeiras",
+    "qe-risk-lab-dessem",
     "quant-energia-app",
 ]
 
@@ -810,23 +810,6 @@ requires-dist = [
 ]
 
 [[package]]
-name = "qe-bandeiras"
-version = "0.1.0"
-source = { editable = "features/bandeiras" }
-dependencies = [
-    { name = "qe-core" },
-    { name = "scipy" },
-    { name = "typer" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "qe-core", editable = "core" },
-    { name = "scipy", specifier = ">=1.18.1" },
-    { name = "typer", specifier = ">=0.27.3" },
-]
-
-[[package]]
 name = "qe-core"
 version = "0.1.0"
 source = { editable = "core" }
@@ -850,9 +833,26 @@ requires-dist = [
 ]
 
 [[package]]
-name = "qe-pld-horario"
+name = "qe-forecast-bandeiras"
 version = "0.1.0"
-source = { editable = "features/pld_horario" }
+source = { editable = "features/forecast_bandeiras" }
+dependencies = [
+    { name = "qe-core" },
+    { name = "scipy" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "qe-core", editable = "core" },
+    { name = "scipy", specifier = ">=1.18.1" },
+    { name = "typer", specifier = ">=0.27.3" },
+]
+
+[[package]]
+name = "qe-risk-lab-dessem"
+version = "0.1.0"
+source = { editable = "features/risk_lab_dessem" }
 dependencies = [
     { name = "qe-core" },
     { name = "typer" },
@@ -870,9 +870,9 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "qe-api" },
-    { name = "qe-bandeiras" },
     { name = "qe-core" },
-    { name = "qe-pld-horario" },
+    { name = "qe-forecast-bandeiras" },
+    { name = "qe-risk-lab-dessem" },
     { name = "typer" },
 ]
 
@@ -885,9 +885,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "qe-api", editable = "api" },
-    { name = "qe-bandeiras", editable = "features/bandeiras" },
     { name = "qe-core", editable = "core" },
-    { name = "qe-pld-horario", editable = "features/pld_horario" },
+    { name = "qe-forecast-bandeiras", editable = "features/forecast_bandeiras" },
+    { name = "qe-risk-lab-dessem", editable = "features/risk_lab_dessem" },
     { name = "typer", specifier = ">=0.27.3" },
 ]
 

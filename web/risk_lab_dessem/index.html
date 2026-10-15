@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Risk Lab DESSEM: Acompanhamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../forecast_bandeiras/estilo.css">
+<link rel="stylesheet" href="pagina.css">
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./" aria-current="page">Acompanhamento</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo">Risk Lab DESSEM · PLD horário</span>
+    <h1 id="titulo">PLD horário: acompanhamento e desvio sobre o DECOMP</h1>
+    <div class="meta" id="meta"></div>
+    <p class="aviso-q" id="erro" hidden></p>
+  </section>
+
+  <section id="acompanhamento" aria-labelledby="titulo">
+
+    <div class="barra-abas">
+      <div class="abas" id="abas-sub" role="group" aria-label="Submercado"></div>
+      <span class="leg">O submercado vale para todos os gráficos desta seção.</span>
+    </div>
+
+    <div class="bloco">
+      <div class="barra-abas"><div class="ttl" id="tt-nivel">PLD médio do dia: DESSEM e DECOMP vigente</div>
+        <div class="abas miud" id="abas-nivel" role="group" aria-label="Período"></div></div>
+      <div class="legenda-mini"><span><i class="l" style="border-color:var(--accent)"></i>DESSEM</span><span><i class="l" style="border-color:var(--ink-3)"></i>DECOMP vigente</span><span><i class="t" style="border-color:var(--ink-3)"></i>Piso do PLD</span></div>
+      <svg id="g-nivel" viewBox="0 0 1040 320" role="img" aria-label="PLD médio diário do DESSEM e DECOMP vigente"></svg>
+      <div class="mini-ttl"><span id="tt-nivel-hora">PLD horário do DESSEM, alinhado aos dias de cima</span></div>
+      <svg id="g-nivel-hora" viewBox="0 0 1040 250" role="img" aria-label="PLD horário do DESSEM alinhado ao gráfico diário"></svg>
+      <p class="leg">R$/MWh. Em cima, a média das 24 horas de cada dia e o DECOMP (PLD semanal da revisão vigente, com limites); embaixo, o PLD hora a hora no mesmo eixo de dias (no ano e no histórico, faixa do mínimo ao máximo horário de cada dia e a média). <span id="leg-nivel"></span></p>
+    </div>
+
+    <div class="bloco">
+      <h3 class="ttl" id="tt-mes">Desvio por bloco de horas</h3>
+      <div class="legenda-mini" id="leg-mes"></div>
+      <div class="dois-tercos">
+        <div><div class="barra-abas"><div class="mini-ttl"><span>Histórico mensal</span></div>
+            <div class="abas miud" id="abas-hist" role="group" aria-label="Período do histórico"></div></div>
+          <svg id="g-mes" viewBox="0 0 700 260" role="img" aria-label="Desvio mensal por bloco de horas"></svg></div>
+        <div><div class="barra-abas"><div class="mini-ttl"><span id="tt-mes-dias">Mês, por dia</span></div>
+            <select id="sel-mes-dias" class="sel-mes" aria-label="Mês do gráfico por dia"></select></div>
+          <svg id="g-mes-dias" viewBox="0 0 350 260" role="img" aria-label="Desvio diário por bloco de horas no mês corrente"></svg></div>
+      </div>
+      <p class="leg">DESSEM − DECOMP vigente, R$/MWh; contribuição de cada bloco à média do mês (à esquerda) ou do dia (à direita), escalas próprias. O mês em curso aparece claro e tracejado: média do realizado até o último deck (*). Mês civil; DECOMP = média das semanas vigentes ponderada pelos dias. Vale 8h–15h, ponta 18h–21h. Sem fev–mar/2023 (decks ausentes).</p>
+      <details class="det-bloco">
+        <summary>Por tipo de dia: contribuição e horas abaixo ou acima do DECOMP</summary>
+        <div class="barra-abas"><span class="ttl" id="tt-contrib">Desvio por faixa horária e tipo de dia</span>
+          <div class="abas miud" id="abas-per-c" role="group" aria-label="Período"></div></div>
+        <div class="grid2">
+          <div><div class="mini-ttl"><span>Contribuição ao desvio médio, R$/MWh</span><b id="tot-c"></b></div>
+            <svg id="g-contrib" viewBox="0 0 520 330" role="img" aria-label="Contribuição ao desvio por faixa e tipo de dia"></svg></div>
+          <div><div class="mini-ttl"><span>Horas por dia abaixo e acima do DECOMP</span></div>
+            <svg id="g-cont" viewBox="0 0 520 330" role="img" aria-label="Horas por dia abaixo e acima do DECOMP"></svg></div>
+        </div>
+        <div class="legenda-mini"><span><i style="background:var(--t-util)"></i>Dia útil</span><span><i style="background:var(--t-sab)"></i>Sábado</span><span><i style="background:var(--t-dom)"></i>Domingo/feriado</span><span>À direita: barra cheia = horas abaixo do DECOMP, parte escura = no piso; barra vazada = horas acima do DECOMP</span></div>
+        <p class="leg">Contribuição = desvio médio da célula × peso das suas horas no período; a soma das células dá o desvio médio do período. Feriado = dia de semana sem patamar pesado no deck.</p>
+      </details>
+    </div>
+
+    <details class="bloco">
+      <summary class="ttl" id="tt-hora">Horas no piso por hora e tipo de dia</summary>
+      <div class="barra-abas"><span></span>
+        <div class="abas miud" id="abas-medida" role="group" aria-label="Medida"></div></div>
+      <div class="controles"><div class="lin"><span>Mês</span><div class="abas miud" id="abas-mes-h" role="group" aria-label="Mês"></div></div></div>
+      <div class="legenda-mini"><span><i class="l" style="border-color:var(--t-util)"></i>Dia útil</span><span><i class="l" style="border-color:var(--t-sab)"></i>Sábado</span><span><i class="l" style="border-color:var(--t-dom)"></i>Domingo/feriado</span></div>
+      <svg id="g-hora" viewBox="0 0 1040 240" role="img" aria-label="Percentual das horas no piso por hora do dia"></svg>
+      <div class="mini-ttl"><span id="tt-sem-hora">Por semana operativa (revisão do DECOMP) do mês selecionado</span></div>
+      <div class="grid4" id="g-semanas"></div>
+      <p class="leg">% das horas de cada hora do dia em que o PLD ficou no piso (ou abaixo do DECOMP vigente), por tipo de dia. Semana operativa de sábado a sexta; RV = revisão do DECOMP vigente na semana.</p>
+    </details>
+
+  </section>
+
+  <div class="aviso">
+    <p><strong>Análise estatística, não é PLD oficial.</strong> O PLD horário é publicado pela CCEE com os decks do DESSEM.</p>
+    <p id="fontes"></p>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+
+<script src="app.js" charset="utf-8"></script>
+</body>
+</html>

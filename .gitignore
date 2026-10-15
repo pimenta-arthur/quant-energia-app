@@ -4,9 +4,9 @@
 # com versionamento assume esse papel)
 !/data/serving/
 /data/serving/*
-!/data/serving/bandeiras/
-/data/serving/bandeiras/*
-!/data/serving/bandeiras/historico_projecoes.json
+!/data/serving/forecast_bandeiras/
+/data/serving/forecast_bandeiras/*
+!/data/serving/forecast_bandeiras/historico_projecoes.json
 .cache/
 .env
 

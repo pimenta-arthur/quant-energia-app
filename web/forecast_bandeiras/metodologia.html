@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metodologia do Previsor de Bandeiras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./">Projeções</a>
+    <a href="metodologia.html" aria-current="page">Metodologia</a>
+  </nav>
+
+  <header>
+    <span class="rotulo">Metodologia do modelo v1 · outubro de 2026</span>
+    <h1>Como a bandeira é prevista</h1>
+    <p class="lead">O modelo não tenta adivinhar a cor diretamente. Ele prevê os dois números que a ANEEL usa para decidir a bandeira, o GSF e o PLD gatilho, e aplica a mesma regra que a ANEEL aplica. Esta página explica cada passo, de onde vem cada dado e como o método foi testado.</p>
+    <div class="indice" aria-label="Nesta página">
+      <a href="#regra">A regra da bandeira</a>
+      <a href="#dados">Dados</a>
+      <a href="#passos">Passo a passo</a>
+      <a href="#probabilidade">Probabilidade e cenários</a>
+      <a href="#backtest">Como foi testado</a>
+      <a href="#decisoes">Decisões</a>
+      <a href="#limites">Limitações</a>
+      <a href="#glossario">Glossário</a>
+    </div>
+  </header>
+
+  <section id="regra" aria-labelledby="h-regra">
+    <h2 id="h-regra">A regra da bandeira</h2>
+    <p class="texto">Por volta do dia 25 de cada mês, a ANEEL anuncia a bandeira do mês seguinte. A decisão usa projeções do Programa Mensal da Operação (PMO) do ONS para aquele mês, não valores realizados. Dois números entram na conta.</p>
+    <div class="eq">
+      GSF_band = GH_band / GF_band &nbsp;&nbsp;(arredondado em 2 casas)<br>
+      X = PLD_gatilho × max(0, 1 − GSF_band)
+    </div>
+    <ul class="lista texto">
+      <li><span class="tag">GH_band</span><span>Geração hidráulica que conta para o MRE: a geração hidráulica prevista pelo ONS, menos a parte da ANDE em Itaipu, descontadas as perdas até o centro de gravidade, mais a parcela das PCH que participa do MRE. Os fatores de perda e de participação são publicados pela CCEE e mudam uma vez por ano.</span></li>
+      <li><span class="tag">GF_band</span><span>Garantia física das usinas do MRE no mês, já sazonalizada e descontadas perdas e indisponibilidade. É praticamente conhecida no início do ano; toda a incerteza do GSF está na geração.</span></li>
+      <li><span class="tag">PLD gatilho</span><span>Preço médio do mês pelo deck do DECOMP da CCEE (não pelo custo marginal do ONS): custo marginal limitado ao PLD mínimo e máximo em cada patamar de carga, médio pelas horas de cada patamar, ponderado pela carga dos quatro submercados.</span></li>
+    </ul>
+    <p class="texto">O índice X decide a cor (Anexo I da REH ANEEL 3.306/2024):</p>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Cor</th><th class="n">Faixa de X (R$/MWh)</th><th>O que significa na prática</th></tr></thead>
+        <tbody>
+          <tr><td>Verde</td><td class="n">X ≤ 27,48</td><td>GSF ≥ 0,96 é sempre verde, qualquer que seja o preço</td></tr>
+          <tr><td>Amarela</td><td class="n">27,48 &lt; X ≤ 68,99</td><td>Com GSF ≥ 0,91, no máximo amarela</td></tr>
+          <tr><td>Vermelha 1</td><td class="n">68,99 &lt; X ≤ 95,05</td><td>Com GSF ≥ 0,875, vermelha 2 é impossível</td></tr>
+          <tr><td>Vermelha 2</td><td class="n">X &gt; 95,05</td><td>Abaixo disso, o preço decide entre todas as cores</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota texto">Exemplo de outubro de 2026: GSF_band = 0,82 e PLD gatilho = R$ 90,19. X = 90,19 × 0,18 = 16,2, logo verde. Com esse GSF, a cor só passaria a amarela com PLD acima de R$ 152,7. Quando o CMSE manda despachar térmicas fora da ordem de mérito (GFOM), a cor pode subir conforme o despacho térmico total (Anexo II da mesma resolução); o modelo não prevê esse caso, que não ocorreu no período testado.</p>
+    <p class="texto">Para conferir a regra, o cálculo foi refeito com os dados brutos para os 46 meses de janeiro de 2023 a outubro de 2026 e reproduziu o GSF publicado nos boletins da CCEE em todos eles.</p>
+  </section>
+
+  <section id="dados" aria-labelledby="h-dados">
+    <h2 id="h-dados">Dados usados</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Fonte</th><th>O que fornece</th><th>Quando está disponível</th></tr></thead>
+        <tbody>
+          <tr><td>Deck do NEWAVE da CCEE</td><td>2.000 séries hidrológicas simuladas por 5 anos: ENA, geração hidráulica e custo marginal por patamar e submercado; carga, PCH e ANDE projetadas</td><td>Início de cada mês</td></tr>
+          <tr><td>ECMWF SEAS5 (sazonal)</td><td>ENA prevista por subsistema até 6 meses à frente: a média da abordagem por precipitação e 51 membros do conjunto</td><td>Por volta do dia 5</td></tr>
+          <tr><td>PMO do ONS (DECOMP rv0)</td><td>ENA do mês corrente (<code>ena.pdf</code>) e o balanço completo do mês (<code>relato.rv0</code>), usados para reconstruir o histórico</td><td>Fim do mês anterior</td></tr>
+          <tr><td>Boletins InfoBandeira da CCEE</td><td>GF_band, PLD mínimo e máximo, fatores de perda; e a bandeira oficial, que é o gabarito</td><td>Por volta do dia 25 do mês anterior</td></tr>
+          <tr><td>Patamares de carga da CCEE</td><td>Horas de cada patamar (leve, médio, pesado) em cada semana operativa</td><td>Publicados para o ano inteiro</td></tr>
+          <tr><td>Curva forward da Dcide</td><td>Preço de mercado esperado para os próximos meses; usada só como comparação</td><td>Dois decks (jan e fev de 2026)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="passos" aria-labelledby="h-passos">
+    <h2 id="h-passos">Passo a passo da previsão</h2>
+    <p class="texto">A previsão é feita no início de cada mês M, com o deck do NEWAVE e a rodada do ECMWF daquele mês, para os meses M+1 a M+6.</p>
+
+    <div class="passo-det">
+      <span class="n">1</span>
+      <div>
+        <h3>Trajetória de ENA de referência</h3>
+        <p class="texto">Para o próprio mês M, usa-se a ENA do PMO, já publicada. De M+1 em diante, a média da abordagem por precipitação do ECMWF, somando os quatro subsistemas. Essa média erra entre 8% e 13% da ENA do SIN em todos os horizontes, contra 25% a 30% da média histórica (MLT).</p>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">2</span>
+      <div>
+        <h3>Escolha das séries do NEWAVE</h3>
+        <p class="texto">Para cada mês-alvo, comparamos a trajetória de ENA de cada uma das 2.000 séries com a referência, do mês do deck até o alvo, e ficamos com as 15 mais próximas. A trajetória importa, e não só o mês-alvo, porque o preço de um mês depende de quanta água ficou guardada nos meses anteriores.</p>
+        <div class="eq">d(s) = média<sub>t = M…alvo</sub> [ (ENA<sub>s,t</sub> − ENA<sub>ref,t</sub>) / ENA<sub>ref,t</sub> ]²<br>séries escolhidas = as 15 de menor d(s), com o mesmo peso para todos os meses</div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">3</span>
+      <div>
+        <h3>GSF de cada série</h3>
+        <p class="texto">A geração hidráulica de cada série vira GH_band com a mesma conta da CCEE. A ANDE e as PCH vêm do próprio deck. A GF_band e os fatores de perda vêm do boletim do mês do deck, porque o boletim do mês-alvo ainda não existe na data da previsão.</p>
+        <div class="eq">GH_band<sub>s</sub> = (GH<sub>s</sub> − ANDE) × (1 − perda<sub>1</sub>) × (1 − perda<sub>2</sub>) + PCH × participação<sub>MRE</sub> × (1 − perda<sub>PCH</sub>)<br>GSF<sub>s</sub> = GH_band<sub>s</sub> / GF_band</div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">4</span>
+      <div>
+        <h3>PLD gatilho de cada série</h3>
+        <p class="texto">O custo marginal de cada série, por patamar e submercado, é limitado ao PLD mínimo e máximo do ano. Depois vira uma média mensal pelas horas de cada patamar e uma média do país pela carga projetada de cada submercado.</p>
+        <div class="eq">PLD<sub>s</sub> = Σ<sub>sub</sub> [ Σ<sub>pat</sub> min(max(CMO<sub>s,sub,pat</sub>, PLD<sub>mín</sub>), PLD<sub>máx</sub>) × horas<sub>pat</sub> / horas<sub>mês</sub> ] × carga<sub>sub</sub> / carga<sub>total</sub></div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">5</span>
+      <div>
+        <h3>Cor esperada</h3>
+        <p class="texto">GSF e PLD de cada mês-alvo são a média das 15 séries escolhidas, e sempre das mesmas séries. Isso mantém a coerência física: uma série seca tem GSF baixo e preço alto ao mesmo tempo. A cor sai da regra da ANEEL aplicada a essas médias.</p>
+        <div class="eq">X<sub>médio</sub> = PLD<sub>médio</sub> × max(0, 1 − round(GSF<sub>médio</sub>, 2)) &nbsp;→&nbsp; cor esperada</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="probabilidade" aria-labelledby="h-prob">
+    <h2 id="h-prob">Probabilidade de cada cor e cenários</h2>
+    <h3>Probabilidade</h3>
+    <p class="texto">A probabilidade mede o quanto o X médio costuma errar. Supomos que o X real fica em torno do X médio, com um desvio σ igual ao desvio dos erros passados do próprio modelo. A probabilidade de cada cor é a chance de o X real cair na faixa dela.</p>
+    <div class="eq">X<sub>real</sub> ~ Normal(X<sub>médio</sub>, σ) &nbsp;&nbsp; P(cor) = P(limite inferior &lt; X<sub>real</sub> ≤ limite superior)</div>
+    <ul class="lista texto">
+      <li><span class="tag">Só o passado</span><span>O σ usa apenas previsões cujo mês-alvo já tinha terminado na data do deck. Com menos de 8 erros disponíveis, a probabilidade não é calculada; por isso os primeiros decks de 2025 não têm probabilidade.</span></li>
+      <li><span class="tag">Por horizonte</span><span>Um σ para M+1 a M+3 (cerca de R$ 16) e outro para M+4 a M+6 (cerca de R$ 25), porque o erro cresce com o horizonte.</span></li>
+      <li><span class="tag">Meses úmidos</span><span>Com GSF médio ≥ 0,96 a cor é verde com 100%, porque o preço não muda a cor.</span></li>
+      <li><span class="tag">Coerência</span><span>A cor mais provável é sempre a cor esperada.</span></li>
+    </ul>
+    <h3>Cenários seco (LI) e úmido (LS)</h3>
+    <p class="texto">Os 51 membros do ECMWF são recentrados na média por precipitação: cada membro é multiplicado pela razão entre essa média e a média dos membros, por subsistema e mês. Assim eles mantêm a dispersão, mas em torno do centro mais preciso. Nessa forma, 82% das ENAs realizadas caíram entre o P10 e o P90 dos membros.</p>
+    <div class="eq">LI (seco) = P10 da ENA do SIN dos membros, mês a mês<br>LS (úmido) = P90 da ENA do SIN dos membros, mês a mês<br>cada cenário repete os passos 2 a 5 com essa trajetória</div>
+    <p class="texto">Testamos outras duas formas de faixa: o X de cada membro e o X médio ± 1,28σ. Elas ficaram estreitas demais de M+4 em diante (só 45% a 50% do X real dentro da faixa de 80%). A forma acima manteve 75%.</p>
+  </section>
+
+  <section id="backtest" aria-labelledby="h-bt">
+    <h2 id="h-bt">Como foi testado</h2>
+    <p class="texto">O backtest simula alguém no início de cada mês, entre janeiro de 2025 e setembro de 2026, prevendo os seis meses seguintes. São 16 decks e 89 previsões já conferidas com a bandeira oficial. Toda informação usada tinha que existir naquela data:</p>
+    <ul class="lista texto">
+      <li><span class="tag">Erros e σ</span><span>Só de meses-alvo já encerrados na data do deck. Nunca de meses posteriores, nem deixando só o próprio mês de fora.</span></li>
+      <li><span class="tag">Insumos</span><span>ANDE, PCH e carga do próprio deck; GF_band, fatores e PLD mínimo e máximo do boletim do mês do deck.</span></li>
+      <li><span class="tag">Parâmetros</span><span>O número de séries (15) e o peso igual na trajetória foram escolhidos com os alvos de 2025 e confirmados em 2026.</span></li>
+      <li><span class="tag">Oráculos</span><span>Testes com a ENA real no lugar da prevista mostram o teto do método e aparecem sempre identificados assim.</span></li>
+    </ul>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Rótulo</th><th>Significado</th><th>Exemplo</th></tr></thead>
+        <tbody>
+          <tr><td>Fora da amostra</td><td>Previsão feita só com o que existia na data</td><td>Acerto do esperado: 72% em M+1–3, 42% em M+4–6</td></tr>
+          <tr><td>Dentro da amostra</td><td>Escolha feita e avaliada no mesmo período</td><td>Comparação entre as três formas de faixa LI/LS</td></tr>
+          <tr><td>Oráculo</td><td>Usa um dado do futuro para medir um limite</td><td>ENA real no lugar do ECMWF: 70% e 75%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="decisoes" aria-labelledby="h-dec">
+    <h2 id="h-dec">Decisões que definem o método</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>ID</th><th>Decisão</th><th>Motivo</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td class="num">D002</td><td>Prever GSF e PLD e aplicar a regra, em vez de classificar a cor</td><td>Histórico curto; a regra é conhecida</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D022</td><td>Histórico reconstruído só com o <code>relato.rv0</code> do PMO</td><td>Reproduz o boletim em todos os meses de 2023 a 2026</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D025</td><td>Saída principal: probabilidade de cada cor por mês</td><td>Junta a incerteza do GSF e do preço</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D029</td><td>15 séries, mesmo peso em toda a trajetória de ENA</td><td>Acerto de 71% para 78% no teste com ENA real</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D030</td><td>Centro = média por precipitação do ECMWF; incerteza = 51 membros recentrados</td><td>Menor erro em todos os horizontes; faixa calibrada</td><td><span class="status teste">Em teste</span></td></tr>
+          <tr><td class="num">D031</td><td>Deck do mês M com a rodada do ECMWF do mês M</td><td>Viável na operação (rodada sai por volta do dia 5)</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">—</td><td>σ separado para M+1–3 e M+4–6</td><td>Brier de 0,54 para 0,52</td><td><span class="status teste">Em teste</span></td></tr>
+          <tr><td class="num">—</td><td>LI e LS pelo P10 e P90 mensal da ENA dos membros</td><td>Única forma que manteve a cobertura em M+4–6</td><td><span class="status teste">Em teste</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="limites" aria-labelledby="h-lim">
+    <h2 id="h-lim">Limitações conhecidas</h2>
+    <ul class="lista texto">
+      <li><span class="tag">Preço</span><span>É o elo fraco. De M+4 a M+6, trocar o PLD previsto pelo real leva o acerto de 42% para 86%; trocar o GSF, só para 49%.</span></li>
+      <li><span class="tag">Fora do deck</span><span>Em alguns meses o preço real ficou acima de tudo o que o deck simulava (março de 2025 e março de 2026). Nenhuma escolha de hidrologia corrige isso.</span></li>
+      <li><span class="tag">Hidrologia longa</span><span>O ECMWF pode errar várias vezes para o mesmo lado, como no segundo semestre de 2026 (previsto seco, foi úmido).</span></li>
+      <li><span class="tag">Transição</span><span>Na passagem do período úmido para o seco (maio e junho), o GSF previsto tende a sair alto demais e a cor barata demais.</span></li>
+      <li><span class="tag">Amostra</span><span>16 decks em dois anos secos. A avaliação fica mais confiável a cada mês novo.</span></li>
+      <li><span class="tag">GFOM</span><span>O despacho térmico fora da ordem de mérito não é previsto.</span></li>
+    </ul>
+  </section>
+
+  <section id="glossario" aria-labelledby="h-glo">
+    <h2 id="h-glo">Glossário</h2>
+    <dl class="glossario texto">
+      <dt>ENA</dt><dd>Energia natural afluente: a água que chega aos reservatórios, convertida em energia (MWmed).</dd>
+      <dt>MLT</dt><dd>Média de longo termo da ENA para cada mês; referência do que é um mês normal.</dd>
+      <dt>GSF</dt><dd>Razão entre a geração hidráulica e a garantia física das usinas do MRE. Abaixo de 1, as hidrelétricas geram menos do que venderam.</dd>
+      <dt>MRE</dt><dd>Mecanismo de Realocação de Energia, que divide o risco hidrológico entre as hidrelétricas.</dd>
+      <dt>PLD</dt><dd>Preço de Liquidação das Diferenças, calculado pela CCEE a partir do custo marginal de operação.</dd>
+      <dt>CMO</dt><dd>Custo marginal de operação. O do ONS não é o PLD gatilho; o da bandeira vem do deck da CCEE.</dd>
+      <dt>NEWAVE</dt><dd>Modelo de planejamento de médio prazo que simula 2.000 cenários hidrológicos por até 5 anos.</dd>
+      <dt>DECOMP</dt><dd>Modelo de curto prazo usado no PMO e no cálculo do PLD; a revisão 0 é a base da bandeira.</dd>
+      <dt>PMO</dt><dd>Programa Mensal da Operação do ONS.</dd>
+      <dt>Deck</dt><dd>O conjunto de arquivos de entrada e saída de uma rodada oficial do NEWAVE ou do DECOMP.</dd>
+      <dt>ECMWF SEAS5</dt><dd>Previsão sazonal do centro europeu de meteorologia, com 51 membros, convertida em ENA por subsistema.</dd>
+      <dt>Brier</dt><dd>Erro de uma previsão probabilística: soma dos quadrados entre a probabilidade dada e o que aconteceu (0 é perfeito).</dd>
+    </dl>
+  </section>
+
+  <footer>Registro completo das decisões, questões em aberto e resultados em <code>docs/metodologia.md</code> do repositório de pesquisa (forecast-bandeiras-analytics). Código de produção em <code>features/forecast_bandeiras/src/qe_forecast_bandeiras/</code> do quant-energia-app (modelo versionado em <code>modelo.py</code>).</footer>
+</main>
+</body>
+</html>

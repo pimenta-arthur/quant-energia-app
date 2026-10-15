@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "qe-api",
-    "qe-bandeiras",
+    "qe-forecast-bandeiras",
     "qe-core",
-    "qe-pld-horario",
+    "qe-risk-lab-dessem",
     "typer>=0.27.3",
 ]
 
@@ -20,7 +20,7 @@ requires = ["uv_build>=0.12.21,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.workspace]
-members = ["core", "features/bandeiras", "features/pld_horario", "api"]
+members = ["core", "features/forecast_bandeiras", "features/risk_lab_dessem", "api"]
 
 [tool.ruff]
 line-length = 100
@@ -39,12 +39,12 @@ module-name = "qe"
 
 [tool.uv.sources]
 qe-core = { workspace = true }
-qe-bandeiras = { workspace = true }
+qe-forecast-bandeiras = { workspace = true }
 qe-api = { workspace = true }
-qe-pld-horario = { workspace = true }
+qe-risk-lab-dessem = { workspace = true }
 
 [tool.ruff.lint.isort]
-known-first-party = ["qe", "qe_core", "qe_bandeiras", "qe_pld_horario", "qe_api"]
+known-first-party = ["qe", "qe_core", "qe_forecast_bandeiras", "qe_risk_lab_dessem", "qe_api"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/cli.py" = ["B008"]  # padrão do Typer: typer.Option nos valores padrão
