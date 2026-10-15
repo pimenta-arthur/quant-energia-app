@@ -15,7 +15,7 @@ from datetime import datetime
 import pandas as pd
 
 from qe_core.armazenamento import Armazenamento, ler_parquet
-from qe_risk_lab_dessem import chaves
+from qe_risk_lab_dessem import chaves, tratamento
 from qe_risk_lab_dessem.modelo import MODELO, SUBMERCADOS
 
 
@@ -320,6 +320,163 @@ def contribuicao(hr: dict, anos: list[int]) -> dict:
     return out
 
 
+# --- blocos 3 e 4: perfil horário do mês dia a dia, mapa de calor, perfis por mês do ano ------------
+
+VARIAVEIS_PRECO = ("pld", "decomp")  # em R$/MWh, 1 casa; as demais em MW, sem casas
+
+
+def perfis(series: dict) -> dict:
+    """Média por variável, submercado, mês e hora: {var: {sub: {mes: [24 valores]}}}."""
+    out = {}
+    for k, x in series.items():
+        x = x[x["submercado"].isin(SUBMERCADOS)].copy()
+        x["mes"] = x["data"].dt.strftime("%Y-%m")
+        x = x[x["mes"] >= "2021-01"]
+        g = (
+            x.groupby(["submercado", "mes", "hora"])["v"]
+            .mean()
+            .unstack("hora")
+            .reindex(columns=range(24))
+        )
+        c = 1 if k in VARIAVEIS_PRECO else 0
+        out[k] = {
+            sub: {mes: [_r(v, c) for v in row] for mes, row in gs.droplevel(0).iterrows()}
+            for sub, gs in g.groupby(level=0)
+        }
+    return out
+
+
+def perfis_dia(series: dict, tipos: pd.Series, meses: int = 6) -> dict:
+    """Perfil horário de cada dia nos últimos `meses` meses civis (D068): {var: {sub: {mes: {dias,
+    tipos, v: [[24 valores] por dia]}}}}."""
+    fim = pd.Period(series["pld"]["data"].max(), "M")
+    ini = str(fim - (meses - 1))
+    out = {}
+    for k, x in series.items():
+        x = x[x["submercado"].isin(SUBMERCADOS)].copy()
+        x["mes"] = x["data"].dt.strftime("%Y-%m")
+        x = x[x["mes"] >= ini]
+        g = x.groupby(["submercado", "mes", "data", "hora"])["v"].mean().unstack("hora")
+        g = g.reindex(columns=range(24))
+        c = 1 if k in VARIAVEIS_PRECO else 0
+        d = {}
+        for (sub, mes), gm in g.groupby(level=[0, 1]):
+            datas = gm.index.get_level_values(2)
+            d.setdefault(sub, {})[mes] = {
+                "dias": [t.strftime("%Y-%m-%d") for t in datas],
+                "tipos": [tipos.get(t, "") for t in datas],
+                "v": [[_r(v, c) for v in row] for row in gm.to_numpy()],
+            }
+        out[k] = d
+    return out
+
+
+# As contas abaixo eram feitas no navegador (pesquisa, app.js); aqui seguem a mesma ordem de soma e o
+# mesmo arredondamento do JS sobre os valores já arredondados de `perfis` e `perfis_dia`.
+
+
+def _media(vs) -> float | None:
+    vs = [v for v in vs if v is not None]
+    return sum(vs) / len(vs) if vs else None
+
+
+def _arred(v, c=4):
+    return None if v is None else round(v, c)
+
+
+def _percentil_js(ordenados: list[float], p: float) -> float:
+    """Percentil por índice arredondado (Math.round do JS), sobre a lista já ordenada."""
+    n = len(ordenados)
+    return ordenados[min(n - 1, max(0, math.floor((n - 1) * p + 0.5)))]
+
+
+def calor(pdia: dict) -> dict:
+    """Mapa de calor do mês (D078, D080) e média do perfil dia a dia: escala cortada nos percentis 5
+    e 95 do mês (índice arredondado, como no JS), média de cada dia (e horas com dado), de cada hora e
+    do mês. {var: {sub: {mes: {lo, hi, dia, nh, hora, mes}}}}."""
+    out = {}
+    for var, por_sub in pdia.items():
+        for sub, por_mes in por_sub.items():
+            for mes, m in por_mes.items():
+                todos = sorted(v for r in m["v"] for v in r if v is not None)
+                if not todos:
+                    continue
+                out.setdefault(var, {}).setdefault(sub, {})[mes] = {
+                    "lo": _percentil_js(todos, 0.05),
+                    "hi": _percentil_js(todos, 0.95),
+                    "dia": [_arred(_media(r)) for r in m["v"]],
+                    "nh": [sum(v is not None for v in r) for r in m["v"]],
+                    "hora": [_arred(_media([r[h] for r in m["v"]])) for h in range(24)],
+                    "mes": _arred(_media([v for r in m["v"] for v in r])),
+                }
+    return out
+
+
+def media_mes(pf: dict) -> dict:
+    """Média do mês (todas as horas) por variável, submercado e mês (D077, "média do mês por ano")."""
+    return {
+        var: {sub: {mes: _arred(_media(v)) for mes, v in pm.items()} for sub, pm in ps.items()}
+        for var, ps in pf.items()
+    }
+
+
+PERIODOS_INDICADORES = {"ano": None, "Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}
+
+
+def indicadores(pf: dict) -> dict:
+    """Indicadores por ano (D069), por submercado e período (ano inteiro ou trimestre): média dos
+    perfis mensais (cada mês pesa igual, não pelas horas), como na pesquisa. Carga líquida no vale e
+    na ponta, rampa 12h→19h (carga líquida às 19h − às 12h), demanda sem MMGD (24 h), renovável com
+    MMGD no vale, PLD médio, da ponta e do vale. MW e R$/MWh.
+
+    {sub: {periodo: [{ano, meses, cl_vale, cl_ponta, rampa, demanda, renov_vale, pld, pld_ponta,
+    pld_vale}]}}; o ano corrente é acumulado até o último deck.
+    """
+    anos = sorted({int(m[:4]) for m in pf["pld"]["SE"]})
+    vale, ponta, todas = list(MODELO.vale), list(MODELO.ponta), list(range(24))
+
+    def perfil_medio(sub, var, filtro):
+        dd = pf[var].get(sub, {})
+        ms = [m for m in dd if filtro(m)]
+        if not ms:
+            return None
+        return len(ms), [_media([dd[m][h] for m in ms]) for h in range(24)]
+
+    def media_h(p, hs):  # no JS, hora sem dado soma como 0
+        return None if p is None else sum((p[1][h] or 0) for h in hs) / len(hs)
+
+    out = {}
+    for sub in SUBMERCADOS:
+        for per, tri in PERIODOS_INDICADORES.items():
+            linhas = []
+            for a in anos:
+                filtro = lambda m, a=a, tri=tri: (
+                    m.startswith(f"{a}-") and (tri is None or math.ceil(int(m[5:7]) / 3) == tri)
+                )
+                cl = perfil_medio(sub, "carga_liquida", filtro)
+                dm = perfil_medio(sub, "demanda_sem_mmgd", filtro)
+                rv = perfil_medio(sub, "renov_com_mmgd", filtro)
+                pl = perfil_medio(sub, "pld", filtro)
+                if not cl and not pl:
+                    continue
+                linhas.append(
+                    {
+                        "ano": a,
+                        "meses": (cl or pl)[0],
+                        "cl_vale": _arred(media_h(cl, vale)),
+                        "cl_ponta": _arred(media_h(cl, ponta)),
+                        "rampa": _arred(cl[1][19] - cl[1][12]) if cl else None,
+                        "demanda": _arred(media_h(dm, todas)),
+                        "renov_vale": _arred(media_h(rv, vale)),
+                        "pld": _arred(media_h(pl, todas)),
+                        "pld_ponta": _arred(media_h(pl, ponta)),
+                        "pld_vale": _arred(media_h(pl, vale)),
+                    }
+                )
+            out.setdefault(sub, {})[per] = linhas
+    return out
+
+
 # --- montagem e gravação -----------------------------------------------------------------------------
 
 
@@ -330,6 +487,8 @@ def dados(arm: Armazenamento) -> dict:
     dec = ler_parquet(arm, chaves.PROC_DECOMP)
     hr = horas(h, tipos)
     anos = sorted(t1["data"].dt.year.unique().tolist())
+    series = tratamento.series_horarias(arm)
+    pf, pd_ = perfis(series), perfis_dia(series, tipos)
     return {
         "dias_nivel": dias_nivel(h, tipos),
         "dias_perfil": dias_perfil(t1, tipos),
@@ -340,6 +499,11 @@ def dados(arm: Armazenamento) -> dict:
         "dias_blocos": dias_blocos(h),
         "horas": hr,
         "contribuicao": contribuicao(hr, anos),
+        "perfis": pf,
+        "perfis_dia": pd_,
+        "calor": calor(pd_),
+        "media_mes": media_mes(pf),
+        "indicadores": indicadores(pf),
     }
 
 

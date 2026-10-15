@@ -1,7 +1,7 @@
 // Página do PLD horário (acompanhamento). Desenho portado de risk-lab-dessem-analytics/web/pld_horario/app.js;
 // as contas que não dependem do usuário vêm prontas do Python (serving/risk_lab_dessem/<chave>.json).
 (async function () {
-  const CHAVES = ["estado", "referencia", "dias_nivel", "dias_perfil", "semanas_perfil", "revisoes", "desvio_mensal", "dias_blocos", "horas", "contribuicao"];
+  const CHAVES = ["estado", "referencia", "dias_nivel", "dias_perfil", "semanas_perfil", "revisoes", "desvio_mensal", "dias_blocos", "horas", "contribuicao", "perfis", "perfis_dia", "calor", "media_mes", "indicadores"];
   const D = {};
   try {
     await Promise.all(CHAVES.map(async k => {
@@ -53,8 +53,9 @@
     itens.forEach(([v, rotulo]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = rotulo; b.dataset.v = v; b.setAttribute("aria-pressed", String(String(v) === String(atual))); box.appendChild(b); });
     box.onclick = e => { const b = e.target.closest("button"); if (!b) return; box.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); aoMudar(b.dataset.v); };
   }
-  const meses = [...new Set(D.dias_nivel.SE.map(r => r[0].slice(0, 7)))].sort();
+  const meses = Object.keys(D.perfis.pld.SE).sort();
   const ultMes = meses[meses.length - 1];
+  const anos = [...new Set(meses.map(m => +m.slice(0, 4)))];
   const ref = D.referencia[0];
   // dias com deck do DESSEM ainda sem PLD publicado pela CCEE: PLD calculado do CMO do deck pela regra oficial (D048)
   const diaSeguinte = s => { const t = new Date(s + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
@@ -111,6 +112,9 @@
     });
   }
 
+  const VARS = [["pld", "PLD", "R$/MWh"], ["decomp", "DECOMP vigente", "R$/MWh"], ["carga_liquida", "Carga líquida", "MW"], ["demanda", "Demanda bruta", "MW"], ["demanda_sem_mmgd", "Demanda sem MMGD", "MW"],
+    ["renov_com_mmgd", "Renovável com MMGD", "MW"], ["renov_sem_mmgd", "Renovável sem MMGD", "MW"], ["renov_saida", "Renovável gerada (saída)", "MW"]];
+  let VAR = "pld";
   const HORAS = [...Array(24).keys()];
   const SOMBRAS = [[8, 15, "var(--sombra-vale)"], [18, 21, "var(--sombra-ponta)"]];
   const mesAnt = (() => { const a = +ultMes.slice(0, 4), m = +ultMes.slice(5, 7); return m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, "0")}`; })();
@@ -128,6 +132,152 @@
 
   function paginaAcompanhamento() {
     abas("abas-sub", Object.entries(SUBN), SUB, v => { SUB = v; desenharSub(); });
+
+    abas("abas-var", VARS.map(v => [v[0], v[1]]), VAR, v => { VAR = v; desenharPerfil(); });
+    // ---------- perfil horário por mês do ano, todos os anos (recolhido) ----------
+    let VISAO = "hora";  // D077: "hora" = perfil horário por ano; "mes" = média do mês, uma barra por ano
+    abas("abas-visao", [["hora", "Por hora do dia"], ["mes", "Média do mês por ano"]], VISAO, v => { VISAO = v; desenharPerfil(); });
+    function painelMesAnos(box, mm, o) {
+      const dd = D.perfis[VAR][SUB] || {}, [, , un] = VARS.find(v => v[0] === VAR);
+      const card = document.createElement("div"); card.className = "bloco"; card.style.padding = "8px";
+      card.innerHTML = `<div class="mini-ttl"><b>${o.titulo}</b></div>`;
+      const svg = document.createElementNS(ns, "svg"); const w = 260, h = 170; svg.setAttribute("viewBox", `0 0 ${w} ${h}`); card.appendChild(svg); box.appendChild(card);
+      const m = { l: 34, r: 6, t: 14, b: 20 }, fmtV = v => (un === "MW" ? n(v / 1000, 1) : n(v, 0));
+      const ax = eixo(o.y0, o.y1, 3, true), y = v => m.t + (h - m.t - m.b) * (1 - (v - ax.a) / (ax.b - ax.a));
+      ax.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 4, y: y(t) + 3, "text-anchor": "end" }, un === "MW" ? n(t / 1000, t % 1000 ? 1 : 0) : n(t)); });
+      const bw = (w - m.l - m.r) / anos.length, base = y(Math.max(ax.a, Math.min(0, ax.b)));
+      anos.forEach((a, i) => {
+        const k = `${a}-${String(mm).padStart(2, "0")}`, v = (D.media_mes[VAR][SUB] || {})[k], xc = m.l + (i + 0.5) * bw;
+        S(svg, "text", { x: xc, y: h - 6, "text-anchor": "middle" }, String(a).slice(2));
+        if (v == null) return;
+        const parcial = k === ultMes;
+        const r = S(svg, "rect", { x: xc - bw * 0.32, y: Math.min(y(v), base), width: bw * 0.64, height: Math.max(1, Math.abs(y(v) - base)), fill: corAno(a), rx: 2, opacity: parcial ? 0.5 : 0.9, stroke: parcial ? corAno(a) : null, "stroke-dasharray": parcial ? "3 2" : null });
+        S(svg, "text", { x: xc, y: Math.min(y(v), base) - 3, "text-anchor": "middle", style: "font-size:9px;fill:var(--ink-2)" }, fmtV(v));
+        dicaEm(r, `<b>${o.titulo} de ${a}</b>${parcial ? " (parcial)" : ""}<br>média do mês: ${un === "MW" ? n(v / 1000, 1) + " GW" : "R$ " + n(v, 1)}`);
+      });
+    }
+    function painelMes(box, mm, o) {
+      const dd = D.perfis[VAR][SUB] || {}, [, , un] = VARS.find(v => v[0] === VAR);
+      const card = document.createElement("div"); card.className = "bloco"; card.style.padding = "8px";
+      card.innerHTML = `<div class="mini-ttl"><b>${o.titulo}</b></div>`;
+      const svg = document.createElementNS(ns, "svg"); const w = 260, h = 170;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`); card.appendChild(svg); box.appendChild(card);
+      const ss = anos.map(a => { const k = `${a}-${String(mm).padStart(2, "0")}`; const v = dd[k]; if (!v) return null;
+        return { nome: String(a), cor: corAno(a), pts: HORAS.map(hh => [hh, v[hh]]), larg: 1.6 }; }).filter(Boolean);
+      const fmtY = un === "MW" ? (v => n(v / 1000, v % 1000 ? 1 : 0)) : n;
+      linhas(svg, { w, h, ml: 34, mr: 6, xs: HORAS, series: ss, sombras: SOMBRAS, fmtY, y0: o.y0, y1: o.y1, nt: 3, justo: true, rotX: hh => (hh % 6 === 0 ? hh + "h" : null),
+        dica: hh => `<b>${o.titulo} · ${hh}h</b><br>` + [...ss].reverse().map(s => { const v = s.pts[hh][1]; return `${s.nome}: ${v == null ? "—" : un === "MW" ? n(v / 1000, 1) + " GW" : "R$ " + n(v, 1)}`; }).join("<br>") });
+    }
+    // ---------- perfil horário do mês, dia a dia (D068): uma linha por dia, cor pelo tipo de dia, média do mês ----------
+    const PDIA = D.perfis_dia || {};
+    let VARD = "carga_liquida", MES_PD = null, UltimoAuto = true;  // padrão: carga líquida e o último dia disponível destacado
+    const DESTAQUE = new Set();
+    abas("abas-var-dia", VARS.map(v => [v[0], v[1]]), VARD, v => { VARD = v; desenharPerfilDia(); });
+    const selPD = document.getElementById("sel-mes-pdia");
+    selPD.addEventListener("change", () => { MES_PD = selPD.value; DESTAQUE.clear(); UltimoAuto = true; desenharPerfilDia(); });
+    document.getElementById("leg-pdia").addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (!b) return;
+      const i = +b.dataset.i; if (i < 0) DESTAQUE.clear(); else if (DESTAQUE.has(i)) DESTAQUE.delete(i); else DESTAQUE.add(i); desenharPerfilDia(); });
+    function desenharPerfilDia() {
+      const [, nomeV, un] = VARS.find(v => v[0] === VARD), porMes = ((PDIA[VARD] || {})[SUB]) || {};
+      const meses = Object.keys(porMes).sort().reverse();
+      if (!meses.length) return;
+      if (!MES_PD || !meses.includes(MES_PD)) MES_PD = meses[0];
+      selPD.replaceChildren(...meses.map(m => { const o = document.createElement("option"); o.value = m; o.textContent = rot(m) + (m === ultMes ? " (corrente)" : ""); o.selected = m === MES_PD; return o; }));
+      const M = porMes[MES_PD], ND = M.dias.length;
+      if (UltimoAuto) { DESTAQUE.clear(); DESTAQUE.add(ND - 1); UltimoAuto = false; }
+      const corT = t => (TIPOS.find(x => x[0] === t) || [, , "var(--ink-3)"])[2];
+      const C = D.calor[VARD][SUB][MES_PD], media = C.hora;  // médias prontas do Python (publicacao.calor)
+      const temD = DESTAQUE.size > 0;
+      const series = M.dias.map((d, i) => ({ nome: d, cor: corT(M.tipos[i]), larg: DESTAQUE.has(i) ? 2.6 : 1.1, opac: temD ? (DESTAQUE.has(i) ? 1 : 0.15) : 0.55, pts: HORAS.map(hh => [hh, M.v[i][hh]]), rotFim: DESTAQUE.has(i) ? d.slice(8, 10) : null }));
+      series.push({ nome: "Média", cor: "var(--ink)", larg: 2.4, tracejado: true, pts: HORAS.map(hh => [hh, media[hh]]), rotFim: "média" });
+      const fmtY = un === "MW" ? (v => n(v / 1000, v % 1000 ? 1 : 0)) : n, fmtV = v => (v == null ? "—" : un === "MW" ? n(v / 1000, 1) + " GW" : "R$ " + n(v, 1));
+      document.getElementById("tt-pdia").textContent = `Perfil horário do mês, dia a dia · ${nomeV} (${un === "MW" ? "GW" : un}) · ${SUBN[SUB]}`;
+      linhas(document.getElementById("g-pdia"), { w: 1040, h: 320, ml: 44, mr: 52, xs: HORAS, series, sombras: SOMBRAS, fmtY, y0: VARD === "pld" || VARD === "decomp" ? 0 : null, nt: 5, justo: true, rotFim: true,
+        rotX: hh => (hh % 3 === 0 ? hh + "h" : null),
+        dica: hh => { const vs = M.v.map((r, i) => [r[hh], i]).filter(([v]) => v != null); if (!vs.length) return `<b>${hh}h</b>`;
+          const mx = vs.reduce((a, b) => (b[0] > a[0] ? b : a)), mn = vs.reduce((a, b) => (b[0] < a[0] ? b : a));
+          return `<b>${rot(MES_PD)} · ${hh}h</b><br>média ${fmtV(media[hh])}<br>maior: ${fmtV(mx[0])} (dia ${M.dias[mx[1]].slice(8, 10)}) · menor: ${fmtV(mn[0])} (dia ${M.dias[mn[1]].slice(8, 10)})` +
+            [...DESTAQUE].map(i => `<br>dia ${M.dias[i].slice(8, 10)} ${diaSem(M.dias[i])}: ${fmtV(M.v[i][hh])}`).join(""); } });
+      document.getElementById("leg-pdia").innerHTML = M.dias.map((d, i) => `<button type="button" data-i="${i}" style="--c:${corT(M.tipos[i])}" aria-pressed="${DESTAQUE.has(i)}" title="${dataBr(d)} ${diaSem(d)} · ${M.tipos[i] || ""}">${d.slice(8, 10)}</button>`).join("") +
+        (temD ? '<button type="button" class="media" data-i="-1">limpar</button>' : "");
+      desenharCalor(M, C, un, fmtV, nomeV);
+      document.getElementById("leg-pdia-nota").innerHTML = `Cor do dia: <span style="color:var(--t-util)">dia útil</span> · <span style="color:var(--t-sab)">sábado</span> · <span style="color:var(--t-dom)">domingo/feriado</span>; tracejado = média dos ${ND} dias. Faixas: vale 8h–15h e ponta 18h–21h.` + (MES_PD === ultMes ? ` Mês corrente até ${dataBr(ref.ultimo_dia)}.` : "") + ` Últimos 6 meses disponíveis.`;
+    }
+
+    // mapa de calor do mês selecionado (D078): linhas = dias, colunas = horas, valor em cada célula; escala de um só tom
+    // cortada nos percentis 5 e 95 do mês para um pico isolado não apagar o resto
+    function desenharCalor(M, C, un, fmtV, nomeV) {
+      const svg = document.getElementById("g-calor"); svg.replaceChildren();
+      // à direita, separada por uma linha vertical, a coluna da média do dia (D080)
+      const ND = M.dias.length, w = 1040, m = { l: 62, r: 6, t: 30, b: 6 }, ch = 17, h = m.t + (ND + 1) * ch + 8 + m.b;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const vao = 10, cwM = 56, cw = (w - m.l - m.r - vao - cwM) / 24, xM = w - m.r - cwM;
+      // percentis 5 e 95 e médias prontos do Python (publicacao.calor)
+      const lo = C.lo, hi = C.hi, tt = v => Math.max(0, Math.min(1, (v - lo) / ((hi - lo) || 1)));
+      const cor = v => `color-mix(in srgb, var(--v1) ${Math.round(8 + 80 * tt(v))}%, var(--surface))`;
+      const txt = v => (un === "MW" ? n(v / 1000, 1) : n(v, 0));
+      HORAS.forEach(hh => { const vale = VALE_H.includes(hh), ponta = PONTA_H.includes(hh);
+        S(svg, "text", { x: m.l + (hh + 0.5) * cw, y: m.t - 8, "text-anchor": "middle", class: vale || ponta ? "forte" : null, style: ponta ? "fill:var(--v1)" : vale ? "fill:var(--accent)" : null }, hh + "h"); });
+      S(svg, "text", { x: xM + cwM / 2, y: m.t - 8, "text-anchor": "middle", class: "forte" }, "média");
+      S(svg, "line", { x1: xM - vao / 2, x2: xM - vao / 2, y1: m.t - 4, y2: h - m.b, stroke: "var(--ink-3)" });
+      const celula = (x, yy, larg, v, dica) => {
+        const r = S(svg, "rect", { x: x + 0.5, y: yy + 0.5, width: larg - 1, height: ch - 1, fill: cor(v) });
+        S(svg, "text", { x: x + larg / 2, y: yy + ch * 0.7, "text-anchor": "middle", style: `font-size:9.5px;fill:${tt(v) > 0.6 ? "#fff" : "var(--ink)"}` }, txt(v));
+        dicaEm(r, dica);
+      };
+      const linha = (rotulo, corRot, vals, yy, dica, forte, dicaM, vm, nh) => {
+        S(svg, "text", { x: m.l - 6, y: yy + ch * 0.68, "text-anchor": "end", class: forte ? "forte" : null, style: corRot ? `fill:${corRot}` : null }, rotulo);
+        vals.forEach((v, hh) => { if (v != null) celula(m.l + hh * cw, yy, cw, v, dica(hh, v)); });
+        if (vm != null) celula(xM, yy, cwM, vm, dicaM(vm, nh));
+      };
+      const corT = t => (TIPOS.find(x => x[0] === t) || [, , "var(--ink-3)"])[2];
+      M.dias.forEach((d, i) => linha(`${d.slice(8, 10)} ${diaSem(d)}`, corT(M.tipos[i]), M.v[i], m.t + i * ch, (hh, v) => `<b>${dataBr(d)} ${diaSem(d)} · ${hh}h</b> · ${M.tipos[i] || ""}<br>${nomeV}: ${fmtV(v)}`, DESTAQUE.has(i),
+        (v, nh) => `<b>${dataBr(d)} ${diaSem(d)} · média do dia</b> · ${M.tipos[i] || ""}<br>${nomeV}: ${fmtV(v)}` + (nh < 24 ? ` (${nh} horas)` : ""), C.dia[i], C.nh[i]));
+      const media = C.hora, nTot = C.nh.reduce((a, b) => a + b, 0);
+      const ym = m.t + ND * ch + 8;
+      S(svg, "line", { x1: m.l, x2: w - m.r, y1: ym - 4, y2: ym - 4, stroke: "var(--ink-3)" });
+      linha("média", "var(--ink)", media, ym, (hh, v) => `<b>Média do mês · ${hh}h</b><br>${nomeV}: ${fmtV(v)}`, true,
+        () => `<b>Média do mês</b> · todas as horas<br>${nomeV}: ${fmtV(C.mes)} (${nTot} horas)`, C.mes, nTot);
+      [...DESTAQUE].forEach(i => { if (i < ND) S(svg, "rect", { x: m.l, y: m.t + i * ch, width: w - m.l - m.r, height: ch, fill: "none", stroke: "var(--ink)", "stroke-width": 1.4 }); });
+      document.getElementById("tt-calor").textContent = `Mapa de calor: dia × hora · ${nomeV} · ${rotLongo(MES_PD)}`;
+      document.getElementById("leg-calor").textContent = `${un === "MW" ? "GW" : "R$/MWh"}. Cor de um só tom, do claro (≤ ${txt(lo)}) ao vermelho (≥ ${txt(hi)}): a escala vai do percentil 5 ao 95 do mês, para um pico isolado não apagar o resto. Dia da semana na cor do tipo de dia; o dia destacado no gráfico acima aparece contornado. Horas do vale (8h–15h) em azul e da ponta (18h–21h) em vermelho no cabeçalho. À direita, a média das horas de cada dia; na última linha, a média de cada hora no mês, e no canto a média de todas as horas do mês.`;
+    }
+
+    function desenharPerfil() {
+      const [, nomeV, un] = VARS.find(v => v[0] === VAR);
+      document.getElementById("tt-perfil").textContent = `Perfil horário por mês do ano, todos os anos · ${nomeV} (${un === "MW" ? "GW" : un}) · ${SUBN[SUB]}`;
+      const dd = D.perfis[VAR][SUB] || {};
+      const todos = Object.values(dd).flat().filter(v => v != null);
+      const y0 = VAR === "pld" || VAR === "decomp" ? 0 : Math.min(...todos), y1 = Math.max(...todos);
+      const box = document.getElementById("g-perfil"); box.replaceChildren();
+      if (VISAO === "mes") {
+        const ms = Object.values(D.media_mes[VAR][SUB] || {}).filter(v => v != null);
+        const z0 = VAR === "pld" || VAR === "decomp" ? 0 : Math.min(...ms) * 0.9, z1 = Math.max(...ms);
+        for (let mm = 1; mm <= 12; mm++) painelMesAnos(box, mm, { y0: z0, y1: z1, titulo: MES[mm - 1] });
+      } else for (let mm = 1; mm <= 12; mm++) painelMes(box, mm, { y0, y1, titulo: MES[mm - 1] });
+      document.getElementById("sub-perfil").textContent = VISAO === "mes" ? "Um painel por mês, uma barra por ano com a média do mês (todas as horas), escala comum a todos os painéis." : "Um painel por mês, uma linha por ano, escala comum a todos os painéis.";
+      document.getElementById("leg-perfil").innerHTML = anos.map(a => `<span><i class="l" style="border-color:${corAno(a)}"></i>${a}</span>`).join("") +
+        '<span><i style="background:var(--sombra-vale);outline:1px solid var(--rule)"></i>Vale 8h–15h</span><span><i style="background:var(--sombra-ponta);outline:1px solid var(--rule)"></i>Ponta 18h–21h</span>';
+      const avisos = [`${rot(ultMes)} parcial: dados até ${dataBr(ref.ultimo_dia)}.`];
+      if (["demanda", "renov_com_mmgd"].includes(VAR)) avisos.push("Quebra em 29/04/2023: antes, a MMGD vinha descontada da demanda e não aparecia na renovável. Compare só de 2024 em diante.");
+      document.getElementById("aviso-perfil").textContent = avisos.join(" ");
+      document.getElementById("leg-perfil-nota").textContent = (VISAO === "mes" ? "Média de todas as horas do mês; barra clara e tracejada = mês parcial. " : "Média dos dias do mês por hora do dia. ") + (VAR === "renov_saida" ? "Renovável gerada é saída do DESSEM, já com cortes; a prevista é entrada do modelo." : "");
+    }
+
+    // ---------- indicadores por ano (P02) ----------
+    const PERIODOS_IND = [["ano", "Ano inteiro"], ["Q1", "Q1 jan–mar"], ["Q2", "Q2 abr–jun"], ["Q3", "Q3 jul–set"], ["Q4", "Q4 out–dez"]];
+    let PERI = "ano";
+    abas("abas-per-ind", PERIODOS_IND, PERI, v => { PERI = v; desenharIndicadores(); });
+    // indicadores prontos do Python (publicacao.indicadores): média dos perfis mensais, cada mês pesa igual
+    function desenharIndicadores() {
+      document.getElementById("tt-ind").textContent = `Indicadores por ano · ${SUBN[SUB]} · ${PERIODOS_IND.find(p => p[0] === PERI)[1]}`;
+      const G = v => (v == null ? "—" : n(v / 1000, 1)), P = v => (v == null ? "—" : n(v, 1));
+      const rs = D.indicadores[SUB][PERI], ultAno = anos[anos.length - 1];
+      document.querySelector("#t-ind tbody").innerHTML = rs.map(r => {
+        const ult = r.ano === ultAno;
+        return `<tr class="${ult ? "destaque" : ""}"><td>${r.ano}${ult ? "<small>acumulado</small>" : ""}</td><td class="n">${r.meses}</td><td class="n">${G(r.cl_vale)}</td><td class="n">${G(r.cl_ponta)}</td><td class="n">${r.rampa == null ? "—" : sn(r.rampa / 1000, 1)}</td><td class="n">${G(r.demanda)}</td><td class="n">${G(r.renov_vale)}</td><td class="n">${P(r.pld)}</td><td class="n">${P(r.pld_ponta)}</td><td class="n">${P(r.pld_vale)}</td></tr>`;
+      }).join("");
+    }
 
     // ---------- PLD médio do dia: DESSEM × DECOMP, com as revisões marcadas (D044, D045) ----------
     let PER_N = "mes";
@@ -375,7 +525,7 @@
       });
     }
 
-    function desenharSub() { desenharMensal(); desenharContrib(); desenharHora(); desenharNivel(); }
+    function desenharSub() { desenharPerfilDia(); desenharPerfil(); desenharIndicadores(); desenharMensal(); desenharContrib(); desenharHora(); desenharNivel(); }
     desenharSub();
   }
 

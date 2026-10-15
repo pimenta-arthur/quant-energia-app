@@ -42,6 +42,8 @@ CHAVES = {
     "bloco1_dias_nivel": ["sub", "data"],
     "bloco2_desvio_mensal": ["sub", "mes"],
     "bloco5_horas": ["sub", "mes", "tipo", "hora"],
+    "bloco4_perfis": ["var", "sub", "mes", "hora"],
+    "bloco4_indicadores": ["sub", "periodo", "ano"],
 }
 
 
@@ -131,3 +133,14 @@ def test_contribuicao_soma_o_desvio_medio_do_periodo(arm):
             esperado = (x["pld_dessem"] - x["decomp_pld"]).mean()
             # a soma do desvio por hora sai arredondada a 1 casa no `horas` (como na pesquisa)
             assert abs(c[sub][per]["total"] - esperado) < 0.05
+
+
+def test_calor_percentis_como_no_navegador():
+    """Percentil por índice arredondado (Math.round do JS): com 101 valores, p5 = 5º e p95 = 95º."""
+    from qe_risk_lab_dessem import publicacao
+
+    pdia = {"pld": {"SE": {"2026-10": {"dias": [], "tipos": [], "v": [list(range(101))]}}}}
+    c = publicacao.calor(pdia)["pld"]["SE"]["2026-10"]
+    assert (c["lo"], c["hi"], c["mes"]) == (5, 95, 50)
+    # 0,5 arredonda para cima, como Math.round (o round do Python arredondaria para o par)
+    assert publicacao._percentil_js([1.0, 2.0, 3.0, 4.0], 0.5) == 3.0

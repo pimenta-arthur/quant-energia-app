@@ -68,6 +68,39 @@
       </details>
     </div>
 
+    <div class="bloco" id="b-perfil-dia">
+      <div class="barra-abas"><h3 class="ttl" id="tt-pdia">Perfil horário do mês, dia a dia</h3>
+        <div class="controles"><div class="lin"><span>Mês</span><select id="sel-mes-pdia" class="sel-mes" aria-label="Mês do perfil dia a dia"></select></div></div></div>
+      <div class="barra-abas"><span class="leg">Uma linha por dia; clique num dia para destacar, clique de novo para tirar.</span>
+        <div class="abas miud" id="abas-var-dia" role="group" aria-label="Variável"></div></div>
+      <div class="dias-leg" id="leg-pdia" role="group" aria-label="Dias do mês"></div>
+      <svg id="g-pdia" viewBox="0 0 1040 320" role="img" aria-label="Perfil horário de cada dia do mês"></svg>
+      <p class="leg" id="leg-pdia-nota"></p>
+      <details class="det-bloco" id="det-calor">
+        <summary id="tt-calor">Mapa de calor: dia × hora</summary>
+        <div class="rolagem"><svg id="g-calor" viewBox="0 0 1040 560" role="img" aria-label="Mapa de calor do mês selecionado, por dia e hora"></svg></div>
+        <p class="leg" id="leg-calor"></p>
+      </details>
+    </div>
+
+    <details class="bloco" id="b-perfil">
+      <summary class="ttl" id="tt-perfil">Perfil horário por mês do ano, todos os anos</summary>
+      <div class="barra-abas"><div class="abas miud" id="abas-visao" role="group" aria-label="Visão dos painéis"></div>
+        <div class="abas miud" id="abas-var" role="group" aria-label="Variável"></div></div>
+      <span class="leg" id="sub-perfil">Um painel por mês, uma linha por ano, escala comum a todos os painéis.</span>
+      <div class="legenda-mini" id="leg-perfil"></div>
+      <div class="grid4" id="g-perfil"></div>
+      <p class="aviso-q" id="aviso-perfil"></p>
+      <p class="leg" id="leg-perfil-nota"></p>
+    </details>
+
+    <div class="bloco">
+      <div class="barra-abas"><h3 class="ttl" id="tt-ind">Indicadores por ano</h3>
+        <div class="abas miud" id="abas-per-ind" role="group" aria-label="Período dos indicadores"></div></div>
+      <table id="t-ind" class="compacta ind"><thead><tr><th>Ano</th><th class="n">Meses</th><th class="n">Carga líq. vale<small>GW</small></th><th class="n">Carga líq. ponta<small>GW</small></th><th class="n">Rampa 12h→19h<small>GW</small></th><th class="n">Demanda s/ MMGD<small>GW</small></th><th class="n">Renov. c/ MMGD vale<small>GW</small></th><th class="n">PLD médio<small>R$/MWh</small></th><th class="n">PLD ponta 18–21h<small>R$/MWh</small></th><th class="n">PLD vale 8–15h<small>R$/MWh</small></th></tr></thead><tbody></tbody></table>
+      <p class="leg">GW médios e PLD médio no período escolhido (ano inteiro ou trimestre). Vale 8h–15h, ponta 18h–21h; rampa = carga líquida às 19h − às 12h. O ano corrente é acumulado até o último deck. Demanda e renovável com MMGD não se comparam antes de 29/04/2023 (a MMGD passou a entrar como usina).</p>
+    </div>
+
     <details class="bloco">
       <summary class="ttl" id="tt-hora">Horas no piso por hora e tipo de dia</summary>
       <div class="barra-abas"><span></span>

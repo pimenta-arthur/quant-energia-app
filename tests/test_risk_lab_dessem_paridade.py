@@ -101,3 +101,11 @@ def test_R8_blocos_2_e_5(arm):
         ref = json.loads((Path(PASTA) / nome).read_text(encoding="utf-8"))
         for k in ref:
             assert d[k] == ref[k], k
+
+
+def test_R8_blocos_3_e_4(arm):
+    d = publicacao.dados(arm)
+    for nome in ("R8_bloco3_perfil_dia.json", "R8_bloco4_perfis.json"):
+        ref = json.loads((Path(PASTA) / nome).read_text(encoding="utf-8"))
+        for k in ref:
+            assert d[k] == ref[k], k

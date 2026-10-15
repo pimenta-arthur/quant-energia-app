@@ -398,6 +398,75 @@ def tipos_de_dia(
     return base.rename_axis("data").rename("tipo")
 
 
+# --- T4: séries horárias de carga e renováveis (blocos 3 e 4) ----------------------------------------
+
+QUEBRA_MMGD = pd.Timestamp("2023-04-29")  # D010: a partir daqui a MMGD entra como usina no deck
+RENOVAVEIS_SEM_MMGD = ["eolica", "solar", "pch", "pct"]
+
+
+def renovavel_horaria(ren: pd.DataFrame, tipos: list[str]) -> pd.DataFrame:
+    """Previsão de geração (MW) do renovaveis.dat por data, hora e submercado, somando `tipos`.
+
+    Dias sem tipo identificado (2020-12-26 a 2021-01-07, `sem_tipo`) ficam de fora.
+    """
+    x = ren[ren["tipo"].isin(tipos)]
+    x = x.groupby(["data", "periodo", "submercado"], as_index=False)["mw"].sum()
+    x["hora"] = (x["periodo"] - 1) // 2
+    h = x.groupby(["data", "hora", "submercado"], as_index=False)["mw"].mean()
+    return h[h["data"].dt.year >= 2021]
+
+
+def cargas_horarias(sist: pd.DataFrame, ren: pd.DataFrame) -> pd.DataFrame:
+    """Por data, hora e submercado (MW): demanda do deck, demanda sem MMGD e carga líquida.
+
+    `demanda_sem_mmgd`: até 28/04/2023 a demanda do deck já vem líquida da MMGD (a MMGD prevista é
+    zero); depois, subtrai-se a MMGD prevista no renovaveis.dat. `carga_liquida`: demanda − todas as
+    renováveis previstas (consistente através da quebra, D010).
+    """
+    r = ren.pivot_table(
+        index=["data", "periodo", "submercado"], columns="tipo", values="mw", aggfunc="sum"
+    ).fillna(0)
+    r = pd.DataFrame({"ren_total": r.sum(axis=1), "mmgd": r.get("mmgd", 0)}).reset_index()
+    x = sist[["data", "periodo", "submercado", "demanda"]].merge(
+        r, on=["data", "periodo", "submercado"]
+    )
+    x["demanda_sem_mmgd"] = x["demanda"] - x["mmgd"]
+    x["carga_liquida"] = x["demanda"] - x["ren_total"]
+    x["hora"] = (x["periodo"] - 1) // 2
+    h = x.groupby(["data", "hora", "submercado"], as_index=False)[
+        ["demanda", "demanda_sem_mmgd", "carga_liquida"]
+    ].mean()
+    return h[h["data"].dt.year >= 2021]
+
+
+def series_horarias(arm: Armazenamento) -> dict[str, pd.DataFrame]:
+    """T4: {variável: DataFrame(data, hora, submercado, v)}, média das duas meias-horas de cada hora.
+
+    PLD (T1), DECOMP vigente (T2), demanda, demanda sem MMGD, carga líquida, renovável prevista sem e
+    com MMGD e renovável gerada (`grenova` do PDO_SIST: saída do modelo, não insumo).
+    """
+    sist = ler_dessem(arm, "sist", ["data", "periodo", "submercado", "demanda", "grenova"])
+    ren = ler_dessem(arm, "renovaveis")
+    k = ["data", "hora", "submercado"]
+    series = {}
+    p = ler_parquet(arm, chaves.PROC_PLD)
+    series["pld"] = p.rename(columns={"pld": "v"})[[*k, "v"]]
+    mh = ler_parquet(arm, chaves.PROC_HORARIO)[[*k, "decomp_pld"]]
+    series["decomp"] = mh.dropna().rename(columns={"decomp_pld": "v"})
+    cg = cargas_horarias(sist, ren)
+    for c in ["demanda", "demanda_sem_mmgd", "carga_liquida"]:
+        series[c] = cg[[*k, c]].rename(columns={c: "v"})
+    series["renov_sem_mmgd"] = renovavel_horaria(ren, RENOVAVEIS_SEM_MMGD).rename(
+        columns={"mw": "v"}
+    )
+    series["renov_com_mmgd"] = renovavel_horaria(ren, [*RENOVAVEIS_SEM_MMGD, "mmgd"]).rename(
+        columns={"mw": "v"}
+    )
+    g = sist.assign(hora=(sist["periodo"] - 1) // 2).groupby(k, as_index=False)["grenova"].mean()
+    series["renov_saida"] = g.rename(columns={"grenova": "v"})
+    return series
+
+
 # --- T5: desvio do mês civil por bloco ---------------------------------------------------------------
 
 

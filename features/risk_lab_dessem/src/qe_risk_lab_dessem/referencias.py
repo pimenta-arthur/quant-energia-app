@@ -4,7 +4,7 @@ Na migração (2026-10-14) as saídas do app foram conferidas uma vez contra o p
 pesquisa (risk-lab-dessem-analytics, reports/promocao/2026-10-13/; teste opt-in
 tests/test_risk_lab_dessem_paridade.py) e congeladas aqui. Só entram períodos fechados, que não mudam
 com os decks novos: leitores em três dias, tabelas-base de jul a set/2026, tipos de dia até
-30/09/2026 e os blocos 1, 2 e 5 nesses meses. Regerar só quando a mudança for intencional:
+30/09/2026, os blocos 1, 2, 4 e 5 nesses meses e os indicadores por ano dos anos completos. Regerar só quando a mudança for intencional:
 `uv run qe risk_lab_dessem congelar` e revisar a diferença no git.
 """
 
@@ -47,6 +47,8 @@ def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     h = publicacao._horario(arm)
     nivel = publicacao.dias_nivel(_no_periodo(h), tipos)
     hr = publicacao.horas(_no_periodo(h), tipos)["mensal"]
+    pf = publicacao.perfis(tratamento.series_horarias(arm))
+    ind = publicacao.indicadores(pf)
     return {
         "leitor_pdo_sist": pd.concat(sist, ignore_index=True),
         "leitor_renovaveis": pd.concat(ren, ignore_index=True),
@@ -73,6 +75,26 @@ def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
                 for hh, v in enumerate(vs)
             ],
             columns=["sub", "mes", "tipo", "hora", "n", "piso", "abaixo", "acima", "soma"],
+        ),
+        "bloco4_perfis": pd.DataFrame(
+            [
+                [var, s, m, hh, v]
+                for var, ps in pf.items()
+                for s, pm in ps.items()
+                for m, vs in pm.items()
+                if m in meses
+                for hh, v in enumerate(vs)
+            ],
+            columns=["var", "sub", "mes", "hora", "v"],
+        ),
+        "bloco4_indicadores": pd.DataFrame(
+            [
+                {"sub": s, "periodo": per, **r}
+                for s, pp in ind.items()
+                for per, rs in pp.items()
+                for r in rs
+                if r["ano"] < PERIODO[1].year  # anos completos
+            ]
         ),
     }
 
