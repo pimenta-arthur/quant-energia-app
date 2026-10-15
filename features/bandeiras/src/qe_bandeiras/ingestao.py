@@ -16,11 +16,10 @@ uma emissão extra entram ao lado das anteriores. Formato de cada fonte: docs/en
 import hashlib
 import io
 import re
-import shutil
 import tempfile
 import unicodedata
 import zipfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -28,6 +27,8 @@ import pandas as pd
 
 from qe_bandeiras import chaves
 from qe_core.armazenamento import Armazenamento, gravar_json
+from qe_core.entrada import NaoReconhecido, Resultado, gravar_conferido, gravar_relatorio, remover
+from qe_core.entrada import sha as _sha
 from qe_core.leitores import aneel, ccee, ons
 
 FONTES = {
@@ -45,10 +46,6 @@ MESES = {n: i for i, n in enumerate(_NOMES_MES.split(), 1)}
 _RE_MES = "|".join(MESES)
 
 
-class NaoReconhecido(Exception):
-    """O pacote fica na entrada; a mensagem diz o que faltou."""
-
-
 @dataclass
 class Pacote:
     """O que foi solto na pasta da fonte: um arquivo, um zip ou uma pasta (com zips dentro, se houver)."""
@@ -58,25 +55,7 @@ class Pacote:
     mes_pasta: pd.Period | None = None  # subpasta AAAA-MM, usada quando o conteúdo não diz o mês
 
 
-@dataclass
-class Resultado:
-    fonte: str
-    origem: str
-    removido: bool
-    mensagem: str
-    gravados: dict[str, str] = field(default_factory=dict)  # chave → novo | igual | sobrescrito
-    meses: set[pd.Period] = field(default_factory=set)  # meses cujo tratamento muda
-
-    @property
-    def novo(self) -> bool:
-        return any(s in ("novo", "sobrescrito") for s in self.gravados.values())
-
-
 # --- leitura dos pacotes --------------------------------------------------------------------------
-
-
-def _sha(dados: bytes) -> str:
-    return hashlib.sha256(dados).hexdigest()
 
 
 def _sem_acento(texto: str) -> str:
@@ -291,21 +270,6 @@ RECONHECER = {
 # --- gravação e laço principal ---------------------------------------------------------------------
 
 
-def _gravar(arm: Armazenamento, chave: str, dados: bytes, sobrescrever: bool) -> str:
-    if arm.existe(chave):
-        if _sha(arm.ler_bytes(chave)) == _sha(dados):
-            return "igual"
-        if not sobrescrever:
-            return "divergente"
-        situacao = "sobrescrito"
-    else:
-        situacao = "novo"
-    arm.gravar_bytes(dados, chave)
-    if _sha(arm.ler_bytes(chave)) != _sha(dados):
-        raise OSError(f"conferência falhou ao gravar {chave}")
-    return situacao
-
-
 def preparar_entrada(entrada: Path) -> None:
     for fonte in FONTES:
         (entrada / fonte).mkdir(parents=True, exist_ok=True)
@@ -318,7 +282,7 @@ def _ingerir_pacote(arm: Armazenamento, fonte: str, item: Path, sobrescrever: bo
     except NaoReconhecido as e:
         return Resultado(fonte, item.name, False, f"mantido na entrada: {e}")
     sobrescreve = sobrescrever or fonte == "aneel_bandeiras"  # conjunto atualizado pela fonte
-    gravados = {c: _gravar(arm, c, d, sobrescreve) for c, d in arquivos.items()}
+    gravados = {c: gravar_conferido(arm, c, d, sobrescreve) for c, d in arquivos.items()}
     if marca and not arm.existe(marca["chave"]):
         info = {k: v for k, v in marca.items() if k != "chave"}
         gravar_json(
@@ -339,7 +303,7 @@ def _ingerir_pacote(arm: Armazenamento, fonte: str, item: Path, sobrescrever: bo
             gravados,
             meses if novos else set(),
         )
-    shutil.rmtree(item) if item.is_dir() else item.unlink()
+    remover(item)
     texto = f"{novos} arquivo(s) novo(s) em raw/" if novos else "já estava em raw/ (nada novo)"
     return Resultado(
         fonte, item.name, True, f"ingerido: {texto}", gravados, meses if novos else set()
@@ -357,11 +321,5 @@ def ingerir_entrada(
         for item in sorted((entrada / fonte).iterdir())
         if not item.name.startswith(".")
     ]
-    if resultados:
-        linhas = []
-        for r in resultados:
-            linhas.append(f"{r.fonte}/{r.origem}: {r.mensagem}")
-            linhas += [f"    {s}: {c}" for c, s in r.gravados.items() if s != "igual"]
-        nome = datetime.now().strftime("%Y-%m-%dT%H-%M-%S") + ".txt"
-        (entrada / "relatorios" / nome).write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    gravar_relatorio(entrada, resultados)
     return resultados

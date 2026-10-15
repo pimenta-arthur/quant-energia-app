@@ -1,4 +1,5 @@
-"""Leitores de arquivos da CCEE: patamares de carga (AAC001) e boletim InfoBandeira.
+"""Leitores de arquivos da CCEE: patamares de carga (AAC001), boletim InfoBandeira, PLD horário
+publicado e limites anuais do PLD.
 
 Funções puras: recebem o caminho do arquivo bruto e devolvem dados; não sabem onde o arquivo
 está guardado (isso é do armazenamento).
@@ -106,3 +107,39 @@ def ler_boletim(caminho: Path, ano: int) -> dict:
     )
     saida["cor"] = m.group(1).strip() if m else None
     return saida
+
+
+SUBMERCADO_PLD = {"SUDESTE": "SE", "SUL": "S", "NORDESTE": "NE", "NORTE": "N"}
+
+
+def ler_pld_horario(caminho: Path) -> pd.DataFrame:
+    """PLD horário publicado (pld_horario_AAAA.csv, `;`): colunas data, hora (0–23), submercado
+    (SE/S/NE/N) e pld (R$/MWh)."""
+    d = pd.read_csv(caminho, sep=";", dtype=str)
+    ref = d["MES_REFERENCIA"].str.strip()
+    pld = pd.DataFrame(
+        {
+            "data": pd.to_datetime(ref.str[:4] + "-" + ref.str[4:6] + "-" + d["DIA"].str.zfill(2)),
+            "hora": d["HORA"].astype(int),
+            "submercado": d["SUBMERCADO"].str.strip().map(SUBMERCADO_PLD),
+            "pld": d["PLD_HORA"].astype(float),
+        }
+    )
+    if pld["submercado"].isna().any():
+        raise ValueError(f"{Path(caminho).name}: submercado desconhecido no PLD horário")
+    if pld.duplicated(["data", "hora", "submercado"]).any():
+        raise ValueError(f"{Path(caminho).name}: linhas duplicadas no PLD horário")
+    return pld.sort_values(["data", "hora", "submercado"], ignore_index=True)
+
+
+def ler_limites_pld(caminho: Path) -> pd.DataFrame:
+    """Limites anuais do PLD (R$/MWh; vírgula decimal, "-" = vazio): ano, piso, teto_estrutural,
+    teto_horario, custo_deficit."""
+    d = pd.read_csv(caminho, dtype=str)
+    d.columns = ["ano", "piso", "teto_estrutural", "teto_horario", "custo_deficit"]
+
+    def numero(s: pd.Series) -> pd.Series:
+        s = s.str.replace(r"\s", "", regex=True).str.replace(",", ".")
+        return pd.to_numeric(s.replace("-", None))
+
+    return d.assign(ano=d["ano"].astype(int), **{c: numero(d[c]) for c in d.columns[1:]})

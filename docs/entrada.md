@@ -1,6 +1,7 @@
 # Caixa de entrada (arquivos baixados → raw/)
 
-Os arquivos brutos entram no app por `data/entrada/<fonte>/`. Você solta o arquivo **como baixou**
+Os arquivos brutos entram no app por `data/entrada/<fonte>/`. Cada funcionalidade lê só as pastas das
+suas fontes (bandeiras abaixo; PLD horário na seção própria). Você solta o arquivo **como baixou**
 (zip, PDF, txt, xlsx, csv; solto ou dentro de uma pasta, com zips dentro de zips se for o caso) na pasta
 da fonte e roda:
 
@@ -45,6 +46,38 @@ da ANEEL: arquivo que não passa na leitura fica na entrada.
 - Um arquivo ainda sendo copiado (zip pela metade) é recusado e fica para a próxima execução.
 - O formato real dos downloads de cada fonte (nomes dos zips, estrutura interna) deve ser conferido na
   primeira vez: se algo não for reconhecido, a mensagem diz o que faltou.
+
+## PLD horário
+
+```bash
+uv run qe pld_horario atualizar    # entrada → raw/ → tratamento do que mudou → status (não publica)
+uv run qe pld_horario publicar     # regrava os dados da página (sem registro de rodada)
+uv run qe pld_horario status       # último deck, último PLD publicado, dias calculados e lacunas
+```
+
+| Pasta | O que soltar | Vai para `raw/` | Como é identificado |
+|---|---|---|---|
+| `ccee_dessem/` | deck do DESSEM: o mensal `DES_AAAAMM.zip` ou os diários `DS_CCEE_MMAAAA_SEMREDE_RVnDdd.zip` (entrada) e `Resultado_DS_CCEE_…zip` (resultado), soltos ou numa pasta | `ccee_dessem/dia=AAAA-MM-DD/`: `entdados.dat.gz`, `renovaveis.dat.gz`, `PDO_SIST.DAT.gz`, `PDO_OPER_USIH.DAT.gz` + `_entrada.json` e `_resultado.json` (nome do deck, PMO, revisão, hash dos originais) | nome do zip diário: o `MMAAAA` é o mês operativo; na RV0, dias ≥ 20 são do mês civil anterior (`RV0D27` de 10/2026 = 27/09/2026) |
+| `ccee_decomp/` | deck do DECOMP: o mensal `DCAAAAMM.zip` ou os semanais `DCAAAAMM-semN[_kaPublicacao].zip` e `Relatorio_Sumario-AAAAMM-semN….zip` | `ccee_decomp/pmo=AAAA-MM/sem=N/pub=K/`: `dadger.gz`, `sumario.gz` | nome do zip semanal (PMO, semana e publicação; sem sufixo = 1ª) |
+| `ccee_pld/` | `pld_horario_AAAA.csv` (um por ano, `;`) | `ccee_pld/pld_horario_AAAA.csv` | ano das datas do arquivo |
+| `ccee_limites_pld/` | `dados_pld.csv` (limites anuais) | `ccee_limites_pld/dados_pld.csv` | — (conjunto inteiro, sempre substitui) |
+
+- **DESSEM e DECOMP em `.gz`** (exceção à regra "idêntico ao original", decidida na migração em
+  2026-10-14): os arquivos usados, descompactados, ocupam o dobro do zip da CCEE (~465 MB/mês contra
+  243 MB); em gzip, ~57 MB/mês. O conteúdo é o original sem perda: o hash conferido na gravação e na
+  reingestão é o do arquivo descomprimido, e os leitores do `qe_core` leem o `.gz` direto.
+- **Um deck por dia**, em duas metades que podem chegar separadas (entrada e resultado): o dia só é
+  tratado quando as duas estão em `raw/`; `status` lista os dias incompletos. O zip mensal cresce ao
+  longo do mês: baixá-lo de novo não duplica nada (dias já gravados dão "igual").
+- Antes de aceitar, a ingestão confere o dia do caso (registros TM do `entdados.dat` e "Data do
+  Caso" do `PDO_SIST.DAT`) e roda os leitores do dadger e do sumário. O `PDO_OPER_USIH.DAT` é
+  opcional (ausente ou truncado em alguns decks: o dia fica sem esse dado).
+- **DECOMP republicado** (`_2aPublicacao`) entra como `pub=2` ao lado da 1ª; o tratamento usa a
+  última publicação de cada semana.
+- **PLD publicado**: o csv do ano corrente é republicado a cada atualização da CCEE e substitui o
+  anterior, desde que não perca horas já publicadas (se perder, fica na entrada; `--sobrescrever`
+  aceita). Nos dias com deck e ainda sem publicação, o tratamento calcula o PLD do deck pela regra
+  oficial e o substitui quando o csv chegar.
 
 ## Na AWS
 `data/entrada/` vira `s3://<bucket>/entrada/<fonte>/`, e um upload dispara a ingestão; coletores

@@ -1,0 +1,192 @@
+/* Estilo das páginas do PLD horário (acompanhamento, simulador, metodologia), sobre estilo.css do Quant Energia */
+/* Layout: painel de produto no padrão das bandeiras — acompanhamento das variáveis primeiro, depois mecanismos, simulador e desempenho; blocos em largura total (máx. 1080px) */
+:root {
+  --b-vale: var(--accent); --b-ponta: var(--v1); --b-demais: var(--ink-3);
+  --t-util: var(--accent); --t-sab: #a8592a; --t-dom: #1d8a84;
+  --a2021: #c3c9cf; --a2022: #98a1a9; --a2023: #a8592a; --a2024: #1d8a84; --a2025: #e35d4f; --a2026: #1d5f86; --a2027: #15191d;
+  --faixa-proj: color-mix(in srgb, var(--accent) 16%, transparent);
+  --sombra-vale: color-mix(in srgb, var(--accent) 7%, transparent); --sombra-ponta: color-mix(in srgb, var(--v1) 7%, transparent); --sombra-ponta-forte: color-mix(in srgb, var(--v1) 16%, transparent); --sombra-vale-forte: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --t-sab: #e3a06c; --t-dom: #5ccac3; --a2021: #48525b; --a2022: #6b7680; --a2023: #e3a06c; --a2024: #5ccac3; --a2025: #f08a7e; --a2026: #6fb0d8; --a2027: #e8ecef; } }
+:root[data-theme="dark"] { --t-sab: #e3a06c; --t-dom: #5ccac3; --a2021: #48525b; --a2022: #6b7680; --a2023: #e3a06c; --a2024: #5ccac3; --a2025: #f08a7e; --a2026: #6fb0d8; --a2027: #e8ecef; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+main { gap: 40px; }
+section { gap: 12px; }
+.hero { display: grid; gap: 14px; }
+.hero h1, h2 { font-size: 1.5rem; }
+h3.ttl { margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.8rem; color: var(--ink-3); }
+.meta .atualizado { margin-left: auto; }
+.bloco { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.sim-topo { display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .sim-topo { grid-template-columns: 1fr; } }
+.sim-nums { display: grid; gap: 10px; }
+.sim-nums .tile { padding: 12px; }
+.sim-nums .tile .v { font-size: 1.9rem; }
+table.compacta th, table.compacta td { padding: 5px 8px; font-size: 0.82rem; }
+table.compacta th small { display: block; color: var(--ink-3); font-weight: 400; }
+.regua-cel { text-align: left !important; }
+.det-tab summary { cursor: pointer; font-size: 0.8rem; color: var(--accent); margin-top: 6px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px 16px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.ttl { font-family: var(--f-display); font-weight: 600; font-size: 1.02rem; }
+.sub { font-size: 0.95rem; color: var(--ink-2); max-width: 78ch; }
+.leg { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); margin: 0; }
+.aviso-q { font-size: 0.8rem; color: var(--v1); margin: 0; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--f-data); font-size: 10.5px; fill: var(--ink-3); }
+svg .forte { fill: var(--ink); font-weight: 500; }
+.legenda-mini { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--ink-2); }
+.legenda-mini span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-mini i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.legenda-mini i.l { height: 0; border-top: 2px solid; border-radius: 0; }
+.legenda-mini i.t { height: 0; border-top: 2px dashed; border-radius: 0; }
+.legenda-mini i.p { width: 9px; height: 9px; border-radius: 50%; }
+.abas { display: flex; flex-wrap: wrap; gap: 6px; }
+.abas button { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.abas button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.abas button:focus-visible, .painel input:focus-visible, .btn-sec:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.abas.miud button { font-size: 0.78rem; padding: 3px 10px; }
+.controles { display: grid; gap: 8px; }
+.controles .lin { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.controles .lin > span { font-family: var(--f-data); font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); min-width: 6.5rem; }
+.barra-abas { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.tile .v { font-family: var(--f-display); font-weight: 600; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.tile .d { font-size: 0.88rem; color: var(--ink-2); }
+.dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 7px 10px; border-radius: 4px; max-width: 320px; transform: translate(12px, 12px); }
+.aviso { font-size: 0.85rem; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 6px; }
+.mini-ttl { font-family: var(--f-data); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); display: flex; justify-content: space-between; gap: 6px; }
+.mini-ttl b { color: var(--ink); font-weight: 500; }
+td.n, th.n { white-space: nowrap; }
+tr.destaque td { background: var(--accent-soft); }
+details.bloco > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+details.bloco > summary::-webkit-details-marker { display: none; }
+details.bloco > summary::after { content: "Abrir"; font: 500 0.8rem var(--f-body); color: var(--surface); background: var(--accent); border-radius: 999px; padding: 4px 12px; }
+details.bloco[open] > summary::after { content: "Fechar"; }
+details.bloco > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sel-mes { font: 500 0.8rem var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 10px; }
+.sel-mes:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dois-tercos { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .dois-tercos { grid-template-columns: 1fr; } }
+.sec-titulo { display: grid; gap: 4px; padding-top: 8px; border-top: 2px solid var(--ink); }
+
+/* painel dos seis meses */
+.painel { display: grid; gap: 6px 8px; align-items: center; width: max-content; min-width: 100%; }
+.painel .rp { font-size: 0.8rem; color: var(--ink-2); position: sticky; left: 0; background: var(--surface); z-index: 1; height: 100%; display: flex; align-items: center; padding-right: 8px; }
+.painel .rp { flex-direction: column; align-items: flex-start; justify-content: center; }
+.painel .rp small { display: block; font-size: 0.68rem; color: var(--ink-3); }
+.painel .btit { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--f-data); font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); padding-block: 2px 4px; }
+.painel .sep { grid-column: 1 / -1; height: 1px; background: var(--rule); margin-block: 6px 2px; }
+.painel .mcab { display: grid; gap: 2px; text-align: center; }
+.painel .mcab b { font-family: var(--f-display); font-weight: 600; font-size: 1.15rem; }
+.painel .mcab span { font-family: var(--f-data); font-size: 0.68rem; color: var(--ink-3); }
+.painel input { width: 100%; font: 500 0.95rem var(--f-data); font-variant-numeric: tabular-nums; text-align: center; padding: 6px 4px; border: 1px solid var(--rule); border-radius: 4px; background: var(--bg); color: var(--ink); }
+#t-prem input { width: 5.5rem; font: 500 0.88rem var(--f-data); font-variant-numeric: tabular-nums; text-align: right; padding: 4px 6px; border: 1px solid var(--rule); border-radius: 4px; background: var(--bg); color: var(--ink); }
+.sens { margin: 10px 0 4px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; display: grid; gap: 6px; }
+.sens input { width: 5rem; font: 500 0.9rem var(--f-data); text-align: right; padding: 4px 6px; border: 1px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--ink); }
+.sens small { color: var(--ink-3); font-size: 0.75rem; }
+.regua { display: flex; flex-wrap: wrap; gap: 6px; }
+.regua span { display: grid; gap: 2px; min-width: 76px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 4px; font: 500 0.95rem var(--f-data); font-variant-numeric: tabular-nums; text-align: center; }
+.regua span b { font-size: 0.68rem; color: var(--ink-3); font-weight: 500; }
+.regua span[data-q] { cursor: pointer; }
+.regua span.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+#t-prem td:first-child { min-width: 230px; }
+#t-prem input.editado { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+#t-prem input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.painel .val { text-align: center; font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+.painel .val.grande { font-family: var(--f-display); font-weight: 600; font-size: 1.3rem; }
+.painel .val small { display: block; font-size: 0.68rem; color: var(--ink-3); }
+.dir { justify-self: stretch; text-align: center; border-radius: 4px; padding: 7px 6px; font-family: var(--f-display); font-weight: 600; font-size: 0.95rem; display: grid; gap: 1px; }
+.dir small { font-family: var(--f-data); font-weight: 400; font-size: 0.68rem; }
+.dir.desconto { background: var(--accent-soft); color: var(--accent); }
+.dir.premio { background: color-mix(in srgb, var(--v1) 14%, transparent); color: var(--v1); }
+.dir.neutro { background: var(--vazio); color: var(--ink-2); }
+.barra { height: 8px; border-radius: 4px; background: var(--vazio); overflow: hidden; }
+.barra i { display: block; height: 100%; background: var(--accent); }
+.btn-sec { font: 500 0.8rem var(--f-body); color: var(--accent); background: transparent; border: 0; padding: 0; cursor: pointer; text-transform: none; letter-spacing: 0; }
+
+/* etiquetas clicáveis com os valores atuais (acompanhamento da ponta, D064) */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { display: grid; gap: 1px; text-align: left; padding: 6px 10px; border: 1px solid var(--rule); border-left: 3px solid var(--c, var(--ink-3)); border-radius: 4px; background: var(--surface); color: var(--ink); font: 500 1rem var(--f-data); font-variant-numeric: tabular-nums; cursor: pointer; }
+.chips button small { font: 500 0.68rem var(--f-data); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.chips button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* detalhe recolhido dentro de um bloco (D067) */
+.det-bloco { border-top: 1px solid var(--rule); padding-top: 8px; display: grid; gap: 10px; }
+.det-bloco > summary, details.bloco > summary { cursor: pointer; }
+.det-bloco > summary { font-size: 0.85rem; color: var(--accent); }
+
+/* seção sem a linha divisória e subtítulo na largura toda (D068) */
+.sec-titulo.sem-linha { border-top: 0; padding-top: 0; }
+.sec-titulo.sem-linha .sub { max-width: none; }
+/* legenda de dias do perfil dia a dia (D068) */
+.dias-leg { display: flex; flex-wrap: wrap; gap: 4px; }
+.dias-leg button { min-width: 2.1rem; padding: 3px 4px; border: 1px solid var(--rule); border-bottom: 3px solid var(--c); border-radius: 3px; background: var(--surface); color: var(--ink-2); font: 500 0.75rem var(--f-data); cursor: pointer; }
+.dias-leg button[aria-pressed="true"] { color: var(--ink); border-color: var(--c); box-shadow: 0 0 0 1px var(--c); }
+.dias-leg button.media { border-bottom-color: var(--ink); min-width: auto; padding-inline: 8px; }
+
+/* indicadores por ano cabem na largura do bloco (D069) */
+table.ind { width: 100%; table-layout: fixed; }
+table.ind th { white-space: normal; line-height: 1.25; vertical-align: bottom; }
+table.ind th:first-child, table.ind td:first-child { width: 7.5rem; }
+table.ind th:nth-child(2), table.ind td:nth-child(2) { width: 4rem; }
+table.ind td small { display: block; color: var(--ink-3); font-size: 0.7rem; }
+
+/* etiquetas da ponta numa linha só (D070) */
+.chips.linha { flex-wrap: nowrap; }
+.chips.linha button { flex: 1 1 0; min-width: 0; padding: 4px 8px; font-size: 0.92rem; }
+.chips.linha button small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) { .chips.linha { flex-wrap: wrap; } .chips.linha button { flex: 1 1 45%; } }
+
+/* nota pequena embaixo dos gráficos mês a mês (D072) */
+.nota-hm { margin: 2px 0 0; font: 400 0.72rem/1.4 var(--f-data); color: var(--ink-3); }
+.nota-hm b { color: var(--ink-2); font-weight: 500; }
+
+/* etiquetas da ponta em duas colunas, embaixo do gráfico estreito (D073) */
+.chips.grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+.chips.grade2 button { padding: 3px 8px; font-size: 0.85rem; }
+.chips.grade2 button small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* régua de sensibilidade compacta (D073) */
+#t-prem .regua span { min-width: 52px; padding: 4px 6px; font-size: 0.85rem; }
+#t-prem .regua-cel small { max-width: 34rem; }
+
+/* sub-blocos dentro do histórico das premissas (D074) */
+.sub-bloco { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--rule); }
+
+/* valor padrão do desconto (média de 12 meses) em destaque sobre o gráfico (D075) */
+.ref12 { margin: 2px 0 0; padding: 4px 8px; border-left: 3px solid var(--ink-2); background: var(--surface); font: 500 0.78rem/1.4 var(--f-data); color: var(--ink-2); }
+.ref12 b { color: var(--ink); font-weight: 500; }
+
+/* simulação e premissas num bloco só, em duas colunas (D075) */
+.sim-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .sim-grade { grid-template-columns: 1fr; } }
+.sim-res, .sim-prem { display: grid; gap: 8px; min-width: 0; }
+.sim-nums2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sim-nums2 .tile { padding: 10px 12px; }
+.sim-nums2 .tile .v { font-size: 1.8rem; }
+#t-prem td, #t-prem th { padding: 5px 6px; }
+#t-prem td:first-child { min-width: 0; width: 9.5rem; }
+#t-prem input { width: 4.6rem; padding: 3px 6px; }
+#t-prem td small { font-size: 0.68rem; }
+#t-prem .rotulo-prem { cursor: help; border-bottom: 1px dotted var(--ink-3); }
+
+/* desempenho: premissas do backtest e tabela única (D075) */
+.premissas-bt li { padding-bottom: 6px; }
+#t-metr th small { display: block; color: var(--ink-3); font-weight: 400; }
+
+/* régua de sensibilidade numa linha (D076) */
+#t-prem .regua { flex-wrap: nowrap; }
+#t-prem .regua span { min-width: 0; flex: 1 1 0; padding: 4px 4px; }
+
+/* desempenho mês a mês + matriz previu × veio (D076) */
+.bt-grade { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bt-grade { grid-template-columns: 1fr; } }
+table.mat td.n b { font-size: 1.05rem; }
+table.mat td.ok { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+table.mat td small { display: block; color: var(--ink-3); }

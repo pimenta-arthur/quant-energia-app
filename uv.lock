@@ -12,6 +12,7 @@ members = [
     "qe-api",
     "qe-bandeiras",
     "qe-core",
+    "qe-pld-horario",
     "quant-energia-app",
 ]
 
@@ -849,6 +850,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "qe-pld-horario"
+version = "0.1.0"
+source = { editable = "features/pld_horario" }
+dependencies = [
+    { name = "qe-core" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "qe-core", editable = "core" },
+    { name = "typer", specifier = ">=0.27.3" },
+]
+
+[[package]]
 name = "quant-energia-app"
 version = "0.1.0"
 source = { editable = "." }
@@ -856,6 +872,7 @@ dependencies = [
     { name = "qe-api" },
     { name = "qe-bandeiras" },
     { name = "qe-core" },
+    { name = "qe-pld-horario" },
     { name = "typer" },
 ]
 
@@ -870,6 +887,7 @@ requires-dist = [
     { name = "qe-api", editable = "api" },
     { name = "qe-bandeiras", editable = "features/bandeiras" },
     { name = "qe-core", editable = "core" },
+    { name = "qe-pld-horario", editable = "features/pld_horario" },
     { name = "typer", specifier = ">=0.27.3" },
 ]
 

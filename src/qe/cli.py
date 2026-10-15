@@ -3,11 +3,13 @@
 import typer
 
 from qe_bandeiras.cli import app as bandeiras
+from qe_pld_horario.cli import app as pld_horario
 
 app = typer.Typer(
     help="quant-energia-app: pipelines e páginas por funcionalidade.", no_args_is_help=True
 )
 app.add_typer(bandeiras, name="bandeiras")
+app.add_typer(pld_horario, name="pld_horario")
 
 
 @app.command()

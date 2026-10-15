@@ -8,6 +8,7 @@ dependencies = [
     "qe-api",
     "qe-bandeiras",
     "qe-core",
+    "qe-pld-horario",
     "typer>=0.27.3",
 ]
 
@@ -19,7 +20,7 @@ requires = ["uv_build>=0.12.21,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.workspace]
-members = ["core", "features/bandeiras", "api"]
+members = ["core", "features/bandeiras", "features/pld_horario", "api"]
 
 [tool.ruff]
 line-length = 100
@@ -40,9 +41,10 @@ module-name = "qe"
 qe-core = { workspace = true }
 qe-bandeiras = { workspace = true }
 qe-api = { workspace = true }
+qe-pld-horario = { workspace = true }
 
 [tool.ruff.lint.isort]
-known-first-party = ["qe", "qe_core", "qe_bandeiras", "qe_api"]
+known-first-party = ["qe", "qe_core", "qe_bandeiras", "qe_pld_horario", "qe_api"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/cli.py" = ["B008"]  # padrão do Typer: typer.Option nos valores padrão

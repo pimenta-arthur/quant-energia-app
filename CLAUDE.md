@@ -1,8 +1,9 @@
 # quant-energia-app
 
-Aplicação com funcionalidades independentes (bandeiras tarifárias, PLD horário, descolamento entre
-submercados), cada uma com a sua página e o seu pipeline. Roda local primeiro e vai para a AWS
-depois, sem mudar o código das etapas. Responder sempre em português do Brasil.
+Aplicação com funcionalidades independentes, cada uma com a sua página e o seu pipeline:
+**Forecast Bandeiras** (código `bandeiras`), **Risk Lab DESSEM** (PLD horário; código `pld_horario`) e, planejado,
+o descolamento entre submercados. Nos textos para o usuário, usar os nomes das funcionalidades; no código, os
+curtos. Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Responder sempre em português do Brasil.
 
 ## Pesquisa × produto
 - A pesquisa (EDA, notebooks, backtest, decisões de método) fica nos repositórios de análise, como
@@ -17,8 +18,8 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
   dele): ao promover, o método é reimplementado aqui e conferido contra os resultados de referência de lá.
 
 ## Ambiente
-- uv workspace (raiz + `core`, `features/bandeiras`, `api`). Sempre `uv add --package <membro> <pacote>`
-  e `uv run ...`. **Nunca pip.** Python 3.14 do Homebrew.
+- uv workspace (raiz + `core`, `features/bandeiras`, `features/pld_horario`, `api`). Sempre
+  `uv add --package <membro> <pacote>` e `uv run ...`. **Nunca pip.** Python 3.14 do Homebrew.
 - Lint/format: `uv run ruff check .` e `uv run ruff format .`; testes: `uv run pytest`.
 
 ## Arquitetura
@@ -57,6 +58,24 @@ depois, sem mudar o código das etapas. Responder sempre em português do Brasil
      versão, quadro de parâmetros gerado de `MODELO` e teste que exige a página de cada versão.
 - `serving/bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
   arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
+
+## Risk Lab DESSEM (PLD horário): etapas e testes
+- Promovido de `../risk-lab-dessem-analytics` em 2026-10-14 pelo pacote `docs/promocao_pld_horario.md` de lá,
+  bloco a bloco (seção 6 do pacote). Escopo: só a página v1 e o simulador v1 simplificado; **não trazer** carga
+  líquida, página v2 nem as outras versões do simulador, nem como contexto.
+- Dia a dia: deck do DESSEM (diário), DECOMP (semanal) e csv do PLD em `data/entrada/<fonte>/` →
+  `qe pld_horario atualizar` (ingere, trata o que mudou, mostra status) → `qe pld_horario publicar`.
+- Etapas avulsas: `qe pld_horario ingerir | tratar [--refazer] | status | conferir | publicar | congelar`.
+- DESSEM e DECOMP ficam em `raw/` como `.gz` (exceção decidida pelo Arthur; motivo em `docs/entrada.md`).
+- Tratamento incremental: as tabelas do DESSEM são particionadas por mês (`processed/pld_horario/dessem/…/mes=`)
+  e só refeitas quando os dias completos do mês mudam; DECOMP e T1–T5 são refeitos inteiros (segundos).
+- Acompanhamento (blocos 1–6) é descritivo: `publicar` regrava `serving/pld_horario/<chave>.json` sem registro de
+  rodada. Registro de rodadas só no simulador (bloco 7), como nas bandeiras.
+- Definições do método (vale 8h–15h, ponta 18h–21h, tolerância do piso) só em `qe_pld_horario.modelo.MODELO`.
+- Testes: `tests/referencias/pld_horario/` (períodos fechados: jul–set/2026), regerados com
+  `qe pld_horario congelar`. Paridade com a pesquisa é opt-in (`QE_PARIDADE_PLD_HORARIO=<pasta do pacote>`).
+- Contas que não dependem do usuário ficam no Python; o JS da página só desenha (exceção: a conta do simulador,
+  com teste de paridade Python × JS).
 
 ## Regras herdadas do analytics (bandeiras)
 - PLD gatilho vem do deck do DECOMP da CCEE, nunca do CMO do ONS.
