@@ -30,6 +30,7 @@ TOLERANCIA = {
     "pld_horario": 0.01,
     "mensal_horario": 1e-4,
     "mensal_delta": 0.01,
+    "bloco7_backtest": 0.01,
 }
 CHAVES = {
     "leitor_pdo_sist": ["data", "periodo", "submercado"],
@@ -45,6 +46,7 @@ CHAVES = {
     "bloco4_perfis": ["var", "sub", "mes", "hora"],
     "bloco4_indicadores": ["sub", "periodo", "ano"],
     "bloco6_mecanismos": ["mes"],
+    "bloco7_backtest": ["mes", "h"],
 }
 
 

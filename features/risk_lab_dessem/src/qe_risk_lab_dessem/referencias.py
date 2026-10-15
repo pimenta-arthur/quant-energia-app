@@ -4,7 +4,7 @@ Na migração (2026-10-14) as saídas do app foram conferidas uma vez contra o p
 pesquisa (risk-lab-dessem-analytics, reports/promocao/2026-10-13/; teste opt-in
 tests/test_risk_lab_dessem_paridade.py) e congeladas aqui. Só entram períodos fechados, que não mudam
 com os decks novos: leitores em três dias, tabelas-base de jul a set/2026, tipos de dia até
-30/09/2026, os blocos 1, 2, 4 e 5 nesses meses, o bloco 6 até set/2026 e os indicadores por ano dos anos completos. Regerar só quando a mudança for intencional:
+30/09/2026, os blocos 1, 2, 4 e 5 nesses meses, o bloco 6 e o backtest do simulador até set/2026 e os indicadores por ano dos anos completos. Regerar só quando a mudança for intencional:
 `uv run qe risk_lab_dessem congelar` e revisar a diferença no git.
 """
 
@@ -49,6 +49,7 @@ def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     hr = publicacao.horas(_no_periodo(h), tipos)["mensal"]
     pf = publicacao.perfis(tratamento.series_horarias(arm))
     ind = publicacao.indicadores(pf)
+    bt = ler_parquet(arm, chaves.PROC_BACKTEST)
     return {
         "leitor_pdo_sist": pd.concat(sist, ignore_index=True),
         "leitor_renovaveis": pd.concat(ren, ignore_index=True),
@@ -90,6 +91,7 @@ def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
         "bloco6_mecanismos": pd.DataFrame(
             [r for r in publicacao.mecanismos_se(arm, tipos) if r["mes"] <= meses[-1]]
         ),
+        "bloco7_backtest": bt[bt["mes"] <= meses[-1]].reset_index(drop=True),
         "bloco4_indicadores": pd.DataFrame(
             [
                 {"sub": s, "periodo": per, **r}

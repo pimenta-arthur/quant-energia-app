@@ -1,0 +1,74 @@
+{
+ "rodadas": {
+  "2026-10-14T23:41:04": {
+   "publicado_em": "2026-10-14T23:41:04",
+   "motivo": "deck do DESSEM de 2026-10-13",
+   "insumos": {
+    "deck_dessem": "2026-10-13",
+    "pld_publicado": "2026-10-10",
+    "decomp": "2026-10 sem3 pub1 (RV2)",
+    "modelo": "v1"
+   },
+   "origem": "2026-10-14",
+   "decomp_vigente": 57.35,
+   "premissas": {
+    "útil": {
+     "dias": 9,
+     "horas_piso": 7.0,
+     "frac_fora": -0.0202,
+     "premio_ponta": 126.8769
+    },
+    "sábado": {
+     "dias": 2,
+     "horas_piso": 8.0,
+     "frac_fora": -0.1532,
+     "premio_ponta": 3.485
+    },
+    "domingo/feriado": {
+     "dias": 3,
+     "horas_piso": 8.0,
+     "frac_fora": -0.2252,
+     "premio_ponta": 2.5375
+    }
+   },
+   "previsao": [
+    {
+     "mes": "2026-10",
+     "h": 1,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 71.82
+    },
+    {
+     "mes": "2026-11",
+     "h": 2,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 70.9
+    },
+    {
+     "mes": "2026-12",
+     "h": 3,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 72.49
+    },
+    {
+     "mes": "2027-01",
+     "h": 4,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 71.15
+    },
+    {
+     "mes": "2027-02",
+     "h": 5,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 71.1
+    },
+    {
+     "mes": "2027-03",
+     "h": 6,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 72.49
+    }
+   ]
+  }
+ }
+}

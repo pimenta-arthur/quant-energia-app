@@ -16,7 +16,7 @@ import pandas as pd
 
 from qe_core.armazenamento import Armazenamento, ler_parquet
 from qe_risk_lab_dessem import chaves, tratamento
-from qe_risk_lab_dessem.modelo import MODELO, SUBMERCADOS
+from qe_risk_lab_dessem.modelo import MODELO, SUBMERCADOS, TIPOS_DIA
 
 
 def _r(x, c=1):
@@ -275,8 +275,6 @@ def contribuicao(hr: dict, anos: list[int]) -> dict:
     {sub: {periodo: {meses, total, linhas: [{tipo, faixa, nh, contrib, medio, dias, piso, abaixo,
     acima}]}}}. Antes era calculado no navegador (pesquisa, app.js desenharContrib).
     """
-    from qe_risk_lab_dessem.modelo import TIPOS_DIA
-
     out = {}
     for sub, por_mes in hr["mensal"].items():
         meses = sorted(por_mes)
@@ -531,6 +529,265 @@ def mecanismos_se(arm: Armazenamento, tipos: pd.Series) -> list:
     return linhas
 
 
+# --- bloco 7: simulador do PLD médio do mês (SE/CO) ------------------------------------------------
+
+
+def _registros(df: pd.DataFrame) -> list:
+    """Como a pesquisa grava as tabelas do simulador: `to_json` (10 algarismos significativos)."""
+    return json.loads(df.to_json(orient="records", force_ascii=False))
+
+
+def _backtest_pagina(bt: pd.DataFrame) -> list:
+    from qe_risk_lab_dessem import simulador as S
+
+    bt = bt.assign(
+        direcao_prevista=S.classe(bt["delta_prev"]).to_numpy(),
+        direcao_real=S.classe(bt["delta_real"]).to_numpy(),
+    )
+    cols = ["mes", "h", "decomp", "real", "prev", "erro", "delta_real", "delta_prev"]
+    return _registros(bt[[*cols, "direcao_prevista", "direcao_real"]].round(2))
+
+
+def _confianca(bt: pd.DataFrame) -> list:
+    from qe_risk_lab_dessem import simulador as S
+
+    conf = []
+    for hz, e in S.estatisticas(bt).items():
+        for dp, linha in e["matriz"].iterrows():
+            conf.append(
+                {
+                    "h": int(hz),
+                    "direcao_prevista": dp,
+                    "meses": int(e["n"].get(dp, 0)),
+                    "acerto": float(linha.get(dp, 0.0)),
+                    "desconto": float(linha.get("desconto", 0.0)),
+                    "neutro": float(linha.get("neutro", 0.0)),
+                    "premio": float(linha.get("prêmio", 0.0)),
+                    "erro_p10": float(e["erro_p10"]),
+                    "erro_p90": float(e["erro_p90"]),
+                    "erro_abs": float(e["erro_abs"]),
+                    "acerto_geral": float(e["acerto"]),
+                    "meses_total": int(e["meses"]),
+                }
+            )
+    return _registros(pd.DataFrame(conf).round(4))
+
+
+def simulador(b, bt: pd.DataFrame) -> dict:
+    """Chaves da página do simulador (pesquisa: pagina._premissas e simulador.exportar_pagina)."""
+    from qe_risk_lab_dessem import simulador as S
+
+    h = b.hs
+    origem = h["data"].max() + pd.Timedelta(days=1)
+    janelas = {}
+    for X in MODELO.janelas_pagina:
+        pr = S.premissas_s_por_tipo(S.janela(h, origem, X))
+        janelas[X] = {t: {k: _r(v, 4) for k, v in p.items()} for t, p in pr.items()}
+        janelas[X]["inicio"] = str((origem - pd.Timedelta(days=X)).date())
+        janelas[X]["fim"] = str((origem - pd.Timedelta(days=1)).date())
+    tr = S.trajetoria_diaria(h, max(MODELO.janelas_pagina))
+    cols_tr = [
+        "horas_piso",
+        "frac_fora",
+        "premio_ponta",
+        "ponta_media",
+        "ponta_max_hora",
+        "decomp",
+        "espaco",
+    ]
+    trajetoria = [
+        [r.data.strftime("%Y-%m-%d"), r.tipo, *(_r(getattr(r, c), 3) for c in cols_tr)]
+        for r in tr.itertuples()
+    ]
+    cols = ["horas_piso", "frac_fora", "premio_ponta", "ponta_media", "decomp", "espaco"]
+    hp = S.historico_premissas_s(h, MODELO.janela)
+    hist = {
+        t: [
+            [r.data.strftime("%Y-%m-%d"), *(_r(getattr(r, c), 3) for c in cols)]
+            for r in x.itertuples()
+        ]
+        for t, x in hp.groupby("tipo")
+    }
+    pm = S.ponta_mensal(h)
+    pm = pm[pm["mes"] >= "2024-07"]
+    cols_pm = ["ponta", "premio", "ponta_min_dia", "ponta_max_dia", "ponta_max_hora", "decomp"]
+    ponta = {
+        t: [
+            {
+                "mes": r.mes,
+                **{c: _r(getattr(r, c), 1) for c in cols_pm},
+                "dias": int(r.dias),
+                "dias_premio_100": int(r.dias_premio_100),
+            }
+            for r in x.itertuples()
+        ]
+        for t, x in pm.groupby("tipo")
+    }
+    hm = S.historico_mensal_s(b)
+    cols_hm = [c for c in hm.columns if c not in ("mes", "tipo", "dias", "rv0")]
+    mensal = {
+        t: [
+            {
+                "mes": r["mes"],
+                "dias": int(r["dias"]),
+                "rv0": r.get("rv0") if isinstance(r.get("rv0"), str) else None,
+                **{c: _r(r[c], 4 if c.endswith("frac_fora") else 2) for c in cols_hm},
+            }
+            for r in x.to_dict("records")
+        ]
+        for t, x in hm.groupby("tipo")
+    }
+    mr = S.mensal_realizado_s(h)
+    est = S.niveis_estresse(h, origem)
+    pdia = S.ponta_diaria(h)
+    return {
+        "janela_padrao": MODELO.janela,
+        "calendario": _registros(pd.DataFrame(S.calendario(b, origem))),
+        "backtest": _backtest_pagina(bt),
+        "confianca": _confianca(bt),
+        "premissas_mensal": mensal,
+        "ponta_janelas": _ponta_janelas(h, mr),
+        "ponta_horas": _ponta_horas(h),
+        "ponta_dias": {
+            t: [_r(v, 1) for v in x["ponta"].tolist()]
+            for t, x in pdia.loc[pdia.index > pdia.index.max() - pd.Timedelta(days=365)].groupby(
+                "tipo"
+            )
+        },
+        "ref_fora": {
+            t: {**v, "valor": _r(v["valor"], 4)}
+            for t, v in {t: S.ref_fora_em(mr, origem, t) for t in [*S.TIPOS_DIA, "todos"]}.items()
+        },
+        "premissas_janelas": janelas,
+        "trajetoria": {"colunas": ["data", "tipo", *cols_tr], "dias": trajetoria},
+        "premissas_hist": {"janela": MODELO.janela, "colunas": ["data", *cols], "tipos": hist},
+        "ponta_mensal": ponta,
+        "estresse": {
+            r.tipo: {
+                "com": _r(r.com_estresse, 1),
+                "sem": _r(r.sem_estresse, 1),
+                "meses": int(r.meses),
+                "de": r.de,
+                "ate": r.ate,
+            }
+            for r in est.itertuples()
+        },
+    }
+
+
+def _ponta_horas(h: pd.DataFrame, desde: str = "2024-07") -> dict:
+    """Preço de cada hora de 18h a 21h, por mês civil e tipo de dia (D072)."""
+    p = h[h["grupo_s"] == "ponta"].copy()
+    p["mes"] = p["data"].dt.strftime("%Y-%m")
+    p = p[p["mes"] >= desde]
+    out = {}
+    for (mes, t), x in p.groupby(["mes", "tipo"]):
+        out.setdefault(mes, {})[t] = [round(v) for v in x["pld_dessem"].tolist()]
+    return out
+
+
+def _ponta_janelas(h: pd.DataFrame, mr: pd.DataFrame) -> dict:
+    """Por tipo de dia (D064, D065): preço médio da ponta, prêmio e DECOMP médio nas janelas móveis de
+    7/14/30/60 dias (cada data usa só os dias anteriores) e a média dos 12 meses encerrados."""
+    from qe_risk_lab_dessem import simulador as S
+
+    hps = {X: S.historico_premissas_s(h, X, desde="2025-01-01") for X in (7, 14, 30, 60)}
+    out = {}
+    for t in S.TIPOS_DIA:
+        base = hps[14][hps[14]["tipo"] == t].set_index("data")
+        d = {"datas": [x.strftime("%Y-%m-%d") for x in base.index]}
+        for X, hp in hps.items():
+            x = hp[hp["tipo"] == t].set_index("data")
+            d[str(X)] = [_r(v, 1) for v in x["ponta_media"].tolist()]
+            d[f"{X}p"] = [_r(v, 1) for v in x["premio_ponta"].tolist()]
+            d[f"{X}d"] = [_r(v, 1) for v in x["decomp"].tolist()]
+        x = mr[(mr["tipo"] == t) & (mr["fim"] < base.index.max())].tail(MODELO.meses_ref_fora)
+        d["ref12"] = {
+            "valor": _r(x["ponta_media"].mean(), 1),
+            "premio": _r(x["premio_ponta"].mean(), 1),
+            "decomp": _r(x["decomp"].mean(), 1),
+            "de": x["mes"].min(),
+            "ate": x["mes"].max(),
+        }
+        out[t] = d
+    return out
+
+
+# As contas abaixo eram feitas na página do simulador (pesquisa, app.js); aqui, sobre os mesmos valores
+# já arredondados das chaves acima, na ordem de soma e com a interpolação do JS.
+
+
+def _quantil_js(vs: list[float], p: float) -> float:
+    """Quantil com interpolação linear (como `q` no JS e `np.quantile`), sobre a lista ordenada."""
+    o = sorted(vs)
+    k = (len(o) - 1) * p
+    a, b = math.floor(k), math.ceil(k)
+    return o[a] + (o[b] - o[a]) * (k - a)
+
+
+def contas_simulador(d: dict, ultimo_dia: str) -> dict:
+    """Desempenho por antecedência no regime atual, preço padrão da sensibilidade (p90 das horas de
+    ponta dos dias úteis do mês corrente; D073), médias de 12 meses das premissas por tipo de dia e
+    percentis 10/50/90 da ponta de cada mês (dispersão)."""
+    regime = [r for r in d["backtest"] if r["mes"] >= MODELO.regime_desde]
+    desempenho = []
+    for hz in range(1, MODELO.horizontes + 1):
+        rs = [r for r in regime if r["h"] == hz]
+        if not rs:
+            continue
+        desempenho.append(
+            {
+                "h": hz,
+                "erro": sum(abs(r["erro"]) for r in rs) / len(rs),
+                "vies": sum(r["erro"] for r in rs) / len(rs),
+                "dir": sum(r["direcao_prevista"] == r["direcao_real"] for r in rs) / len(rs),
+                "dec": sum(abs(r["real"] - r["decomp"]) for r in rs) / len(rs),
+                "meses": len(rs),
+            }
+        )
+    ult_mes = max(d["ponta_horas"])
+    horas_mes = d["ponta_horas"][ult_mes].get("útil", [])
+    parcial = ultimo_dia[:7]
+    R = {t: {r["mes"]: r for r in d["premissas_mensal"].get(t, [])} for t in TIPOS_DIA}
+    fech = [m for m in sorted(R["útil"]) if m < parcial][-MODELO.meses_ref_fora :]
+
+    def media12(t, k, filtrar_espaco=False):
+        vs = [
+            R[t][m][k]
+            for m in fech
+            if m in R[t]
+            and (not filtrar_espaco or R[t][m]["espaco"] >= MODELO.espaco_min)
+            and R[t][m][k] is not None
+        ]
+        return sum(vs) / len(vs) if vs else None
+
+    return {
+        "desempenho": desempenho,
+        "sensibilidade": {
+            "mes": ult_mes,
+            "preco": _quantil_js(horas_mes, MODELO.q_sensibilidade) if horas_mes else None,
+            "pct": MODELO.pct_sensibilidade,
+        },
+        "media12": {
+            "de": fech[0] if fech else None,
+            "ate": fech[-1] if fech else None,
+            **{
+                t: {
+                    "horas_piso": media12(t, "horas_piso"),
+                    "frac_fora": media12(t, "frac_fora", filtrar_espaco=True),
+                    "ponta_media": media12(t, "ponta_media"),
+                    "premio_ponta": media12(t, "premio_ponta"),
+                }
+                for t in TIPOS_DIA
+            },
+        },
+        "ponta_quantis": {
+            mes: {t: [_quantil_js(v, q) for q in (0.1, 0.5, 0.9)] for t, v in pt.items() if v}
+            for mes, pt in d["ponta_horas"].items()
+        },
+    }
+
+
 # --- montagem e gravação -----------------------------------------------------------------------------
 
 
@@ -562,6 +819,68 @@ def dados(arm: Armazenamento) -> dict:
     }
 
 
+def dados_simulador(arm: Armazenamento, ultimo_dia: str) -> dict:
+    """Chaves do simulador (bloco 7), com o backtest gravado pelo tratamento."""
+    from qe_risk_lab_dessem import simulador as S
+
+    d = simulador(S.Base(arm), ler_parquet(arm, chaves.PROC_BACKTEST))
+    return d | contas_simulador(d, ultimo_dia)
+
+
+class RodadaRepetida(Exception):
+    """Insumos e modelo iguais aos da última rodada: publicar de novo exige --forcar e --motivo."""
+
+
+def carregar_registro(arm: Armazenamento) -> dict:
+    if not arm.existe(chaves.SERVING_REGISTRO):
+        return {"rodadas": {}}
+    return json.loads(arm.ler_bytes(chaves.SERVING_REGISTRO).decode("utf-8"))
+
+
+def insumos(arm: Armazenamento, ref: dict) -> dict:
+    """O que define uma rodada do simulador: último deck do DESSEM, último dia de PLD publicado, último
+    deck do DECOMP (PMO, semana e publicação) e a versão do modelo."""
+    dec = ler_parquet(arm, chaves.PROC_DECOMP)
+    u = dec.sort_values(["pmo", "sem", "publicacao"]).iloc[-1]
+    return {
+        "deck_dessem": ref["ultimo_dia"],
+        "pld_publicado": ref["ultimo_publicado"],
+        "decomp": f"{u['pmo']} sem{int(u['sem'])} pub{int(u['publicacao'])} (RV{int(u['rv'])})",
+        "modelo": MODELO.versao,
+    }
+
+
+def rodada(arm: Armazenamento, d: dict, ins: dict, motivo: str) -> dict:
+    """Rodada do simulador: premissas padrão por tipo de dia na origem (janela padrão; desconto das
+    outras horas pela média de 12 meses) e o PLD de cada mês do calendário com o DECOMP vigente."""
+    from qe_risk_lab_dessem import simulador as S
+
+    b = S.Base(arm)
+    origem = b.hs["data"].max() + pd.Timedelta(days=1)
+    pr = S.premissas_na_origem(b, origem)
+    dv = d["referencia"][0]["decomp_vigente"]
+    return {
+        "publicado_em": datetime.now().isoformat(timespec="seconds"),
+        "motivo": motivo,
+        "insumos": ins,
+        "origem": str(origem.date()),
+        "decomp_vigente": dv,
+        "premissas": {
+            t: {k: round(pr[t][k], 4) for k in ("dias", "horas_piso", "frac_fora", "premio_ponta")}
+            for t in TIPOS_DIA
+        },
+        "previsao": [
+            {
+                "mes": c["mes"],
+                "h": c["h"],
+                "piso": c["piso"],
+                "pld_com_decomp_vigente": round(S.prever_mes(pr, c, dv), 2),
+            }
+            for c in d["calendario"]
+        ],
+    }
+
+
 def estado(arm: Armazenamento, d: dict) -> dict:
     """Premissas do topo da página: datas da base, dias com PLD calculado e versão do modelo."""
     t1 = ler_parquet(arm, chaves.PROC_PLD)
@@ -578,10 +897,28 @@ def estado(arm: Armazenamento, d: dict) -> dict:
     }
 
 
-def publicar(arm: Armazenamento) -> dict:
-    """Regrava serving/risk_lab_dessem/ com os dados atuais. Devolve o estado publicado."""
+def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False) -> dict:
+    """Regrava serving/risk_lab_dessem/ (acompanhamento e simulador) com os dados atuais e registra uma
+    rodada do simulador quando os insumos mudaram. Devolve o estado publicado (com `nova_rodada`)."""
     d = dados(arm)
-    e = estado(arm, d)
+    d |= dados_simulador(arm, d["referencia"][0]["ultimo_dia"])
+    reg = carregar_registro(arm)
+    ins = insumos(arm, d["referencia"][0])
+    ultima = max(reg["rodadas"]) if reg["rodadas"] else None
+    repetida = ultima is not None and reg["rodadas"][ultima]["insumos"] == ins
+    if repetida and forcar and not motivo:
+        raise RodadaRepetida("--forcar exige --motivo")
+    nova = not repetida or forcar
+    if nova:
+        motivo = motivo or f"deck do DESSEM de {ins['deck_dessem']}"
+        rid = datetime.now().isoformat(timespec="seconds")
+        reg["rodadas"][rid] = rodada(arm, d, ins, motivo)
+        arm.gravar_bytes(
+            (json.dumps(reg, ensure_ascii=False, indent=1) + "\n").encode("utf-8"),
+            chaves.SERVING_REGISTRO,
+        )
+        ultima = rid
+    e = estado(arm, d) | {"rodada": ultima, "nova_rodada": nova}
     for nome, valor in {**d, "estado": e}.items():
         arm.gravar_bytes(
             json.dumps(valor, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),

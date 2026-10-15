@@ -72,8 +72,19 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 - Tratamento incremental: as tabelas do DESSEM são particionadas por mês (`processed/risk_lab_dessem/dessem/…/mes=`)
   e só refeitas quando os dias completos do mês mudam; DECOMP e T1–T5 são refeitos inteiros (segundos).
 - Acompanhamento (blocos 1–6) é descritivo: `publicar` regrava `serving/risk_lab_dessem/<chave>.json` sem registro de
-  rodada. Registro de rodadas só no simulador (bloco 7), como nas bandeiras.
-- Definições do método (vale 8h–15h, ponta 18h–21h, tolerância do piso) só em `qe_risk_lab_dessem.modelo.MODELO`.
+  rodada. O simulador (bloco 7) registra uma rodada a cada `publicar` com insumo novo (deck do DESSEM, PLD publicado,
+  DECOMP ou modelo); insumos iguais não geram rodada (`--forcar --motivo` para forçar).
+- `serving/risk_lab_dessem/historico_simulador.json` é o registro das rodadas do simulador: não apagar nem recalcular;
+  versionado no git (exceção no .gitignore); commitar depois de cada publicação com rodada nova.
+- A conta do simulador roda no navegador (`web/risk_lab_dessem/simulador_conta.js`) e no Python
+  (`qe_risk_lab_dessem.simulador`): mudar uma exige mudar a outra; o teste de paridade compara as duas (precisa de node).
+- Rótulos obrigatórios do simulador: janela de 14 dias escolhida dentro da amostra (D057); backtest condicional ao
+  DECOMP (entra o realizado); premissas fora da amostra.
+- Definições e parâmetros do método (vale, ponta, tolerância do piso, janela, 12 meses, limiar de direção…) só em
+  `qe_risk_lab_dessem.modelo.MODELO` (hoje `v1`). Mudar = versão nova (decisão na pesquisa, `congelar`, tag
+  `risk_lab_dessem-modelo-<versão>`, metodologia da versão anterior guardada, como nas bandeiras).
+- Feriados dos meses sem deck: lista `FERIADOS_FUTUROS` (até mar/2027). Equivalência "sem patamar pesado" × AAC001
+  conferida em 2026-10-14 (1.347 dias, 34 feriados, sem divergência): trocar pelo AAC001 é decisão da pesquisa.
 - Testes: `tests/referencias/risk_lab_dessem/` (períodos fechados: jul–set/2026), regerados com
   `qe risk_lab_dessem congelar`. Paridade com a pesquisa é opt-in (`QE_PARIDADE_RISK_LAB_DESSEM=<pasta do pacote>`).
 - Contas que não dependem do usuário ficam no Python; o JS da página só desenha (exceção: a conta do simulador,

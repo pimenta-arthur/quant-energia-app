@@ -541,11 +541,16 @@ def tratar_tabelas(arm: Armazenamento) -> dict:
     t3 = tipos_de_dia(sist, dec, t1, pub["data"].max()).reset_index()
     gravar_parquet(arm, t3, chaves.PROC_TIPOS)
     gravar_parquet(arm, delta_mes_civil(t2), chaves.PROC_DELTA)
+    from qe_risk_lab_dessem import simulador  # depende das tabelas acima
+
+    bt = simulador.backtest(simulador.Base(arm))
+    gravar_parquet(arm, bt, chaves.PROC_BACKTEST)
     calc = t1.loc[t1["origem"] != "publicado", "data"]
     return {
         "ultimo_deck": sist["data"].max(),
         "ultimo_publicado": pub["data"].max(),
         "dias_calculados": sorted(calc.unique()),
         "semanas_decomp": int(dec[["pmo", "sem"]].drop_duplicates().shape[0]),
+        "backtest": f"{bt['mes'].min()} a {bt['mes'].max()}, {len(bt)} previsões",
         "avisos": avisos,
     }

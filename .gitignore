@@ -7,6 +7,9 @@
 !/data/serving/forecast_bandeiras/
 /data/serving/forecast_bandeiras/*
 !/data/serving/forecast_bandeiras/historico_projecoes.json
+!/data/serving/risk_lab_dessem/
+/data/serving/risk_lab_dessem/*
+!/data/serving/risk_lab_dessem/historico_simulador.json
 .cache/
 .env
 

@@ -54,8 +54,12 @@ PROC_PLD = f"{PROC}/pld_horario.parquet"  # T1: publicado + calculado do deck
 PROC_HORARIO = f"{PROC}/mensal_horario.parquet"  # T2: hora a hora com o DECOMP vigente
 PROC_TIPOS = f"{PROC}/tipos_de_dia.parquet"  # T3
 PROC_DELTA = f"{PROC}/mensal_delta.parquet"  # T5: desvio do mês civil por bloco
+PROC_BACKTEST = f"{PROC}/backtest_simulador.parquet"  # bloco 7: v1 simplificada, fora da amostra
 
 SERVING = "serving/risk_lab_dessem"
+# Registro das rodadas publicadas do simulador, como foram publicadas (não apagar nem recalcular);
+# versionado no git até a fase AWS, como o das bandeiras.
+SERVING_REGISTRO = f"{SERVING}/historico_simulador.json"
 
 
 def serving(nome: str) -> str:

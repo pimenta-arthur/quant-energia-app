@@ -62,6 +62,7 @@ def tratar(
     for a in r["avisos"]:
         typer.echo(f"aviso: {a}")
     typer.echo(f"tabelas-base refeitas ({r['semanas_decomp']} semanas do DECOMP)")
+    typer.echo(f"backtest do simulador: {r['backtest']}")
     status()
 
 
@@ -142,17 +143,36 @@ def atualizar(
 
 
 @app.command()
-def publicar():
-    """Regrava os dados da página (serving/risk_lab_dessem/) com a base atual. Sem registro de rodada."""
+def publicar(
+    motivo: str | None = typer.Option(
+        None, help="Por que esta rodada do simulador (padrão: o deck do DESSEM do dia)."
+    ),
+    forcar: bool = typer.Option(
+        False, help="Registra rodada do simulador mesmo sem mudança de insumo (exige --motivo)."
+    ),
+):
+    """Regrava as páginas (serving/risk_lab_dessem/) e registra uma rodada do simulador se os insumos
+    mudaram. O acompanhamento não tem registro de rodada."""
     from qe_risk_lab_dessem import publicacao
 
-    e = publicacao.publicar(armazenamento())
+    try:
+        e = publicacao.publicar(armazenamento(), motivo, forcar)
+    except publicacao.RodadaRepetida as erro:
+        typer.echo(f"não publicado: {erro}")
+        raise typer.Exit(1) from erro
     calc = e["calculados"]
     typer.echo(
-        f"página do PLD horário publicada: dados até {e['ultimo_deck']}, PLD publicado até "
+        f"páginas publicadas: dados até {e['ultimo_deck']}, PLD publicado até "
         f"{e['ultimo_publicado']}"
         + (f" (calculado do deck de {calc[0]} a {calc[1]})" if calc else "")
     )
+    if e["nova_rodada"]:
+        typer.echo(
+            f"simulador: rodada {e['rodada']} registrada; lembre de commitar "
+            "data/serving/risk_lab_dessem/historico_simulador.json"
+        )
+    else:
+        typer.echo(f"simulador: insumos iguais aos da rodada {e['rodada']} (nenhuma rodada nova)")
 
 
 @app.command()

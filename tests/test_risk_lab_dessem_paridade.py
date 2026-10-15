@@ -114,3 +114,15 @@ def test_R8_blocos_3_e_4(arm):
 def test_R8_bloco6(arm):
     ref = json.loads((Path(PASTA) / "R8_bloco6_mecanismos.json").read_text(encoding="utf-8"))
     assert publicacao.mecanismos_se(arm, publicacao._tipos(arm)) == ref["mecanismos_se"]
+
+
+def test_R8_bloco7_e_R9_backtest(arm):
+    from qe_risk_lab_dessem import chaves
+
+    ref = json.loads((Path(PASTA) / "R8_bloco7_simulador.json").read_text(encoding="utf-8"))
+    d = json.loads(json.dumps(publicacao.dados_simulador(arm, "2026-10-13")))
+    for k in ref:
+        assert d[k] == ref[k], k
+    bt = ler_parquet(arm, chaves.PROC_BACKTEST)
+    r = pd.read_parquet(Path(PASTA) / "R9_backtest_v1s.parquet")
+    _igual(bt, r.drop(columns="versao"), ["mes", "h"], atol=0.01)
