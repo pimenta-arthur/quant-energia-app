@@ -853,59 +853,5 @@
   "cor_li": "Verde",
   "cor_ls": "Verde",
   "prob": "Vd 100%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2026-11",
-  "h": 1,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 81% Am 18%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2026-12",
-  "h": 2,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 100%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2027-01",
-  "h": 3,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 100%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2027-02",
-  "h": 4,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 100%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2027-03",
-  "h": 5,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 100%"
- },
- {
-  "deck": "2026-10",
-  "alvo": "2027-04",
-  "h": 6,
-  "cor_esp": "Verde",
-  "cor_li": "Verde",
-  "cor_ls": "Verde",
-  "prob": "Vd 100%"
  }
 ]

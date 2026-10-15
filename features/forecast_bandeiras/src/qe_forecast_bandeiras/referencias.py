@@ -4,8 +4,8 @@ Servem de rede de segurança nos testes: se uma mudança de código altera algum
 querer, o teste falha. Quando a mudança é intencional (dados novos no histórico ou versão nova do
 modelo), regera-se com `qe forecast_bandeiras congelar` e a diferença aparece no commit para revisão.
 
-Conteúdo (um JSON por parte): backtest (previsões com bandeira oficial), oráculo, rodadas
-reconstruídas e a projeção da rodada de referência (deck de set/2026 com a emissão de 01/09/2026,
+Conteúdo (um JSON por parte), só no período fechado (decks e meses-alvo até `ATE`): backtest
+(previsões com bandeira oficial), oráculo, rodadas reconstruídas e a projeção da rodada de referência (deck de set/2026 com a emissão de 01/09/2026,
 a mesma publicada pelo forecast-bandeiras-analytics).
 """
 
@@ -18,6 +18,9 @@ from qe_core.armazenamento import Armazenamento
 from qe_forecast_bandeiras import backtest, insumos, modelo, projecao
 
 RODADA_REFERENCIA = ("2026-09", "2026-09-01")  # (deck, emissão do ECMWF)
+# período fechado: decks e meses-alvo até aqui não mudam com dados novos (o backtest só usa o que
+# existia na data de cada deck), então um deck ou uma bandeira oficial nova não quebra os testes
+ATE = "2026-09"
 CASAS = 6
 
 
@@ -46,13 +49,18 @@ def calcular(arm: Armazenamento) -> dict[str, list | dict]:
     cen = cen.rename(columns=lambda c: c.replace(" ", "_"))
     cenarios = [f"{k}_{n}" for n in ("esp", "li", "ls") for k in ("gsf", "pld", "cor")]
     base = ["deck", "alvo", "h", "gsf_medio", "pld_medio", "cor_media"]
+    fechado = lambda rs: [r for r in rs if r["deck"] <= ATE and r["alvo"] <= ATE]
     return {
         "modelo": modelo.MODELO.como_dict(),
-        "backtest": _registros(bt["referencia"], base + ["cor_oficial"]),
-        "oraculo": _registros(bt["oraculo"], base),
-        "rodadas": _registros(
-            bt["rodadas"], ["deck", "alvo", "h", "cor_esp", "cor_li", "cor_ls", "prob"]
-        ),
+        "backtest": fechado(_registros(bt["referencia"], base + ["cor_oficial"])),
+        "oraculo": fechado(_registros(bt["oraculo"], base)),
+        "rodadas": [
+            r
+            for r in _registros(
+                bt["rodadas"], ["deck", "alvo", "h", "cor_esp", "cor_li", "cor_ls", "prob"]
+            )
+            if r["deck"] <= ATE
+        ],
         "projecao_referencia": _registros(
             cen, ["alvo", "h", *cenarios, "p_Verde", "p_Amarela", "p_Vermelha_1", "p_Vermelha_2"]
         ),

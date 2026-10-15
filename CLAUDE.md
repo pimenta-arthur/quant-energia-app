@@ -47,7 +47,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   são versionados em raw/ (deck=AAAA-MM/v=<hash>, emissao=AAAA-MM-DD). O backtest segue mensal (D031).
 - Modelo versionado em `qe_forecast_bandeiras.modelo.MODELO` (hoje `v1`). Mudar parâmetro ou lógica do método
   = versão nova: decisão no analytics, `qe forecast_bandeiras congelar`, tag `modelo-<versão>` no git.
-- Testes: `tests/referencias/forecast_bandeiras/<versão>/` (modelo) e `…/tratamento/` (dados tratados), regerados
+- Testes: `tests/referencias/forecast_bandeiras/<versão>/` (modelo; só decks e meses-alvo até `referencias.ATE`,
+  para dados novos não quebrarem o teste) e `…/tratamento/` (dados tratados), regerados
   com `qe forecast_bandeiras congelar`.
 - Nunca regenerar referências para "fazer o teste passar" sem entender a diferença.
 - Checklist ao criar uma versão nova do modelo (ex.: v2):

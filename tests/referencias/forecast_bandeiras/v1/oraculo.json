@@ -664,14 +664,6 @@
   "cor_media": "Amarela"
  },
  {
-  "deck": "2026-04",
-  "alvo": "2026-10",
-  "h": 6,
-  "gsf_medio": 0.8,
-  "pld_medio": 65.957788,
-  "cor_media": "Verde"
- },
- {
   "deck": "2026-05",
   "alvo": "2026-06",
   "h": 1,
@@ -702,21 +694,5 @@
   "gsf_medio": 0.72,
   "pld_medio": 171.117976,
   "cor_media": "Amarela"
- },
- {
-  "deck": "2026-05",
-  "alvo": "2026-10",
-  "h": 5,
-  "gsf_medio": 0.77,
-  "pld_medio": 111.633524,
-  "cor_media": "Verde"
- },
- {
-  "deck": "2026-09",
-  "alvo": "2026-10",
-  "h": 1,
-  "gsf_medio": 0.81,
-  "pld_medio": 101.62991,
-  "cor_media": "Verde"
  }
 ]
