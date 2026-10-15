@@ -113,6 +113,21 @@
       <p class="leg">% das horas de cada hora do dia em que o PLD ficou no piso (ou abaixo do DECOMP vigente), por tipo de dia. Semana operativa de sábado a sexta; RV = revisão do DECOMP vigente na semana.</p>
     </details>
 
+
+    <details class="bloco" id="mecanismos">
+      <summary class="ttl" id="s-mec">Mecanismos do vale · SE/CO</summary>
+      <p class="sub">Por que o vale vai ao piso: quando a hidráulica necessária encosta na mínima, ou quando o SE se acopla ao Norte na cheia de Belo Monte.</p>
+    <div class="grid2">
+      <div class="bloco"><div class="ttl">Folga hidráulica no vale do dia útil (SIN)</div>
+        <div class="legenda-mini"><span><i class="l" style="border-color:var(--accent)"></i>Hidráulica necessária</span><span><i class="l" style="border-color:var(--v1)"></i>Hidráulica mínima revelada</span><span><i style="background:color-mix(in srgb, var(--ink-3) 45%, transparent)"></i>Renovável cortada</span></div>
+        <svg id="g-folga" viewBox="0 0 520 240" role="img" aria-label="Hidráulica necessária e mínima revelada"></svg>
+        <p class="leg">GW médios, 8h–15h. Necessária = demanda − renovável prevista − térmica mínima. Mínima revelada = hidráulica do DESSEM nos dias com o vale todo no piso (resultado do modelo). Quando as linhas se encostam, o vale vai ao piso e sobra renovável cortada.</p></div>
+      <div class="bloco"><div class="ttl">Acoplamento SE–Norte e Belo Monte</div>
+        <div class="legenda-mini"><span><i style="background:color-mix(in srgb, var(--accent) 30%, transparent)"></i>% dos dias úteis com SE acoplado ao N no vale</span><span><i class="l" style="border-color:var(--v1)"></i>Valor da água de Belo Monte</span></div>
+        <svg id="g-acopl" viewBox="0 0 520 240" role="img" aria-label="Acoplamento SE-Norte e valor da água de Belo Monte"></svg>
+        <p class="leg">Na cheia do Xingu a água de Belo Monte perde valor; se o SE está acoplado ao Norte, o vale do SE vai ao piso (mar/2026). Valor da água a partir de abr/2025 (formato anterior do deck não lido).</p></div>
+    </div>
+    </details>
   </section>
 
   <div class="aviso">

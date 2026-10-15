@@ -44,6 +44,7 @@ CHAVES = {
     "bloco5_horas": ["sub", "mes", "tipo", "hora"],
     "bloco4_perfis": ["var", "sub", "mes", "hora"],
     "bloco4_indicadores": ["sub", "periodo", "ano"],
+    "bloco6_mecanismos": ["mes"],
 }
 
 

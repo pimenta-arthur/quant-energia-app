@@ -1,7 +1,7 @@
 // Página do PLD horário (acompanhamento). Desenho portado de risk-lab-dessem-analytics/web/pld_horario/app.js;
 // as contas que não dependem do usuário vêm prontas do Python (serving/risk_lab_dessem/<chave>.json).
 (async function () {
-  const CHAVES = ["estado", "referencia", "dias_nivel", "dias_perfil", "semanas_perfil", "revisoes", "desvio_mensal", "dias_blocos", "horas", "contribuicao", "perfis", "perfis_dia", "calor", "media_mes", "indicadores"];
+  const CHAVES = ["estado", "referencia", "dias_nivel", "dias_perfil", "semanas_perfil", "revisoes", "desvio_mensal", "dias_blocos", "horas", "contribuicao", "perfis", "perfis_dia", "calor", "media_mes", "indicadores", "mecanismos_se"];
   const D = {};
   try {
     await Promise.all(CHAVES.map(async k => {
@@ -524,6 +524,23 @@
           dica: hh => `<b>RV${W.rv} · semana de ${dataBr(sm)} · ${hh}h</b><br>` + TIPOS.map(([t, nome]) => { const a = W[t] && W[t][hh]; return `${nome}: ${a && a[0] ? n(100 * a[idx] / a[0]) + "% de " + a[0] + " h" : "—"}`; }).join("<br>") });
       });
     }
+
+    // ---------- mecanismos (SE/CO) ----------
+    const MC = [...D.mecanismos_se].sort((a, b) => (a.mes < b.mes ? -1 : 1)).filter(r => r.mes >= "2024-07");
+    const mxs = MC.map(r => r.mes), rotM = (mm, i) => (mm.endsWith("-01") || i === 0 ? { t: rot(mm), forte: true } : +mm.slice(5, 7) % 3 === 1 ? MES[+mm.slice(5, 7) - 1] : null);
+    linhas(document.getElementById("g-folga"), { w: 520, h: 240, xs: mxs, y0: 0, rotX: rotM,
+      barras: MC.filter(r => r.corte != null).map(r => ({ x: r.mes, v: r.corte, lw: 10, cor: "color-mix(in srgb, var(--ink-3) 45%, transparent)" })),
+      series: [{ nome: "Necessária", cor: "var(--accent)", pts: MC.map(r => [r.mes, r.hid_nec]), pontos: true }, { nome: "Mínima revelada", cor: "var(--v1)", pts: MC.map(r => [r.mes, r.gh_min]), pontos: true }],
+      dica: mm => { const r = MC.find(x => x.mes === mm); return `<b>${rotLongo(mm)}</b><br>necessária ${n(r.hid_nec, 1)} GW · mínima revelada ${n(r.gh_min, 1)} GW<br>folga ${r.hid_nec != null && r.gh_min != null ? sn(r.hid_nec - r.gh_min, 1) + " GW" : "—"} · renovável cortada ${n(r.corte, 1)} GW<br>dia útil: ${n(r.piso_util, 1)} h do vale no piso`; } });
+    (function () {
+      const vmax = Math.max(400, ...MC.map(r => r.bm_vagua || 0));
+      linhas(document.getElementById("g-acopl"), { w: 520, h: 240, xs: mxs, y0: 0, y1: 100, fmtY: v => v + "%", rotX: rotM,
+        barras: MC.filter(r => r.acopl != null).map(r => ({ x: r.mes, v: 100 * r.acopl, lw: 10, cor: "color-mix(in srgb, var(--accent) 30%, transparent)" })),
+        series: [{ nome: "Valor da água BM", cor: "var(--v1)", pts: MC.map(r => [r.mes, r.bm_vagua == null ? null : 100 * Math.max(0, r.bm_vagua) / vmax]), pontos: true }],
+        dica: mm => { const r = MC.find(x => x.mes === mm); return `<b>${rotLongo(mm)}</b><br>SE acoplado ao N em ${pct(r.acopl)} dos dias úteis (vale)<br>Belo Monte: valor da água ${r.bm_vagua == null ? "—" : "R$ " + n(r.bm_vagua, 1)} · geração ${n(r.bm_ger, 1)} GW<br>vertimento em Pimental ${r.pim_ver == null ? "—" : n(r.pim_ver) + " m³/s"}`; } });
+      const svg = document.getElementById("g-acopl");
+      S(svg, "text", { x: 514, y: 14, "text-anchor": "end", style: "fill:var(--v1)" }, `valor da água: 100% = R$ ${n(vmax)}`);
+    })();
 
     function desenharSub() { desenharPerfilDia(); desenharPerfil(); desenharIndicadores(); desenharMensal(); desenharContrib(); desenharHora(); desenharNivel(); }
     desenharSub();

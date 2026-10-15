@@ -109,3 +109,8 @@ def test_R8_blocos_3_e_4(arm):
         ref = json.loads((Path(PASTA) / nome).read_text(encoding="utf-8"))
         for k in ref:
             assert d[k] == ref[k], k
+
+
+def test_R8_bloco6(arm):
+    ref = json.loads((Path(PASTA) / "R8_bloco6_mecanismos.json").read_text(encoding="utf-8"))
+    assert publicacao.mecanismos_se(arm, publicacao._tipos(arm)) == ref["mecanismos_se"]

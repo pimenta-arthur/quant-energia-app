@@ -28,7 +28,10 @@ from qe_risk_lab_dessem.modelo import MODELO, SUBMERCADOS
 
 INICIO_PLD_HORARIO = pd.Timestamp("2021-01-01")
 PATAMAR = {"PESADA": 1, "MEDIA": 2, "LEVE": 3}
-TABELAS_DESSEM = ("sist", "renovaveis")
+TABELAS_DESSEM = ("sist", "renovaveis", "belo_monte")
+# meias-horas do vale (8h–15h: períodos 17 a 32)
+PERIODOS_VALE = range(2 * MODELO.vale[0] + 1, 2 * (MODELO.vale[-1] + 1) + 1)
+INICIO_BELO_MONTE = dt.date(2025, 1, 1)  # antes de abr/2025 o deck não traz o valor da água
 
 
 # --- inventário de raw/ ----------------------------------------------------------------------------
@@ -70,19 +73,45 @@ def inventario_dessem(arm: Armazenamento) -> Inventario:
 # --- decks do DESSEM: uma partição por mês ---------------------------------------------------------
 
 
-def _ler_mes(dias: list[tuple[dt.date, dict[str, str]]]) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Lê os dias de um mês (no processo filho): (PDO_SIST, previsão de renováveis)."""
-    sist, ren = [], []
+def _belo_monte_dia(caminho: str | None, dia: dt.date) -> dict:
+    """No vale do dia (D082): mediana do valor da água de Belo Monte (R$/MWh), médias da geração e da
+    geração máxima de Belo Monte (MW) e do vertimento de Pimental (m³/s). Vazio (NaN) antes de 2025,
+    sem o PDO_OPER_USIH.DAT ou no formato anterior a abr/2025 (sem valor da água)."""
+    linha = {"data": pd.Timestamp(dia), "bm_vagua": np.nan, "bm_ghid": np.nan}
+    linha |= {"bm_ghmax": np.nan, "pim_qver": np.nan}
+    if caminho is None or dia < INICIO_BELO_MONTE:
+        return linha
+    try:
+        u = dessem.ler_oper_usih(caminho)
+    except StopIteration, ValueError, KeyError:
+        return linha  # arquivo truncado ou em outro formato
+    u = u[u["periodo"].isin(PERIODOS_VALE)]
+    bm, pim = u[u["nome"] == "BELO MONTE"], u[u["nome"] == "PIMENTAL"]
+    if bm.empty or bm["vagua"].isna().all():
+        return linha
+    return linha | {
+        "bm_vagua": bm["vagua"].median(),
+        "bm_ghid": bm["ghid"].mean(),
+        "bm_ghmax": bm["ghmax"].mean(),
+        "pim_qver": pim["qver"].mean(),
+    }
+
+
+def _ler_mes(dias: list[tuple[dt.date, dict[str, str]]]) -> tuple[pd.DataFrame, ...]:
+    """Lê os dias de um mês (no processo filho): PDO_SIST, previsão de renováveis e Belo Monte."""
+    sist, ren, bm = [], [], []
     for dia, caminhos in dias:
         dessem.conferir_tm(caminhos["entdados.dat"], dia)
         sist.append(dessem.ler_pdo_sist(caminhos["PDO_SIST.DAT"], dia))
         ren.append(dessem.ler_renovaveis(caminhos["renovaveis.dat"], dia))
+        bm.append(_belo_monte_dia(caminhos.get("PDO_OPER_USIH.DAT"), dia))
     s = pd.concat(sist, ignore_index=True)
     r = pd.concat(ren, ignore_index=True)
     s["data"], r["data"] = pd.to_datetime(s["data"]), pd.to_datetime(r["data"])
     return (
         s.sort_values(["data", "periodo", "submercado"], ignore_index=True),
         r.sort_values(["data", "periodo", "submercado", "tipo"], ignore_index=True),
+        pd.DataFrame(bm),
     )
 
 
@@ -109,9 +138,9 @@ def tratar_dessem(arm: Armazenamento, refazer: bool = False, aviso=None) -> dict
     ]
     feitos = {}
     with ProcessPoolExecutor() as ex:
-        for mes, (sist, ren) in zip(pendentes, ex.map(_ler_mes, tarefas)):
-            gravar_parquet(arm, sist, chaves.proc_dessem("sist", mes))
-            gravar_parquet(arm, ren, chaves.proc_dessem("renovaveis", mes))
+        for mes, tabelas in zip(pendentes, ex.map(_ler_mes, tarefas)):
+            for nome, df in zip(TABELAS_DESSEM, tabelas):
+                gravar_parquet(arm, df, chaves.proc_dessem(nome, mes))
             feitos[mes] = len(pendentes[mes])
             if aviso:
                 aviso(f"DESSEM {mes}: {feitos[mes]} dias")
@@ -119,7 +148,7 @@ def tratar_dessem(arm: Armazenamento, refazer: bool = False, aviso=None) -> dict
 
 
 def ler_dessem(arm: Armazenamento, tabela: str, colunas: list[str] | None = None) -> pd.DataFrame:
-    """Todas as partições de uma tabela do DESSEM (sist ou renovaveis)."""
+    """Todas as partições de uma tabela do DESSEM (sist, renovaveis ou belo_monte)."""
     prefixo = f"{chaves.PROC}/dessem/{tabela}/"
     partes = [ler_parquet(arm, c) for c in arm.listar(prefixo) if c.endswith(".parquet")]
     d = pd.concat(partes, ignore_index=True)

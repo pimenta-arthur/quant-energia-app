@@ -5,7 +5,8 @@ como ficam guardados em raw/); o conteúdo lido é o mesmo.
 
 - `conferir_tm` (entdados.dat): os 48 primeiros registros TM são as meias-horas do dia do caso;
 - `ler_pdo_sist` (PDO_SIST.DAT): balanço por meia-hora e submercado (CMO, demanda, renovável…);
-- `ler_renovaveis` (renovaveis.dat): previsão de geração por meia-hora, submercado e tipo de fonte.
+- `ler_renovaveis` (renovaveis.dat): previsão de geração por meia-hora, submercado e tipo de fonte;
+- `ler_oper_usih` (PDO_OPER_USIH.DAT): operação de cada usina hidrelétrica por meia-hora.
 """
 
 import calendar
@@ -177,4 +178,37 @@ def ler_renovaveis(caminho: Path, data: dt.date) -> pd.DataFrame:
     d = d.rename_axis(index=["submercado", "tipo"], columns="periodo").stack().rename("mw")
     d = d.reset_index()
     d.insert(0, "data", data)
+    return d
+
+
+def ler_oper_usih(caminho: Path) -> pd.DataFrame:
+    """PDO_OPER_USIH.DAT: por período e usina hidrelétrica, subsistema, Qtur, Qver, Ghid, Ghmax,
+    Ghmin e valor da água. Decks anteriores a abr/2025 não trazem o valor da água nesse formato."""
+    linhas = texto(caminho).splitlines()
+    i = next(k for k, ln in enumerate(linhas) if ln.lstrip().startswith("IPER") and "USIH" in ln)
+    cab = [c.strip() for c in linhas[i].split(";")]
+    pos = {}
+    for k, c in enumerate(cab):
+        pos.setdefault(c, k)
+    campos = {
+        "periodo": "IPER",
+        "usih": "USIH",
+        "nome": "NomeUsih",
+        "submercado": "NomeSist",
+        "qtur": "Qtur",
+        "qver": "Qver",
+        "ghid": "Ghid",
+        "ghmax": "Ghmax",
+        "ghmin": "Ghmin",
+        "vagua": "ValorAgua",
+    }
+    reg = []
+    for ln in linhas[i + 3 :]:
+        p = ln.split(";")
+        if len(p) < len(cab) - 1 or not p[0].strip().isdigit():
+            continue
+        reg.append([p[pos[c]].strip() for c in campos.values()])
+    d = pd.DataFrame(reg, columns=list(campos))
+    for c in ["periodo", "usih", "qtur", "qver", "ghid", "ghmax", "ghmin", "vagua"]:
+        d[c] = pd.to_numeric(d[c], errors="coerce")
     return d

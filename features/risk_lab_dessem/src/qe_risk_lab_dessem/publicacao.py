@@ -477,6 +477,60 @@ def indicadores(pf: dict) -> dict:
     return out
 
 
+# --- bloco 6: mecanismos do vale (SE/CO) -------------------------------------------------------------
+
+
+def mecanismos_se(arm: Armazenamento, tipos: pd.Series) -> list:
+    """Por mês (diagnóstico com saídas do modelo; D082): horas do vale no piso do dia útil, folga
+    hidráulica no vale do dia útil (SIN, GW: necessária, mínima revelada = mediana da hidráulica do
+    modelo nos dias com o vale todo no piso, renovável cortada), % dos dias úteis com SE acoplado ao N
+    e Belo Monte nos dias úteis (mediana do valor da água; geração e vertimento de Pimental)."""
+    import numpy as np
+
+    from qe_risk_lab_dessem import vale
+
+    d = vale.dias_vale(vale.horas_vale(arm), tipos).join(vale.insumos_vale_diarios(arm))
+    cm = vale.cmo_vale_diario(arm)
+    d = d.join(((cm["SE"] - cm["N"]).abs() < vale.LIMIAR_ACOPLAMENTO).rename("acopl"))
+    u = d[d["tipo"] == "útil"]
+    gh_min = d[d["n_piso"] == len(MODELO.vale)].groupby("mes")["gh_modelo_sin"].median()
+    fol = u.groupby("mes").agg(
+        hid=("hid_nec_sin", "mean"), corte=("corte_sin", "mean"), acopl=("acopl", "mean")
+    )
+    fol["gh_min"] = gh_min
+    tipo = d.groupby(["mes", "tipo"])["n_piso"].mean().unstack()
+    bmu = vale.belo_monte_diario(arm).join(d[["mes", "tipo"]], how="inner")
+    bmm = (
+        bmu[bmu["tipo"] == "útil"]
+        .groupby("mes")
+        .agg(
+            bm_vagua=("bm_vagua", "median"),
+            bm_ger=("bm_ghid", "mean"),
+            pim_ver=("pim_qver", "mean"),
+        )
+    )
+    linhas = []
+    for mes in sorted(fol.index):
+        f = fol.loc[mes]
+        b = bmm.loc[mes] if mes in bmm.index else None
+        linhas.append(
+            {
+                "mes": mes,
+                "piso_util": _r(tipo.loc[mes].get("útil", np.nan), 2)
+                if mes in tipo.index
+                else None,
+                "hid_nec": _r(f.hid / 1000, 1),
+                "gh_min": _r(f.gh_min / 1000, 1),
+                "corte": _r(f.corte / 1000, 1),
+                "acopl": _r(f.acopl, 3),
+                "bm_vagua": _r(b.bm_vagua, 1) if b is not None else None,
+                "bm_ger": _r(b.bm_ger / 1000, 1) if b is not None else None,
+                "pim_ver": _r(b.pim_ver, 0) if b is not None else None,
+            }
+        )
+    return linhas
+
+
 # --- montagem e gravação -----------------------------------------------------------------------------
 
 
@@ -504,6 +558,7 @@ def dados(arm: Armazenamento) -> dict:
         "calor": calor(pd_),
         "media_mes": media_mes(pf),
         "indicadores": indicadores(pf),
+        "mecanismos_se": mecanismos_se(arm, tipos),
     }
 
 
