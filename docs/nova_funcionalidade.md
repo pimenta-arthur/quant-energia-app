@@ -37,7 +37,8 @@ tests/referencias/<nome>/     # resultados esperados
 - `raw/` por fonte e imutável; se a fonte publica mais de uma versão (deck republicado, emissão extra), a
   versão entra na chave (`deck=AAAA-MM/v=<hash>`, `emissao=AAAA-MM-DD`).
 - `processed/<nome>/` e `serving/<nome>/` só da funcionalidade.
-- O registro das rodadas publicadas é versionado no git (exceção no `.gitignore`) até a fase AWS.
+- `serving/<nome>/` (dados das páginas e registro das rodadas publicadas) é versionado no git até a fase AWS;
+  `raw/` e `processed/` não.
 - Documentar o formato da pasta de origem da ingestão em `docs/entrada.md` (seção da funcionalidade).
 
 ## 3. Rodadas e modelo

@@ -167,12 +167,10 @@ def publicar(
         + (f" (calculado do deck de {calc[0]} a {calc[1]})" if calc else "")
     )
     if e["nova_rodada"]:
-        typer.echo(
-            f"simulador: rodada {e['rodada']} registrada; lembre de commitar "
-            "data/serving/risk_lab_dessem/historico_simulador.json"
-        )
+        typer.echo(f"simulador: rodada {e['rodada']} registrada")
     else:
         typer.echo(f"simulador: insumos iguais aos da rodada {e['rodada']} (nenhuma rodada nova)")
+    typer.echo("lembre de commitar data/serving/risk_lab_dessem/")
 
 
 @app.command()

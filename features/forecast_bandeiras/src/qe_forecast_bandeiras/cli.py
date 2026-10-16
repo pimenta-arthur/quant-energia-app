@@ -161,7 +161,7 @@ def publicar(
         raise typer.Exit(1) from e
     typer.echo(
         f"publicada a rodada {dados['rodada']['id']} (deck {ins.deck}, ECMWF {ins.ecmwf_emissao}); "
-        "lembre de commitar data/serving/forecast_bandeiras/historico_projecoes.json"
+        "lembre de commitar data/serving/forecast_bandeiras/"
     )
 
 

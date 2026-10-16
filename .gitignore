@@ -1,15 +1,8 @@
 # dados (imitam o bucket; nunca versionar)...
 /data/*
-# ...exceto o registro das rodadas publicadas de bandeiras (versionado até a fase AWS, onde o S3
-# com versionamento assume esse papel)
+# ...exceto serving/: o que as páginas leem (inclusive os registros das rodadas publicadas), para o app abrir
+# com dados em qualquer máquina. Versionado até a fase AWS, onde o S3 com versionamento assume esse papel.
 !/data/serving/
-/data/serving/*
-!/data/serving/forecast_bandeiras/
-/data/serving/forecast_bandeiras/*
-!/data/serving/forecast_bandeiras/historico_projecoes.json
-!/data/serving/risk_lab_dessem/
-/data/serving/risk_lab_dessem/*
-!/data/serving/risk_lab_dessem/historico_simulador.json
 .cache/
 .env
 

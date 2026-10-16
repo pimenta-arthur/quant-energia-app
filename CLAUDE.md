@@ -32,7 +32,9 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   `serving/` são por funcionalidade.
 - Leitores (`qe_core.leitores`) são funções puras sobre o caminho do arquivo.
 - Configuração só por variáveis `QE_*` (ou `.env`).
-- `data/` nunca vai para o git.
+- `data/` não vai para o git, exceto `data/serving/` (o que as páginas leem, inclusive os registros das rodadas):
+  versionado para o app abrir com dados em qualquer máquina, até a fase AWS. Commitar `data/serving/` depois de
+  cada `publicar`. `raw/` e `processed/` ficam fora (pesados e binários; o histórico do git cresceria sem limite).
 - **Pendência da fase AWS:** até lá, `data/raw/` existe só na máquina local (sem backup, por escolha do
   Arthur: arquivos pesados). Na AWS, o bucket com versionamento passa a ser a cópia de segurança.
 
@@ -58,8 +60,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
      "versão anterior; em uso de … a …", e atualizar `metodologia.html` e o rótulo do topo para a versão nova;
   4. nessa hora, criar: seletor de versões na Metodologia, link de cada rodada para a metodologia da sua
      versão, quadro de parâmetros gerado de `MODELO` e teste que exige a página de cada versão.
-- `serving/forecast_bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar. É o único
-  arquivo de `data/` versionado no git (exceção no .gitignore); commitar depois de cada publicação.
+- `serving/forecast_bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar.
+  Versionado no git com o resto de `serving/`.
 
 ## Risk Lab DESSEM (PLD horário): etapas e testes
 - Promovido de `../risk-lab-dessem-analytics` em 2026-10-14 pelo pacote `docs/promocao_pld_horario.md` de lá,
@@ -75,7 +77,7 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   rodada. O simulador (bloco 7) registra uma rodada a cada `publicar` com insumo novo (deck do DESSEM, PLD publicado,
   DECOMP ou modelo); insumos iguais não geram rodada (`--forcar --motivo` para forçar).
 - `serving/risk_lab_dessem/historico_simulador.json` é o registro das rodadas do simulador: não apagar nem recalcular;
-  versionado no git (exceção no .gitignore); commitar depois de cada publicação com rodada nova.
+  versionado no git com o resto de `serving/`.
 - A conta do simulador roda no navegador (`web/risk_lab_dessem/simulador_conta.js`) e no Python
   (`qe_risk_lab_dessem.simulador`): mudar uma exige mudar a outra; o teste de paridade compara as duas (precisa de node).
 - Rótulos obrigatórios do simulador: janela de 14 dias escolhida dentro da amostra (D057); backtest condicional ao
