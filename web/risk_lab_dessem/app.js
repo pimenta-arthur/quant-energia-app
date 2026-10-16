@@ -22,7 +22,13 @@
   const ns = "http://www.w3.org/2000/svg";
   const MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
   const MESL = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-  const SUBN = { SE: "SE/CO", S: "S", NE: "NE", N: "N" };
+  const SUBN = { SIN: "SIN", SE: "SE/CO", S: "S", NE: "NE", N: "N" };
+  // filtro de submercado por bloco (D084): preço só por submercado (padrão SE/CO); variáveis físicas também no SIN
+  // (padrão SIN). No SIN, PLD e DECOMP mostram o SE/CO: não existe PLD do SIN
+  const SUBS_PRECO = [["SE", "SE/CO"], ["S", "S"], ["NE", "NE"], ["N", "N"]], SUBS_FIS = [["SIN", "SIN"], ...SUBS_PRECO];
+  const ehPreco = v => v === "pld" || v === "decomp";
+  const subDe = (sub, v) => (sub === "SIN" && ehPreco(v) ? "SE" : sub);
+  const rotSub = (sub, v) => (sub === "SIN" && ehPreco(v) ? "SE/CO (SIN não tem PLD)" : SUBN[sub]);
   const rot = p => `${MES[+p.slice(5, 7) - 1]}/${p.slice(2, 4)}`;
   const rotLongo = p => `${MESL[+p.slice(5, 7) - 1]} de ${p.slice(0, 4)}`;
   const dataBr = s => `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(2, 4)}`;
@@ -65,7 +71,6 @@
   const diaSeguinte = s => { const t = new Date(s + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
   const notaCalc = ref.ultimo_publicado && ref.ultimo_publicado < ref.ultimo_dia
     ? ` · PLD de ${dataBr(diaSeguinte(ref.ultimo_publicado)).slice(0, 5)} a ${dataBr(ref.ultimo_dia).slice(0, 5)} calculado do deck pela regra da CCEE (publicação oficial pendente)` : "";
-  let SUB = "SE";
 
   // ---------- premissas no topo: datas da base e versão do modelo ----------
   const E = D.estado;
@@ -132,18 +137,25 @@
   // semana operativa (sábado a sexta) e revisão em curso
   const inicioSemana = d => { const t = new Date(d + "T12:00:00Z"); const k = (t.getUTCDay() + 1) % 7; t.setUTCDate(t.getUTCDate() - k); return t.toISOString().slice(0, 10); };
   const semAtual = inicioSemana(ref.ultimo_dia);
-  const infoSemana = ini => { for (const sb of [SUB, "SE"]) for (const m of [ultMes, mesAnt]) { const s = (((D.semanas_perfil || {})[sb] || {})[m] || []).find(x => x.inicio === ini); if (s) return s; } return null; };
+  const infoSemana = ini => { for (const sb of ["SE"]) for (const m of [ultMes, mesAnt]) { const s = (((D.semanas_perfil || {})[sb] || {})[m] || []).find(x => x.inicio === ini); if (s) return s; } return null; };
   const rvAtual = (infoSemana(semAtual) || {}).rv;
 
   function paginaAcompanhamento() {
-    abas("abas-sub", Object.entries(SUBN), SUB, v => { SUB = v; desenharSub(); });
+    let SUB_N = "SE", SUB_M = "SE", SUB_H = "SE", SUB_PD = "SIN", SUB_P = "SIN", SUB_I = "SIN";
+    const notaSub = (id, sub, v) => { document.getElementById("nota-sub-" + id).textContent = sub === "SIN" && ehPreco(v) ? "PLD e DECOMP não têm SIN: mostrando o SE/CO." : ""; };
+    abas("abas-sub-nivel", SUBS_PRECO, SUB_N, v => { SUB_N = v; desenharNivel(); });
+    abas("abas-sub-mes", SUBS_PRECO, SUB_M, v => { SUB_M = v; desenharMensal(); desenharContrib(); });
+    abas("abas-sub-hora", SUBS_PRECO, SUB_H, v => { SUB_H = v; desenharHora(); });
+    abas("abas-sub-pdia", SUBS_FIS, SUB_PD, v => { SUB_PD = v; desenharPerfilDia(); });
+    abas("abas-sub-perfil", SUBS_FIS, SUB_P, v => { SUB_P = v; desenharPerfil(); });
+    abas("abas-sub-ind", SUBS_FIS, SUB_I, v => { SUB_I = v; desenharIndicadores(); });
 
     abas("abas-var", VARS.map(v => [v[0], v[1]]), VAR, v => { VAR = v; desenharPerfil(); });
     // ---------- perfil horário por mês do ano, todos os anos (recolhido) ----------
     let VISAO = "hora";  // D077: "hora" = perfil horário por ano; "mes" = média do mês, uma barra por ano
     abas("abas-visao", [["hora", "Por hora do dia"], ["mes", "Média do mês por ano"]], VISAO, v => { VISAO = v; desenharPerfil(); });
     function painelMesAnos(box, mm, o) {
-      const dd = D.perfis[VAR][SUB] || {}, [, , un] = VARS.find(v => v[0] === VAR);
+      const dd = D.perfis[VAR][subDe(SUB_P, VAR)] || {}, [, , un] = VARS.find(v => v[0] === VAR);
       const card = document.createElement("div"); card.className = "bloco"; card.style.padding = "8px";
       card.innerHTML = `<div class="mini-ttl"><b>${o.titulo}</b></div>`;
       const svg = document.createElementNS(ns, "svg"); const w = 260, h = 170; svg.setAttribute("viewBox", `0 0 ${w} ${h}`); card.appendChild(svg); box.appendChild(card);
@@ -152,7 +164,7 @@
       ax.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 4, y: y(t) + 3, "text-anchor": "end" }, un === "MW" ? n(t / 1000, t % 1000 ? 1 : 0) : n(t)); });
       const bw = (w - m.l - m.r) / anos.length, base = y(Math.max(ax.a, Math.min(0, ax.b)));
       anos.forEach((a, i) => {
-        const k = `${a}-${String(mm).padStart(2, "0")}`, v = (D.media_mes[VAR][SUB] || {})[k], xc = m.l + (i + 0.5) * bw;
+        const k = `${a}-${String(mm).padStart(2, "0")}`, v = (D.media_mes[VAR][subDe(SUB_P, VAR)] || {})[k], xc = m.l + (i + 0.5) * bw;
         S(svg, "text", { x: xc, y: h - 6, "text-anchor": "middle" }, String(a).slice(2));
         if (v == null) return;
         const parcial = k === ultMes;
@@ -162,7 +174,7 @@
       });
     }
     function painelMes(box, mm, o) {
-      const dd = D.perfis[VAR][SUB] || {}, [, , un] = VARS.find(v => v[0] === VAR);
+      const dd = D.perfis[VAR][subDe(SUB_P, VAR)] || {}, [, , un] = VARS.find(v => v[0] === VAR);
       const card = document.createElement("div"); card.className = "bloco"; card.style.padding = "8px";
       card.innerHTML = `<div class="mini-ttl"><b>${o.titulo}</b></div>`;
       const svg = document.createElementNS(ns, "svg"); const w = 260, h = 170;
@@ -183,7 +195,7 @@
     document.getElementById("leg-pdia").addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (!b) return;
       const i = +b.dataset.i; if (i < 0) DESTAQUE.clear(); else if (DESTAQUE.has(i)) DESTAQUE.delete(i); else DESTAQUE.add(i); desenharPerfilDia(); });
     function desenharPerfilDia() {
-      const [, nomeV, un] = VARS.find(v => v[0] === VARD), porMes = ((PDIA[VARD] || {})[SUB]) || {};
+      const [, nomeV, un] = VARS.find(v => v[0] === VARD), porMes = ((PDIA[VARD] || {})[subDe(SUB_PD, VARD)]) || {};
       const meses = Object.keys(porMes).sort().reverse();
       if (!meses.length) return;
       if (!MES_PD || !meses.includes(MES_PD)) MES_PD = meses[0];
@@ -191,12 +203,13 @@
       const M = porMes[MES_PD], ND = M.dias.length;
       if (UltimoAuto) { DESTAQUE.clear(); DESTAQUE.add(ND - 1); UltimoAuto = false; }
       const corT = t => (TIPOS.find(x => x[0] === t) || [, , "var(--ink-3)"])[2];
-      const C = D.calor[VARD][SUB][MES_PD], media = C.hora;  // médias prontas do Python (publicacao.calor)
+      const C = D.calor[VARD][subDe(SUB_PD, VARD)][MES_PD], media = C.hora;  // médias prontas do Python (publicacao.calor)
       const temD = DESTAQUE.size > 0;
       const series = M.dias.map((d, i) => ({ nome: d, cor: corT(M.tipos[i]), larg: DESTAQUE.has(i) ? 2.6 : 1.1, opac: temD ? (DESTAQUE.has(i) ? 1 : 0.15) : 0.55, pts: HORAS.map(hh => [hh, M.v[i][hh]]), rotFim: DESTAQUE.has(i) ? d.slice(8, 10) : null }));
       series.push({ nome: "Média", cor: "var(--ink)", larg: 2.4, tracejado: true, pts: HORAS.map(hh => [hh, media[hh]]), rotFim: "média" });
       const fmtY = un === "MW" ? (v => n(v / 1000, v % 1000 ? 1 : 0)) : n, fmtV = v => (v == null ? "—" : un === "MW" ? n(v / 1000, 1) + " GW" : "R$ " + n(v, 1));
-      document.getElementById("tt-pdia").textContent = `Perfil horário do mês, dia a dia · ${nomeV} (${un === "MW" ? "GW" : un}) · ${SUBN[SUB]}`;
+      document.getElementById("tt-pdia").textContent = `Perfil horário do mês, dia a dia · ${nomeV} (${un === "MW" ? "GW" : un}) · ${rotSub(SUB_PD, VARD)}`;
+      notaSub("pdia", SUB_PD, VARD);
       linhas(document.getElementById("g-pdia"), { w: 1040, h: 320, ml: 44, mr: 52, xs: HORAS, series, sombras: SOMBRAS, fmtY, y0: VARD === "pld" || VARD === "decomp" ? 0 : null, nt: 5, justo: true, rotFim: true,
         rotX: hh => (hh % 3 === 0 ? hh + "h" : null),
         dica: hh => { const vs = M.v.map((r, i) => [r[hh], i]).filter(([v]) => v != null); if (!vs.length) return `<b>${hh}h</b>`;
@@ -250,13 +263,14 @@
 
     function desenharPerfil() {
       const [, nomeV, un] = VARS.find(v => v[0] === VAR);
-      document.getElementById("tt-perfil").textContent = `Perfil horário por mês do ano, todos os anos · ${nomeV} (${un === "MW" ? "GW" : un}) · ${SUBN[SUB]}`;
-      const dd = D.perfis[VAR][SUB] || {};
+      document.getElementById("tt-perfil").textContent = `Perfil horário por mês do ano, todos os anos · ${nomeV} (${un === "MW" ? "GW" : un}) · ${rotSub(SUB_P, VAR)}`;
+      notaSub("perfil", SUB_P, VAR);
+      const dd = D.perfis[VAR][subDe(SUB_P, VAR)] || {};
       const todos = Object.values(dd).flat().filter(v => v != null);
       const y0 = VAR === "pld" || VAR === "decomp" ? 0 : Math.min(...todos), y1 = Math.max(...todos);
       const box = document.getElementById("g-perfil"); box.replaceChildren();
       if (VISAO === "mes") {
-        const ms = Object.values(D.media_mes[VAR][SUB] || {}).filter(v => v != null);
+        const ms = Object.values(D.media_mes[VAR][subDe(SUB_P, VAR)] || {}).filter(v => v != null);
         const z0 = VAR === "pld" || VAR === "decomp" ? 0 : Math.min(...ms) * 0.9, z1 = Math.max(...ms);
         for (let mm = 1; mm <= 12; mm++) painelMesAnos(box, mm, { y0: z0, y1: z1, titulo: MES[mm - 1] });
       } else for (let mm = 1; mm <= 12; mm++) painelMes(box, mm, { y0, y1, titulo: MES[mm - 1] });
@@ -275,9 +289,10 @@
     abas("abas-per-ind", PERIODOS_IND, PERI, v => { PERI = v; desenharIndicadores(); });
     // indicadores prontos do Python (publicacao.indicadores): média dos perfis mensais, cada mês pesa igual
     function desenharIndicadores() {
-      document.getElementById("tt-ind").textContent = `Indicadores por ano · ${SUBN[SUB]} · ${PERIODOS_IND.find(p => p[0] === PERI)[1]}`;
+      notaSub("ind", SUB_I, "pld");
+      document.getElementById("tt-ind").textContent = `Indicadores por ano · ${SUBN[SUB_I]}${SUB_I === "SIN" ? " (PLD do SE/CO)" : ""} · ${PERIODOS_IND.find(p => p[0] === PERI)[1]}`;
       const G = v => (v == null ? "—" : n(v / 1000, 1)), P = v => (v == null ? "—" : n(v, 1));
-      const rs = D.indicadores[SUB][PERI], ultAno = anos[anos.length - 1];
+      const rs = D.indicadores[SUB_I][PERI], ultAno = anos[anos.length - 1];
       document.querySelector("#t-ind tbody").innerHTML = rs.map(r => {
         const ult = r.ano === ultAno;
         return `<tr class="${ult ? "destaque" : ""}"><td>${r.ano}${ult ? "<small>acumulado</small>" : ""}</td><td class="n">${r.meses}</td><td class="n">${G(r.cl_vale)}</td><td class="n">${G(r.cl_ponta)}</td><td class="n">${r.rampa == null ? "—" : sn(r.rampa / 1000, 1)}</td><td class="n">${G(r.demanda)}</td><td class="n">${G(r.renov_vale)}</td><td class="n">${P(r.pld)}</td><td class="n">${P(r.pld_ponta)}</td><td class="n">${P(r.pld_vale)}</td></tr>`;
@@ -290,13 +305,13 @@
     const somaDias = (ini, k) => { const t = new Date(ini + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + k); return t.toISOString().slice(0, 10); };
     abas("abas-nivel", [["rev", `Revisão atual (RV${rvAtual ?? "?"})`], ["mes", `Mês corrente (${rot(ultMes)})`], ["3m", "Últimos 3 meses"], ["ano", `No ano (${ultMes.slice(0, 4)})`], ["todo", "Todo o histórico"]], PER_N, v => { PER_N = v; desenharNivel(); });
     function desenharNivel() {
-      let rs = (D.dias_nivel || {})[SUB] || [];
+      let rs = (D.dias_nivel || {})[SUB_N] || [];
       const ult = rs.length ? rs[rs.length - 1][0] : ref.ultimo_dia;
       if (PER_N === "rev") { const sa = inicioSemana(ult); rs = rs.filter(r => inicioSemana(r[0]) === sa); }
       else if (PER_N === "mes") rs = rs.filter(r => r[0].startsWith(ult.slice(0, 7)));
       else if (PER_N === "ano") rs = rs.filter(r => r[0].startsWith(ult.slice(0, 4)));
       else if (PER_N === "3m") { const d = new Date(ult + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() - 3); const c = d.toISOString().slice(0, 10); rs = rs.filter(r => r[0] > c); }
-      document.getElementById("tt-nivel").textContent = `PLD médio do dia: DESSEM e DECOMP vigente · ${SUBN[SUB]}`;
+      document.getElementById("tt-nivel").textContent = `PLD médio do dia: DESSEM e DECOMP · ${SUBN[SUB_N]}`;
       const xs = rs.map(r => r[0]), u = rs[rs.length - 1] || [];
       // revisões do período: índices do primeiro e do último dia, médias de DECOMP e DESSEM nos dias mostrados
       const grupos = [];
@@ -370,7 +385,7 @@
       if (!N) { S(svg, "text", { x: w / 2, y: h / 2, "text-anchor": "middle" }, "sem dados no período"); return; }
       const curto = modo !== "nenhum";
       const dw = (w - m.l - m.r) / N, xd = i => m.l + i * dw, xc = i => xd(i) + dw / 2, xh = (i, hh) => xd(i) + (hh + 0.5) * dw / 24;
-      const horas = new Map(); Object.values((D.dias_perfil || {})[SUB] || {}).flat().forEach(d => horas.set(d.data, d.pld));
+      const horas = new Map(); Object.values((D.dias_perfil || {})[SUB_N] || {}).flat().forEach(d => horas.set(d.data, d.pld));
       let vals = [];
       if (curto) rs.forEach(r => { const v = horas.get(r[0]); if (v) vals.push(...v); }); else rs.forEach(r => vals.push(r[6], r[7]));
       vals = vals.filter(v => v != null);
@@ -439,14 +454,14 @@
     const selMes = document.getElementById("sel-mes-dias");
     selMes.addEventListener("change", () => { MES_DIAS = selMes.value; desenharMensal(); });
     function desenharMensal() {
-      document.getElementById("tt-mes").textContent = `Desvio por bloco de horas · ${SUBN[SUB]}`;
-      let dm = D.desvio_mensal.filter(r => r.sub === SUB).sort((a, b) => (a.mes < b.mes ? -1 : 1));
+      document.getElementById("tt-mes").textContent = `Desvio por bloco de horas · ${SUBN[SUB_M]}`;
+      let dm = D.desvio_mensal.filter(r => r.sub === SUB_M).sort((a, b) => (a.mes < b.mes ? -1 : 1));
       if (HIST === "ano") dm = dm.filter(r => r.mes.startsWith(ultMes.slice(0, 4)));
       if (HIST === "12m") dm = dm.slice(-12);
       const curto = HIST !== "todo";
       empilhado(document.getElementById("g-mes"), dm.map(r => ({ ...r, extra: `<br>DECOMP ${n(r.decomp, 1)} · DESSEM ${n(r.dessem, 1)}` + (r.parcial ? `<br>mês em curso: realizado de ${r.dias} dias, até ${dataBr(ref.ultimo_dia)}` : "") })), 700, 260,
         (r, i) => (curto ? { t: rot(r.mes) + (r.parcial ? "*" : ""), forte: r.mes.endsWith("-01") } : r.mes.endsWith("-01") ? { t: r.mes.slice(0, 4), forte: true } : null), r => rotLongo(r.mes) + (r.parcial ? " (parcial)" : ""));
-      const todosDias = ((D.dias_blocos || {})[SUB] || []);
+      const todosDias = ((D.dias_blocos || {})[SUB_M] || []);
       const mesesDias = [...new Set(todosDias.map(r => r.data.slice(0, 7)))].sort().reverse();
       if (!mesesDias.includes(MES_DIAS)) MES_DIAS = mesesDias[0] || ultMes;
       selMes.replaceChildren(...mesesDias.map(m => { const o = document.createElement("option"); o.value = m; o.textContent = rot(m) + (m === ultMes ? " (corrente)" : ""); o.selected = m === MES_DIAS; return o; }));
@@ -463,9 +478,9 @@
     abas("abas-per-c", PER_C, PERC, v => { PERC = v; desenharContrib(); });
     // contribuição por tipo de dia × faixa (D067): conta feita no Python (publicacao.contribuicao)
     function desenharContrib() {
-      const C = D.contribuicao[SUB][PERC], ms = C.meses;
+      const C = D.contribuicao[SUB_M][PERC], ms = C.meses;
       const per = ms.length ? (ms.length === 1 ? rotLongo(ms[0]) : `${rot(ms[0])} a ${rot(ms[ms.length - 1])}`) : "—";
-      document.getElementById("tt-contrib").textContent = `Desvio por faixa horária e tipo de dia · ${SUBN[SUB]} · ${per}`;
+      document.getElementById("tt-contrib").textContent = `Desvio por faixa horária e tipo de dia · ${SUBN[SUB_M]} · ${per}`;
       const COR = Object.fromEntries(TIPOS.map(([t, nomeT, cor]) => [t, { nomeT, cor }]));
       const linhasC = C.linhas.map(r => ({ ...r, t: r.tipo, f: r.faixa, ...COR[r.tipo] }));
       const total = C.total;
@@ -510,14 +525,14 @@
     function serieHora(a, idx) { return HORAS.map(hh => [hh, a && a[hh] && a[hh][0] ? 100 * a[hh][idx] / a[hh][0] : null]); }
     function desenharHora() {
       const idx = { piso: 1, abaixo: 2, acima: 3 }[MEDIDA], nomeM = { piso: "no piso", abaixo: "abaixo do DECOMP", acima: "acima do DECOMP" }[MEDIDA];
-      const H = D.horas.mensal[SUB] || {}, ms = Object.keys(H).sort();
+      const H = D.horas.mensal[SUB_H] || {}, ms = Object.keys(H).sort();
       if (!H[MESH]) MESH = ms[ms.length - 1];
       abas("abas-mes-h", ms.slice(-13).reverse().map(m => [m, rot(m)]), MESH, v => { MESH = v; desenharHora(); });
-      document.getElementById("tt-hora").textContent = `Horas ${nomeM} por hora e tipo de dia · ${SUBN[SUB]} · ${rotLongo(MESH)}`;
+      document.getElementById("tt-hora").textContent = `Horas ${nomeM} por hora e tipo de dia · ${SUBN[SUB_H]} · ${rotLongo(MESH)}`;
       const ss = TIPOS.map(([t, nome, cor]) => ({ nome, cor, pts: serieHora(H[MESH] && H[MESH][t], idx), pontos: true }));
       linhas(document.getElementById("g-hora"), { w: 1040, h: 240, xs: HORAS, series: ss, sombras: SOMBRAS, y0: 0, y1: 100, fmtY: v => v + "%", rotX: hh => hh + "h",
         dica: hh => `<b>${hh}h · ${rot(MESH)}</b><br>` + TIPOS.map(([t, nome], i) => { const a = H[MESH] && H[MESH][t] && H[MESH][t][hh]; return `${nome}: ${a && a[0] ? n(100 * a[idx] / a[0]) + "% de " + a[0] + " h" : "—"}`; }).join("<br>") });
-      const Ws = (D.horas.semanal[SUB] || {})[MESH] || {}, sems = Object.keys(Ws).sort();
+      const Ws = (D.horas.semanal[SUB_H] || {})[MESH] || {}, sems = Object.keys(Ws).sort();
       const box = document.getElementById("g-semanas"); box.replaceChildren();
       document.getElementById("tt-sem-hora").textContent = `${rotLongo(MESH)} por semana operativa (revisão do DECOMP) · só os dias de cada semana que caem no mês`;
       if (!sems.length) { const p = document.createElement("p"); p.className = "leg"; p.textContent = "Sem revisões disponíveis para este mês."; box.appendChild(p); }
@@ -547,8 +562,7 @@
       S(svg, "text", { x: 514, y: 14, "text-anchor": "end", style: "fill:var(--v1)" }, `valor da água: 100% = R$ ${n(vmax)}`);
     })();
 
-    function desenharSub() { desenharPerfilDia(); desenharPerfil(); desenharIndicadores(); desenharMensal(); desenharContrib(); desenharHora(); desenharNivel(); }
-    desenharSub();
+    desenharPerfilDia(); desenharPerfil(); desenharIndicadores(); desenharMensal(); desenharContrib(); desenharHora(); desenharNivel();
   }
 
   // ========== página do simulador (simulador.html): simulador e desempenho ==========

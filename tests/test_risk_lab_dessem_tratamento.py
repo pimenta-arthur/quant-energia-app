@@ -147,3 +147,19 @@ def test_calor_percentis_como_no_navegador():
     assert (c["lo"], c["hi"], c["mes"]) == (5, 95, 50)
     # 0,5 arredonda para cima, como Math.round (o round do Python arredondaria para o par)
     assert publicacao._percentil_js([1.0, 2.0, 3.0, 4.0], 0.5) == 3.0
+
+
+@com_dados
+def test_sin_soma_os_quatro_submercados_so_nas_horas_com_os_quatro(arm):
+    """D084: SIN = soma dos quatro submercados hora a hora, só nas variáveis em MW e só nas horas em que
+    os quatro existem. Exemplo do pacote: carga líquida em 01/10/2026 às 19h = 75.583,4 MW."""
+    s = tratamento.series_horarias(arm)
+    assert "SIN" not in set(s["pld"]["submercado"]) | set(s["decomp"]["submercado"])
+    cl = s["carga_liquida"]
+    x = cl[(cl["data"] == "2026-10-01") & (cl["hora"] == 19)].set_index("submercado")["v"]
+    assert x["SIN"] == pytest.approx(x[["SE", "S", "NE", "N"]].sum())
+    assert x["SIN"] == pytest.approx(75583.4, abs=0.05)
+    for v in tratamento.VARIAVEIS_MW:
+        y = s[v]
+        n = y[y["submercado"] != "SIN"].groupby(["data", "hora"]).size()
+        assert len(y[y["submercado"] == "SIN"]) == int((n == 4).sum())

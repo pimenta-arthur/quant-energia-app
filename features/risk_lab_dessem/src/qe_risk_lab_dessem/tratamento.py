@@ -431,6 +431,15 @@ def tipos_de_dia(
 
 QUEBRA_MMGD = pd.Timestamp("2023-04-29")  # D010: a partir daqui a MMGD entra como usina no deck
 RENOVAVEIS_SEM_MMGD = ["eolica", "solar", "pch", "pct"]
+# variáveis físicas (MW), que têm SIN; PLD e DECOMP são por submercado (D084)
+VARIAVEIS_MW = [
+    "demanda",
+    "demanda_sem_mmgd",
+    "carga_liquida",
+    "renov_sem_mmgd",
+    "renov_com_mmgd",
+    "renov_saida",
+]
 
 
 def renovavel_horaria(ren: pd.DataFrame, tipos: list[str]) -> pd.DataFrame:
@@ -472,7 +481,8 @@ def series_horarias(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     """T4: {variável: DataFrame(data, hora, submercado, v)}, média das duas meias-horas de cada hora.
 
     PLD (T1), DECOMP vigente (T2), demanda, demanda sem MMGD, carga líquida, renovável prevista sem e
-    com MMGD e renovável gerada (`grenova` do PDO_SIST: saída do modelo, não insumo).
+    com MMGD e renovável gerada (`grenova` do PDO_SIST: saída do modelo, não insumo). Nas variáveis em
+    MW, também o SIN (D084): soma dos quatro submercados hora a hora, só nas horas com os quatro.
     """
     sist = ler_dessem(arm, "sist", ["data", "periodo", "submercado", "demanda", "grenova"])
     ren = ler_dessem(arm, "renovaveis")
@@ -493,6 +503,11 @@ def series_horarias(arm: Armazenamento) -> dict[str, pd.DataFrame]:
     )
     g = sist.assign(hora=(sist["periodo"] - 1) // 2).groupby(k, as_index=False)["grenova"].mean()
     series["renov_saida"] = g.rename(columns={"grenova": "v"})
+    for v in VARIAVEIS_MW:
+        x = series[v][series[v]["submercado"].isin(SUBMERCADOS)]
+        s = x.groupby(["data", "hora"])["v"].agg(["sum", "count"]).reset_index()
+        s = s[s["count"] == len(SUBMERCADOS)].rename(columns={"sum": "v"}).drop(columns="count")
+        series[v] = pd.concat([series[v], s.assign(submercado="SIN")], ignore_index=True)
     return series
 
 

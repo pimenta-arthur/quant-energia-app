@@ -120,7 +120,8 @@ def test_R8_bloco7_e_R9_backtest(arm):
     from qe_risk_lab_dessem import chaves
 
     ref = json.loads((Path(PASTA) / "R8_bloco7_simulador.json").read_text(encoding="utf-8"))
-    d = json.loads(json.dumps(publicacao.dados_simulador(arm, "2026-10-13")))
+    manifesto = json.loads((Path(PASTA) / "manifesto.json").read_text(encoding="utf-8"))
+    d = json.loads(json.dumps(publicacao.dados_simulador(arm, manifesto["decks_dessem_ate"])))
     for k in ref:
         assert d[k] == ref[k], k
     bt = ler_parquet(arm, chaves.PROC_BACKTEST)

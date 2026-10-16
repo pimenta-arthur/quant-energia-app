@@ -1,8 +1,9 @@
 """Referências congeladas do PLD horário (tests/referencias/risk_lab_dessem/).
 
-Na migração (2026-10-14) as saídas do app foram conferidas uma vez contra o pacote de promoção da
-pesquisa (risk-lab-dessem-analytics, reports/promocao/2026-10-13/; teste opt-in
-tests/test_risk_lab_dessem_paridade.py) e congeladas aqui. Só entram períodos fechados, que não mudam
+Na migração (2026-10-14) as saídas do app foram conferidas contra o pacote de promoção da pesquisa
+(risk-lab-dessem-analytics, reports/promocao/2026-10-13/; teste opt-in
+tests/test_risk_lab_dessem_paridade.py) e congeladas aqui; com a D084 (SIN nas variáveis em MW), de novo
+contra reports/promocao/2026-10-15/ (2026-10-16). Só entram períodos fechados, que não mudam
 com os decks novos: leitores em três dias, tabelas-base de jul a set/2026, tipos de dia até
 30/09/2026, os blocos 1, 2, 4 e 5 nesses meses, o bloco 6 e o backtest do simulador até set/2026 e os indicadores por ano dos anos completos. Regerar só quando a mudança for intencional:
 `uv run qe risk_lab_dessem congelar` e revisar a diferença no git.

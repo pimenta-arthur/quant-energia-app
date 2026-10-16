@@ -327,7 +327,7 @@ def perfis(series: dict) -> dict:
     """Média por variável, submercado, mês e hora: {var: {sub: {mes: [24 valores]}}}."""
     out = {}
     for k, x in series.items():
-        x = x[x["submercado"].isin(SUBMERCADOS)].copy()
+        x = x[x["submercado"].isin([*SUBMERCADOS, "SIN"])].copy()  # SIN só nas variáveis em MW
         x["mes"] = x["data"].dt.strftime("%Y-%m")
         x = x[x["mes"] >= "2021-01"]
         g = (
@@ -351,7 +351,7 @@ def perfis_dia(series: dict, tipos: pd.Series, meses: int = 6) -> dict:
     ini = str(fim - (meses - 1))
     out = {}
     for k, x in series.items():
-        x = x[x["submercado"].isin(SUBMERCADOS)].copy()
+        x = x[x["submercado"].isin([*SUBMERCADOS, "SIN"])].copy()  # SIN só nas variáveis em MW
         x["mes"] = x["data"].dt.strftime("%Y-%m")
         x = x[x["mes"] >= ini]
         g = x.groupby(["submercado", "mes", "data", "hora"])["v"].mean().unstack("hora")
@@ -428,7 +428,8 @@ def indicadores(pf: dict) -> dict:
     MMGD no vale, PLD médio, da ponta e do vale. MW e R$/MWh.
 
     {sub: {periodo: [{ano, meses, cl_vale, cl_ponta, rampa, demanda, renov_vale, pld, pld_ponta,
-    pld_vale}]}}; o ano corrente é acumulado até o último deck.
+    pld_vale}]}}, com sub = SIN, SE, S, NE, N; no SIN, as colunas de PLD são do SE/CO (D084). O ano
+    corrente é acumulado até o último deck.
     """
     anos = sorted({int(m[:4]) for m in pf["pld"]["SE"]})
     vale, ponta, todas = list(MODELO.vale), list(MODELO.ponta), list(range(24))
@@ -444,7 +445,7 @@ def indicadores(pf: dict) -> dict:
         return None if p is None else sum((p[1][h] or 0) for h in hs) / len(hs)
 
     out = {}
-    for sub in SUBMERCADOS:
+    for sub in ["SIN", *SUBMERCADOS]:
         for per, tri in PERIODOS_INDICADORES.items():
             linhas = []
             for a in anos:
@@ -454,7 +455,7 @@ def indicadores(pf: dict) -> dict:
                 cl = perfil_medio(sub, "carga_liquida", filtro)
                 dm = perfil_medio(sub, "demanda_sem_mmgd", filtro)
                 rv = perfil_medio(sub, "renov_com_mmgd", filtro)
-                pl = perfil_medio(sub, "pld", filtro)
+                pl = perfil_medio("SE" if sub == "SIN" else sub, "pld", filtro)  # SIN não tem PLD
                 if not cl and not pl:
                     continue
                 linhas.append(

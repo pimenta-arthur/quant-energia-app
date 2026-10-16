@@ -87,6 +87,9 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   conferida em 2026-10-14 (1.347 dias, 34 feriados, sem divergência): trocar pelo AAC001 é decisão da pesquisa.
 - Testes: `tests/referencias/risk_lab_dessem/` (períodos fechados: jul–set/2026), regerados com
   `qe risk_lab_dessem congelar`. Paridade com a pesquisa é opt-in (`QE_PARIDADE_RISK_LAB_DESSEM=<pasta do pacote>`).
+- Submercado (D084): filtro por bloco, sem filtro global. Blocos de preço (1, 2, 5): SE/CO, S, NE, N (padrão SE/CO);
+  blocos 3 e 4: SIN, SE/CO, S, NE, N (padrão SIN; no SIN, PLD e DECOMP mostram o SE/CO, com aviso); 6 e 7 fixos.
+  SIN = soma dos quatro submercados hora a hora, só nas variáveis em MW e só nas horas com os quatro (T4).
 - Contas que não dependem do usuário ficam no Python; o JS da página só desenha (exceção: a conta do simulador,
   com teste de paridade Python × JS).
 
