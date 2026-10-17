@@ -176,6 +176,19 @@ def pagina():
 
 
 @app.command()
+def exportar(
+    destino: Path = typer.Option(
+        ..., help="Pasta do site estático (ex.: ../forecast-bandeiras-page)."
+    ),
+):
+    """Grava a página da última rodada como site estático (GitHub Pages), com caminhos relativos."""
+    from qe_forecast_bandeiras import exportacao
+
+    escritos = exportacao.exportar(armazenamento(), destino)
+    typer.echo(f"{len(escritos)} arquivos em {destino}: " + ", ".join(escritos))
+
+
+@app.command()
 def congelar(
     destino: Path = typer.Option(
         Path("tests/referencias/forecast_bandeiras"), help="Pasta das referências."

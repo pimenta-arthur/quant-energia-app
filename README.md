@@ -23,6 +23,8 @@ cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 uv run qe forecast_bandeiras atualizar                    # entrada → raw/ → tratamento → backtest → status e prévia
 uv run qe forecast_bandeiras publicar --motivo "deck do NEWAVE de out/26"   # registra a rodada e atualiza a página
 # etapas avulsas: ingerir | tratar --mes AAAA-MM [--ate AAAA-MM] | backtest | status | projetar | pagina
+# página pública (GitHub Pages): uv run qe forecast_bandeiras exportar --destino ../forecast-bandeiras-page
+#   e commit/push lá (https://pimenta-arthur.github.io/forecast-bandeiras-page/)
 # fixar insumos: --deck 2026-09 --versao <hash> --ecmwf 2026-09-01 (projetar/publicar)
 
 uv run qe servir                          # http://localhost:8000 → /forecast_bandeiras/ e /risk_lab_dessem/
