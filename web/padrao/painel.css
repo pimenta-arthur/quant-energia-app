@@ -1,0 +1,55 @@
+/* Padrão visual Quant Energia · v1 · 2026-10 · painel.css
+   Camada das páginas de painel (projeções, acompanhamento), sobre base.css: topo com premissas, blocos,
+   grades, abas, legendas curtas, tooltip, cartões de número, pequenos múltiplos, marcadores de cenário
+   e espaçamento compacto. Regras de uso em GUIA.md. */
+:root { --faixa-proj: color-mix(in srgb, var(--accent) 16%, transparent); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.hero { display: grid; gap: 14px; }
+.hero h1 { font-size: 1.55rem; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.8rem; color: var(--ink-3); }
+.bloco { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.sub { font-size: 0.95rem; color: var(--ink-2); max-width: 72ch; }
+.ttl { font-family: var(--f-display); font-weight: 600; font-size: 1.02rem; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--f-data); font-size: 10.5px; fill: var(--ink-3); }
+svg .forte { fill: var(--ink); font-weight: 500; }
+.legenda-mini { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--ink-2); }
+.legenda-mini span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-mini i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.legenda-mini i.l { height: 0; border-top: 2px solid; border-radius: 0; }
+.legenda-mini i.t { height: 0; border-top: 2px dashed; border-radius: 0; }
+.abas { display: flex; flex-wrap: wrap; gap: 6px; }
+.abas button { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.abas button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.abas button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: grid; gap: 4px; }
+.tile .v { font-family: var(--f-display); font-weight: 600; font-size: 2.2rem; line-height: 1; }
+.tile .d { font-size: 0.88rem; color: var(--ink-2); }
+.dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 7px 10px; border-radius: 4px; max-width: 280px; transform: translate(12px, 12px); }
+.aviso { font-size: 0.85rem; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 6px; }
+.duas { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .duas { grid-template-columns: 1fr; } }
+/* v2: cores dos cenários (não usam as cores das bandeiras) */
+.legenda-mini i.cen-marca { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 1.5px solid #1b2226; color: #1b2226; font: 600 0.55rem var(--f-data); font-style: normal; }
+.cen-marca-svg circle { fill: #fff; stroke: #1b2226; stroke-width: 1.5; }
+.cen-marca-svg text { font: 600 9px var(--f-data); fill: #1b2226; pointer-events: none; }
+:root { --cen-esp: var(--accent); --cen-li: #a8592a; --cen-ls: #1d8a84; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cen-li: #e3a06c; --cen-ls: #5ccac3; } }
+:root[data-theme="dark"] { --cen-li: #e3a06c; --cen-ls: #5ccac3; }
+.sub { max-width: none; }
+.hero h1, h2 { font-size: 1.5rem; }
+.meta .atualizado { margin-left: auto; }
+.barra-abas { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.leg { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); margin: 0; }
+/* mais compacto */
+main { gap: 34px; }
+section { gap: 10px; }
+.bloco { padding: 14px; gap: 8px; }
+.mini6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.mini { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.mini .ttl { font-size: 0.95rem; display: flex; justify-content: space-between; align-items: baseline; }
+.mini .ttl span { font-family: var(--f-data); font-weight: 400; font-size: 0.7rem; color: var(--ink-3); }

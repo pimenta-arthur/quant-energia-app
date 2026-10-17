@@ -7,15 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="estilo.css">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
 <style>
   /* Layout: painel de produto — cabeçalho com veredito, cartões dos 6 meses, depois blocos visuais em largura total (máx. 1080px) */
-  :root { --esc: #4b1d3f; --faixa-proj: color-mix(in srgb, var(--accent) 16%, transparent); }
-  body { margin: 0; }
-  [hidden] { display: none !important; }
-  .hero { display: grid; gap: 14px; }
-  .hero h1 { font-size: 1.55rem; }
-  .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.8rem; color: var(--ink-3); }
+  :root { --esc: #4b1d3f; }
   .meses6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
   .mes { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
   .mes .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -30,27 +26,6 @@
   .linha-info b { font-family: var(--f-data); font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
   .conf { font-family: var(--f-data); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
   .conf.alta { color: var(--accent); }
-  .bloco { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
-  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-  .sub { font-size: 0.95rem; color: var(--ink-2); max-width: 72ch; }
-  .ttl { font-family: var(--f-display); font-weight: 600; font-size: 1.02rem; }
-  svg { display: block; width: 100%; height: auto; overflow: visible; }
-  svg text { font-family: var(--f-data); font-size: 10.5px; fill: var(--ink-3); }
-  svg .forte { fill: var(--ink); font-weight: 500; }
-  .legenda-mini { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--ink-2); }
-  .legenda-mini span { display: inline-flex; align-items: center; gap: 6px; }
-  .legenda-mini i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
-  .legenda-mini i.l { height: 0; border-top: 2px solid; border-radius: 0; }
-  .legenda-mini i.t { height: 0; border-top: 2px dashed; border-radius: 0; }
-  .abas { display: flex; flex-wrap: wrap; gap: 6px; }
-  .abas button { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
-  .abas button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
-  .abas button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-  .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: grid; gap: 4px; }
-  .tile .v { font-family: var(--f-display); font-weight: 600; font-size: 2.2rem; line-height: 1; }
-  .tile .d { font-size: 0.88rem; color: var(--ink-2); }
   .tempo { display: grid; gap: 3px; width: max-content; min-width: 100%; }
   .tempo .lin { display: grid; gap: 3px; align-items: center; }
   .tempo .rot { font-size: 0.78rem; color: var(--ink-2); position: sticky; left: 0; background: var(--surface); z-index: 1; height: 100%; display: flex; align-items: center; padding-right: 6px; }
@@ -62,18 +37,7 @@
   .tempo .cab.ano { color: var(--ink); font-weight: 500; }
   .Verde { background: var(--vd); } .Amarela { background: var(--am); } .V1 { background: var(--v1); } .V2 { background: var(--v2); } .Esc { background: var(--esc); }
   .tempo .c.Verde { background: var(--vd); } .tempo .c.Amarela { background: var(--am); } .tempo .c.V1 { background: var(--v1); } .tempo .c.V2 { background: var(--v2); } .tempo .c.Esc { background: var(--esc); }
-  .dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 7px 10px; border-radius: 4px; max-width: 280px; transform: translate(12px, 12px); }
-  .aviso { font-size: 0.85rem; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 6px; }
   .wf-total { font-family: var(--f-display); font-weight: 600; font-size: 2rem; }
-  .duas { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
-  @media (max-width: 760px) { .duas { grid-template-columns: 1fr; } }
-  /* v2: cores dos cenários (não usam as cores das bandeiras) */
-  .legenda-mini i.cen-marca { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 1.5px solid #1b2226; color: #1b2226; font: 600 0.55rem var(--f-data); font-style: normal; }
-  .cen-marca-svg circle { fill: #fff; stroke: #1b2226; stroke-width: 1.5; }
-  .cen-marca-svg text { font: 600 9px var(--f-data); fill: #1b2226; pointer-events: none; }
-  :root { --cen-esp: var(--accent); --cen-li: #a8592a; --cen-ls: #1d8a84; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cen-li: #e3a06c; --cen-ls: #5ccac3; } }
-  :root[data-theme="dark"] { --cen-li: #e3a06c; --cen-ls: #5ccac3; }
   /* painel de probabilidade (substitui os cartões) */
   .painel { display: grid; gap: 6px 8px; align-items: center; width: max-content; min-width: 100%; }
   .painel .rp { font-size: 0.8rem; color: var(--ink-2); position: sticky; left: 0; background: var(--surface); z-index: 1; height: 100%; display: flex; align-items: center; padding-right: 8px; }
@@ -90,7 +54,6 @@
   .painel .val { text-align: center; font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .painel .sep { grid-column: 1 / -1; height: 1px; background: var(--rule); }
   .tempo .qcab { font-family: var(--f-data); font-size: 0.64rem; color: var(--ink-2); text-align: left; padding-left: 4px; border-left: 2px solid var(--rule); }
-  .sub { max-width: none; }
   .hero h1 .pos { font-weight: 500; color: var(--ink-3); font-size: 0.62em; white-space: nowrap; }
   .painel .rp .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
   .painel .rp.sec { font-family: var(--f-data); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); padding-top: 8px; }
@@ -104,8 +67,6 @@
   .painel .btit { grid-column: 1 / -1; display: flex; align-items: center; font-family: var(--f-data); font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); padding-block: 2px 4px; }
   .painel .pt { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; flex: none; }
   .painel .sep.larga { margin-block: 10px 6px; }
-  .hero h1, h2 { font-size: 1.5rem; }
-  .meta .atualizado { margin-left: auto; }
   .proposta { font-family: var(--f-data); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 2px 6px; vertical-align: middle; margin-left: 8px; }
   #rodadas { width: 100%; min-width: 0; }
   #rodadas .c { white-space: nowrap; overflow: hidden; font-size: 0.62rem; }
@@ -122,21 +83,11 @@
   #rodadas .rot .novo { color: var(--accent); font-weight: 600; }
   #rodadas .rot .hora { font-size: 0.6rem; font-weight: 400; color: var(--ink-3); }
   #rodadas .rot.titulo-col { font-size: 0.6rem; color: var(--ink-3); }
-  .barra-abas { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
   #leg-traj, #leg-gsf { display: grid; gap: 10px; }
-  .leg { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); margin: 0; }
-  /* mais compacto */
-  main { gap: 34px; }
-  section { gap: 10px; }
-  .bloco { padding: 14px; gap: 8px; }
   .pcol { height: 118px; }
   .painel { gap: 4px 8px; }
-  .mini6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
-  .mini { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
-  .mini .ttl { font-size: 0.95rem; display: flex; justify-content: space-between; align-items: baseline; }
   .selo-cor { font-weight: 500; color: var(--on-flag); padding: 1px 7px; border-radius: 3px; }
   .selo-cor.am { color: var(--on-am); }
-  .mini .ttl span { font-family: var(--f-data); font-weight: 400; font-size: 0.7rem; color: var(--ink-3); }
 </style>
 </head>
 <body>

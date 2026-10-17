@@ -54,8 +54,8 @@ tests/referencias/<nome>/     # resultados esperados
    Um teste de paridade com a pesquisa pode ficar opt-in (variável de ambiente).
 
 ## 5. Página
-- Mesmo visual (`web/forecast_bandeiras/estilo.css` como base): IBM Plex Sans/Mono, títulos institucionais, legendas
-  curtas embaixo dos gráficos, premissas (insumos, versão do modelo, data da rodada) no topo.
+- Mesmo visual: padrão em `web/padrao/` (`base.css`, `painel.css`, `graficos.js`; regras em `GUIA.md`). Partir de
+  `web/padrao/modelo.html`; estilos próprios da página depois dos do padrão.
 - Metodologia da funcionalidade em `web/<nome>/metodologia.html`, identificando a versão do modelo.
 
 ## 6. Independência

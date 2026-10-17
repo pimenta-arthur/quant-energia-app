@@ -35,6 +35,10 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 - `data/` não vai para o git, exceto `data/serving/` (o que as páginas leem, inclusive os registros das rodadas):
   versionado para o app abrir com dados em qualquer máquina, até a fase AWS. Commitar `data/serving/` depois de
   cada `publicar`. `raw/` e `processed/` ficam fora (pesados e binários; o histórico do git cresceria sem limite).
+- **Padrão visual em `web/padrao/`** (`base.css`, `painel.css`, `graficos.js`, `modelo.html`, regras em `GUIA.md`):
+  todas as páginas importam dali; nada de uma página importar o CSS de outra funcionalidade. Mudança que vale
+  para todas as páginas vai para o padrão (e sobe a versão no topo dos arquivos se mudar regra); o resto fica
+  na página. Antes de mexer no padrão, comparar prints de todas as páginas (claro e escuro) antes e depois.
 - **Pendência da fase AWS:** até lá, `data/raw/` existe só na máquina local (sem backup, por escolha do
   Arthur: arquivos pesados). Na AWS, o bucket com versionamento passa a ser a cópia de segurança.
 

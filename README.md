@@ -35,7 +35,7 @@ uv run pytest                             # testes contra as referências congel
 core/                  qe_core: configuração, armazenamento (local|S3), leitores CCEE/ONS/NEWAVE/ECMWF/ANEEL
 features/forecast_bandeiras/    qe_forecast_bandeiras: ingestão → tratamento → projeção → publicação
 api/                   qe_api: FastAPI que serve as páginas e o serving local
-web/                   páginas (uma pasta por funcionalidade)
+web/                   páginas (uma pasta por funcionalidade) e web/padrao/ (padrão visual: CSS, JS, modelo e guia)
 src/qe/                linha de comando `qe`
 tests/                 testes de aceitação
 data/                  (fora do git) imita o bucket: raw/ processed/ serving/

@@ -1,4 +1,4 @@
-/* Estilo das páginas do PLD horário (acompanhamento, simulador, metodologia), sobre estilo.css do Quant Energia */
+/* Estilo das páginas do PLD horário (acompanhamento, simulador), sobre ../padrao/base.css e ../padrao/painel.css */
 /* Layout: painel de produto no padrão das bandeiras — acompanhamento das variáveis primeiro, depois mecanismos, simulador e desempenho; blocos em largura total (máx. 1080px) */
 :root {
   --b-vale: var(--accent); --b-ponta: var(--v1); --b-demais: var(--ink-3);
