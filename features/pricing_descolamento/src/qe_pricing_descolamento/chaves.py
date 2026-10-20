@@ -21,6 +21,8 @@ PROC_PLD_MENSAL = f"{PROC}/pld_mensal.parquet"
 PROC_DECK = {t: f"{PROC}/deck_{t}.parquet" for t in ("mercado", "nao_simuladas", "agrint")}
 # T5: base horária
 PROC_BASE = f"{PROC}/base_horaria.parquet"
+# backtest da página (metodologia): modelo vigente em 16 decks, SE realizado como insumo
+PROC_BACKTEST = f"{PROC}/backtest.parquet"
 
 
 def proc_dessem(tabela: str, mes: str) -> str:

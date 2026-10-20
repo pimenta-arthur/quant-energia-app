@@ -175,3 +175,18 @@ def test_R7_cenarios_insumos_e_faixas(rodada):
         ex["NE_min"],
         ex["NE_max"],
     ]
+
+
+# --- bloco 5: backtest da página (R9) --------------------------------------------------------------------
+
+
+def test_R9_backtest_pagina(arm):
+    r = _r("R9_backtest_pagina")
+    a = ler_parquet(arm, chaves.PROC_BACKTEST)
+    r = r.assign(
+        cenario=r["cenario"].str.split("|").str[0]
+    )  # na v2.2, o cenário é só o ano climático
+    chave = ["deck", "mes", "cenario"]
+    assert a[chave].astype(str).values.tolist() == r[chave].astype(str).values.tolist()
+    num = [c for c in r.columns if c not in chave]
+    _igual(a[num], r[num], 1e-9)

@@ -6,7 +6,8 @@ tests/test_pricing_descolamento_paridade.py) e congeladas aqui. Só entram perí
 novos: leitores em três dias (um de cada formato do PDO_RESTOPER) e em dois decks, o PLD mensal até set/2026, as
 tabelas dos decks até out/2026 e o PLD horário e a base horária nos meses desses três dias (a base inteira foi
 conferida na migração; congelada inteira, ocuparia 14 MB no git). Do modelo (bloco 2): o treino no deck de out/2026
-(dados até ago/2026) e os cenários com SE plano de R$ 200 até dez/2030, com coeficientes e faixas por período. Regerar só quando a mudança for intencional:
+(dados até ago/2026) e os cenários com SE plano de R$ 200 até dez/2030, com coeficientes e faixas por período; e o
+backtest da página inteiro (decks até jul/2026, meses-alvo até set/2026). Regerar só quando a mudança for intencional:
 `uv run qe pricing_descolamento congelar` e revisar a diferença no git.
 """
 
@@ -100,7 +101,13 @@ def modelo_ref(arm: Armazenamento) -> dict[str, pd.DataFrame]:
         ],
         ignore_index=True,
     )
-    return {"modelo": tabela_modelo(mod), "modelo_cenarios": cen, "modelo_faixas": faixas}
+    bt = ler_parquet(arm, chaves.PROC_BACKTEST).assign(mes=lambda d: d["mes"].astype(str))
+    return {
+        "modelo": tabela_modelo(mod),
+        "modelo_cenarios": cen,
+        "modelo_faixas": faixas,
+        "backtest": bt,
+    }
 
 
 def congelar(arm: Armazenamento, destino: Path) -> Path:

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import typer
 
-from qe_core.armazenamento import armazenamento, ler_parquet
+from qe_core.armazenamento import armazenamento, gravar_parquet, ler_parquet
 from qe_pricing_descolamento import chaves, ingestao, referencias, tratamento
 
 app = typer.Typer(
@@ -43,6 +43,20 @@ def tratar(refazer: bool = typer.Option(False, help="Refaz todas as partições 
     r = tratamento.tratar(armazenamento(), refazer, aviso=typer.echo)
     for k, v in r.items():
         typer.echo(f"{k}: {v}")
+
+
+@app.command()
+def backtest():
+    """Backtest da página: modelo vigente em 16 decks com o SE realizado → processed/…/backtest.parquet."""
+    from qe_pricing_descolamento import backtest as bt
+    from qe_pricing_descolamento import modelo as M
+
+    arm = armazenamento()
+    x = bt.backtest(M.Base(arm))
+    gravar_parquet(arm, x, chaves.PROC_BACKTEST)
+    typer.echo(
+        f"backtest {M.MODELO.versao}: {x['deck'].nunique()} decks, {x['mes'].nunique()} meses-alvo, {len(x)} linhas"
+    )
 
 
 @app.command()

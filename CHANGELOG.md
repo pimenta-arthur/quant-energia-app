@@ -8,6 +8,15 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-19] Pricing Descolamento: backtest da página (bloco 5, dados)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, bloco 5; D025). Conferido contra o R9 de
+`reports/promocao/2026-10/`: 955 linhas (16 decks, meses-alvo jan/2025–set/2026) com diferença zero.
+
+### Adicionado
+- `qe pricing_descolamento backtest`: modelo vigente nos decks de jan, mar, mai, jul, set e nov de 2024 a jul/2026,
+  com o SE realizado como insumo, por cenário climático e com as variáveis do mês (deck, modelo, realizado).
+
 ## [2026-10-19] Pricing Descolamento: bloco 2 (modelo v2.2)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, bloco 2; D015, D022, D025). Conferido
