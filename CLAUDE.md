@@ -113,6 +113,10 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   DESSEM (`PDO_SIST` e `PDO_RESTOPER`, guardado inteiro em `.gz`), PLD **publicado** e limites.
 - Etapas: `qe pricing_descolamento ingerir | tratar [--refazer] | status | congelar`. T3 e T4 (DESSEM) particionados
   por mês, refeitos quando os dias do mês mudam; T1, T2 e T5 inteiros.
+- Modelo em `qe_pricing_descolamento.modelo.MODELO` (hoje `v2.2`: P(trava) logística por regime, k pareado com o
+  ano climático, D015, D022); definições de "descolado" e "travada" da base horária também vêm dele. Mudar = versão
+  nova (decisão na pesquisa, `congelar`, tag `pricing_descolamento-modelo-<versão>`). Os coeficientes por cenário
+  reproduzem o modelo para qualquer SE (teste): é o que a página vai usar.
 - Testes: `tests/referencias/pricing_descolamento/` (períodos fechados até set/2026), regerados com `congelar`.
   Paridade com a pesquisa é opt-in (`QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta do pacote>`).
 

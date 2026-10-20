@@ -5,6 +5,7 @@ description = "Funcionalidade Pricing Descolamento: descolamento do PLD do NE e 
 requires-python = ">=3.14"
 dependencies = [
     "qe-core",
+    "scikit-learn>=1.9.1",
     "typer>=0.27.3",
 ]
 

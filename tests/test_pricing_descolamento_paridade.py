@@ -2,13 +2,16 @@
 
 Conferência única da migração (docs/promocao_descolamento.md da pesquisa, seção 9). Só roda com
 QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta reports/promocao/AAAA-MM da pesquisa> e com o app tendo ingerido os mesmos
-arquivos brutos (hashes no manifesto da pasta). Bloco 1: leitores (R1 a R3) e tabelas-base (R4, R5).
+arquivos brutos (hashes no manifesto da pasta). Bloco 1: leitores (R1 a R3) e tabelas-base (R4, R5); bloco 2:
+modelo treinado (R6), cenários, insumos, faixas e o exemplo do T1/2027 (R7).
 """
 
 import datetime as dt
+import json
 import os
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -97,3 +100,78 @@ def test_R5_base_horaria(arm):
     a = ler_parquet(arm, chaves.PROC_BASE)
     a = a[a.index <= r.index.max()]
     _igual(a[r.columns], r, 1e-3)
+
+
+# --- bloco 2: modelo v2.2 (R6, R7) -----------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def rodada(arm):
+    from qe_pricing_descolamento import modelo as M
+
+    b, d = M.Base(arm), pd.Period("2026-10", "M")
+    mod = M.treinar(b, d)
+    meses = list(pd.period_range(d + 1, pd.Period("2030-12", "M"), freq="M"))
+    return M, b, d, mod, meses
+
+
+def _perto(a, r, tol):
+    a, r = np.asarray(a, float), np.asarray(r, float)
+    assert a.shape == r.shape and np.nanmax(np.abs(a - r)) <= tol
+
+
+def test_R6_modelo(rodada):
+    M, _b, _d, mod, _ = rodada
+    r6 = json.loads((Path(PASTA) / "R6_modelo.json").read_text(encoding="utf-8"))
+    f = r6["features"]
+    _perto(mod["mu"][f], [r6["mu"][x] for x in f], 1e-6)
+    _perto(mod["sd"][f], [r6["sd"][x] for x in f], 1e-6)
+    _perto([mod["vies_car"], mod["vies_car_n"]], [r6["vies_car_NE"], r6["vies_car_N"]], 1e-6)
+    perfil = [[mod["perfil_se"].get((m, h), np.nan) for h in range(24)] for m in range(1, 13)]
+    _perto(perfil, r6["perfil_se"], 1e-6)
+    for reg in M.REGIMES:
+        for s in M.SUBS:
+            c, r = mod[("p", reg, s)], r6["p_trava"][f"{reg}_{s}"]
+            _perto([*c.coef_[0], c.intercept_[0]], [*r["coef"], r["intercepto"]], 1e-6)
+            _perto([mod[("k", reg, s)]], [r6["k_reserva"][f"{reg}_{s}"]], 1e-6)
+    for s in M.SUBS:
+        a = sorted(mod[("kano", s)].items())
+        r = r6["k_ano_semestre"][s]
+        assert [k for k, _ in a] == [(x["ano"], x["semestre"]) for x in r]
+        _perto(
+            [[v["k"], v["folga_media"], v["horas"]] for _, v in a],
+            [[x["k"], x["folga_media"], x["horas"]] for x in r],
+            1e-6,
+        )
+
+
+def test_R7_cenarios_insumos_e_faixas(rodada):
+    M, b, d, mod, meses = rodada
+    cen = pd.concat([M.prever(b, d, m, 200.0, mod) for m in meses], ignore_index=True)
+    r7 = _r("R7_cenarios")
+    assert (
+        cen[["mes_alvo", "ano_hidro"]].values.tolist()
+        == r7[["mes_alvo", "ano_hidro"]].values.tolist()
+    )
+    for c in ["h", "SE", "renovavel_efetiva_NE", "hidraulica_N", "peso", "d_NE", "d_N", "piso"]:
+        _perto(cen[c], r7[c], 1e-9)
+    for c in ["p_trava_NE", "p_trava_N", "k_prev_NE", "k_prev_N"]:
+        _perto(cen[c], r7[c], 1e-9)
+    for c in ["c_NE", "c_N", "perfil_h"]:
+        _perto(np.vstack(cen[c]), np.vstack(r7[c]), 1e-9)
+    ri = _r("R7_insumos")
+    ins = pd.DataFrame([M.insumos_mes(b, d, pd.Period(m, "M"), mod) for m in ri["mes"]])
+    _perto(ins[ri.columns[1:]], ri[ri.columns[1:]], 1e-3)
+    x = M.projecao(b, d, pd.Series(200.0, index=meses), mod)
+    fx = json.loads((Path(PASTA) / "R7_faixas_se200.json").read_text(encoding="utf-8"))
+    for per in ("trimestre", "semestre", "ano"):
+        a, r = M.faixa_periodos(x, per).reset_index(), pd.DataFrame(fx[per])
+        assert a[per].tolist() == r[per].tolist()
+        _perto(a.iloc[:, 1:], r.iloc[:, 1:], 0.01)
+    ex = json.loads((Path(PASTA) / "R7_exemplo.json").read_text(encoding="utf-8"))
+    t = M.faixa_periodos(x, "trimestre").loc[ex["periodo"]]
+    assert [round(t.NE_justo, 2), round(t.NE_min, 2), round(t.NE_max, 2)] == [
+        ex["NE_justo"],
+        ex["NE_min"],
+        ex["NE_max"],
+    ]

@@ -8,6 +8,18 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-19] Pricing Descolamento: bloco 2 (modelo v2.2)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, bloco 2; D015, D022, D025). Conferido
+contra `reports/promocao/2026-10/`: R6 (modelo treinado no deck de out/2026) e R7 (282 cenários com SE = R$ 200,
+coeficientes, insumos, faixas e o exemplo do T1/2027: NE −28,09, faixa −45,07 a −18,69) com diferença zero.
+
+### Adicionado
+- `qe_pricing_descolamento.modelo`: `MODELO` = v2.2 com os parâmetros nomeados (início do treino 2024-01-01, C = 1,0,
+  mínimos de 20/50 horas, folga mínima de R$ 50 para o k pareado, viés da carga em 12 meses, 20 dias por cenário);
+  treino na data do deck, cenários, previsão com coeficientes por hora e agregação em preço justo e faixa.
+- Dependência `scikit-learn` (1.9.1, a mesma da pesquisa) no pacote do descolamento.
+
 ## [2026-10-19] Pricing Descolamento: bloco 1 (tabelas-base) e ingestão comum das fontes
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (pacote `docs/promocao_descolamento.md`, seções 2 a

@@ -5,7 +5,8 @@ Na migração (2026-10-19), as saídas do app foram conferidas contra o pacote d
 tests/test_pricing_descolamento_paridade.py) e congeladas aqui. Só entram períodos fechados, que não mudam com dados
 novos: leitores em três dias (um de cada formato do PDO_RESTOPER) e em dois decks, o PLD mensal até set/2026, as
 tabelas dos decks até out/2026 e o PLD horário e a base horária nos meses desses três dias (a base inteira foi
-conferida na migração; congelada inteira, ocuparia 14 MB no git). Regerar só quando a mudança for intencional:
+conferida na migração; congelada inteira, ocuparia 14 MB no git). Do modelo (bloco 2): o treino no deck de out/2026
+(dados até ago/2026) e os cenários com SE plano de R$ 200 até dez/2030, com coeficientes e faixas por período. Regerar só quando a mudança for intencional:
 `uv run qe pricing_descolamento congelar` e revisar a diferença no git.
 """
 
@@ -18,6 +19,7 @@ import pandas as pd
 from qe_core.armazenamento import Armazenamento, ler_parquet
 from qe_core.leitores import dessem, newave
 from qe_pricing_descolamento import chaves, tratamento
+from qe_pricing_descolamento import modelo as M
 
 PASTA = "pricing_descolamento"
 FIM = pd.Timestamp("2026-09-30 23:00")  # último mês fechado
@@ -26,6 +28,7 @@ ULTIMO_DECK = "202610"
 DIAS_LEITORES = [dt.date(2023, 3, 15), dt.date(2025, 3, 15), dt.date(2026, 9, 15)]
 DECKS_LEITORES = ["202401", "202610"]
 MESES = [f"{d:%Y-%m}" for d in DIAS_LEITORES]  # meses do PLD horário e da base horária congelados
+DECK_MODELO, FIM_MODELO, SE_REF = "2026-10", "2030-12", 200.0  # rodada de referência do modelo
 
 
 def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
@@ -57,7 +60,47 @@ def calcular(arm: Armazenamento) -> dict[str, pd.DataFrame]:
         out[f"deck_{k}"] = t[t["deck"] <= ULTIMO_DECK].reset_index(drop=True)
     base = ler_parquet(arm, chaves.PROC_BASE)
     out["base_horaria"] = base[base.index.strftime("%Y-%m").isin(MESES)]
-    return out
+    return out | modelo_ref(arm)
+
+
+def tabela_modelo(mod: dict) -> pd.DataFrame:
+    """O modelo treinado numa tabela longa (parâmetro, chave, valor)."""
+    lin = [("mu", f, v) for f, v in mod["mu"].items()] + [
+        ("sd", f, v) for f, v in mod["sd"].items()
+    ]
+    lin += [("vies_car", "NE", mod["vies_car"]), ("vies_car", "N", mod["vies_car_n"])]
+    lin += [("perfil_se", f"{m:02d}-{h:02d}", v) for (m, h), v in mod["perfil_se"].items()]
+    for reg in M.REGIMES:
+        for s in M.SUBS:
+            c = mod[("p", reg, s)]
+            coef = [] if c is None else [*c.coef_[0], c.intercept_[0]]
+            lin += [(f"p_trava_{reg}_{s}", str(i), v) for i, v in enumerate(coef)]
+            lin.append((f"k_reserva_{reg}", s, mod[("k", reg, s)]))
+        for s in M.SUBS:
+            for (ano, r), v in sorted(mod[("kano", s)].items()):
+                if r == reg:
+                    lin += [
+                        (f"k_ano_{s}", f"{ano}-{r}", v["k"]),
+                        (f"folga_ano_{s}", f"{ano}-{r}", v["folga_media"]),
+                    ]
+                    lin.append((f"horas_ano_{s}", f"{ano}-{r}", float(v["horas"])))
+    return pd.DataFrame(lin, columns=["parametro", "chave", "valor"])
+
+
+def modelo_ref(arm: Armazenamento) -> dict[str, pd.DataFrame]:
+    b, d = M.Base(arm), pd.Period(DECK_MODELO, "M")
+    mod = M.treinar(b, d)
+    meses = list(pd.period_range(d + 1, pd.Period(FIM_MODELO, "M"), freq="M"))
+    cen = pd.concat([M.prever(b, d, m, SE_REF, mod) for m in meses], ignore_index=True)
+    x = M.projecao(b, d, pd.Series(SE_REF, index=meses), mod)
+    faixas = pd.concat(
+        [
+            M.faixa_periodos(x, p).reset_index().rename(columns={p: "periodo"})
+            for p in ("trimestre", "semestre", "ano")
+        ],
+        ignore_index=True,
+    )
+    return {"modelo": tabela_modelo(mod), "modelo_cenarios": cen, "modelo_faixas": faixas}
 
 
 def congelar(arm: Armazenamento, destino: Path) -> Path:

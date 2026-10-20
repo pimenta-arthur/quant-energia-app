@@ -24,6 +24,7 @@ import pandas as pd
 from qe_core.armazenamento import Armazenamento, gravar_parquet, ler_parquet
 from qe_core.leitores import ccee, dessem, newave
 from qe_pricing_descolamento import chaves
+from qe_pricing_descolamento.modelo import MODELO
 
 SUBMERCADOS = ["SE", "S", "NE", "N"]
 VARS_SIST = {
@@ -56,8 +57,6 @@ RESTRICOES = {
     "+IV-SE -SE-IV": "IV>SE",
     "+SE-IV -IV-SE": "SE>IV",
 }
-# R$/MWh: multiplicador abaixo disso é penalidade numérica, não gargalo (trava = mult > LIMIAR_MULT)
-LIMIAR_MULT = 1.0
 
 
 # --- T1: PLD publicado --------------------------------------------------------------------------------
@@ -253,7 +252,7 @@ def base_horaria(
     w.columns = [f"{a}_{b}" for a, b in w.columns]
     r = re_.assign(rest=re_["composicao"].map(RESTRICOES))
     r = r[r["rest"].notna()]
-    r = r.assign(trava=r["mult"] > LIMIAR_MULT)
+    r = r.assign(trava=r["mult"] > MODELO.limiar_mult)  # abaixo: penalidade numérica, não gargalo
     rr = r.pivot_table(
         index="hora", columns="rest", values=["valor", "lsup", "trava"], aggfunc="max"
     )
@@ -262,7 +261,7 @@ def base_horaria(
     x = x[x.index >= desde].copy()
     for s in ("NE", "N"):
         x[f"d_{s}"] = x[s] - x["SE"]
-        x[f"desc_{s}"] = x[f"d_{s}"] < -1
+        x[f"desc_{s}"] = x[f"d_{s}"] < -MODELO.limiar_desc
     x["regime"] = np.where(x.index.month <= 6, "1S", "2S")
     x["sobra_ren_NE"] = x["renovavel_NE"] - x["demanda_NE"]
     x["sobra_NE"] = x["sobra_ren_NE"] + x["hidraulica_NE"] + x["termica_NE"]
