@@ -56,6 +56,19 @@ def test_deck_de_entrada_com_publicacoes(ambiente):
     assert not any("/v=" in c.split("sistema_agrint")[0] for c in arm.listar("raw/ccee_newave"))
 
 
+def test_publicacoes_iguais_contam_como_novo(ambiente):
+    """Duas publicações com SISTEMA e AGRINT iguais são uma versão só, e o pacote conta como novo."""
+    arm, entrada = ambiente
+    pub = _zip({"SISTEMA.DAT": b"s", "AGRINT.DAT": b"a"})
+    (entrada / "ccee_newave" / "NW202609.zip").write_bytes(
+        _zip({"NW202609_1aPublicacao.zip": pub, "NW202609_2aPublicacao.zip": pub})
+    )
+    [r] = ing_bandeiras.ingerir_entrada(arm, entrada)
+    assert r.novo and "2 arquivo(s) novo(s)" in r.mensagem
+    [marca] = [c for c in arm.listar("raw/ccee_newave/deck=2026-09") if c.endswith(".json")]
+    assert json.loads(arm.ler_bytes(marca))["origem"] == "NW202609.zip/NW202609_1aPublicacao.zip"
+
+
 def test_deck_de_entrada_sem_mes_fica_na_entrada(ambiente):
     arm, entrada = ambiente
     (entrada / "ccee_newave" / "deck.zip").write_bytes(

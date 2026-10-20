@@ -201,7 +201,7 @@ class _Grupo:
 
 def _grupos_newave(item: Path) -> list[_Grupo]:
     """Cada publicação (NWAAAAMM_kaPublicacao.zip) vira um grupo; o resto do que foi solto, outro."""
-    base = _Grupo(nomes=[item.name])
+    base = _Grupo(nomes=[item.name] if item.is_dir() else [])
     grupos = [base]
 
     def zip_(nome: str, dados: bytes, g: _Grupo) -> None:
@@ -245,6 +245,16 @@ def _mes_conferido(item: Path, mes: pd.Period | None, o_que: str) -> pd.Period:
     return mes or pasta
 
 
+_PESO = {"igual": 0, "novo": 1, "sobrescrito": 2, "divergente": 3}
+
+
+def _juntar(gravados: dict[str, str], novos: dict[str, str]) -> None:
+    """A mesma chave pode vir de duas publicações iguais: fica a situação mais forte (novo vence igual)."""
+    for c, s in novos.items():
+        if _PESO[s] >= _PESO[gravados.get(c, "igual")]:
+            gravados[c] = s
+
+
 def _newave(arm: Armazenamento, item: Path, sobrescrever: bool):
     gravados, meses, conjuntos = {}, set(), 0
     for g in _grupos_newave(item):
@@ -263,12 +273,15 @@ def _newave(arm: Armazenamento, item: Path, sobrescrever: bool):
             )
             conteudo = {a: g.achar(a) for a in ARQUIVOS_NEWAVE}
             v = versao(conteudo, ARQUIVOS_NEWAVE)
-            gravados |= {
-                raw_newave(deck, v, a): gravar_conferido(
-                    arm, raw_newave(deck, v, a), d, sobrescrever
-                )
-                for a, d in conteudo.items()
-            }
+            _juntar(
+                gravados,
+                {
+                    raw_newave(deck, v, a): gravar_conferido(
+                        arm, raw_newave(deck, v, a), d, sobrescrever
+                    )
+                    for a, d in conteudo.items()
+                },
+            )
             marca = raw_newave(deck, v, MARCA_NEWAVE)
             if not arm.existe(marca):
                 gravar_json(
@@ -292,12 +305,15 @@ def _newave(arm: Armazenamento, item: Path, sobrescrever: bool):
                 )
             conteudo = {a: g.achar(a) for a in ARQUIVOS_SISTEMA_AGRINT}
             v = versao(conteudo, ARQUIVOS_SISTEMA_AGRINT)
-            gravados |= {
-                raw_sistema_agrint(deck, v, a): gravar_conferido(
-                    arm, raw_sistema_agrint(deck, v, a), d, sobrescrever
-                )
-                for a, d in conteudo.items()
-            }
+            _juntar(
+                gravados,
+                {
+                    raw_sistema_agrint(deck, v, a): gravar_conferido(
+                        arm, raw_sistema_agrint(deck, v, a), d, sobrescrever
+                    )
+                    for a, d in conteudo.items()
+                },
+            )
             marca = raw_sistema_agrint(deck, v, MARCA_NEWAVE)
             if not arm.existe(marca):
                 gravar_json(
