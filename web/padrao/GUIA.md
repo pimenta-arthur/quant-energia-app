@@ -1,4 +1,4 @@
-# Padrão visual Quant Energia · v1.3 · 2026-10
+# Padrão visual Quant Energia · v1.3.1 · 2026-10
 
 Guia das páginas do Quant Energia (bandeiras tarifárias, PLD horário) para reaproveitar o mesmo layout em
 páginas e projetos novos. Matriz em `quant-energia-app/web/padrao/`; em outro projeto, **copiar a pasta
@@ -82,6 +82,8 @@ Página nova: copiar `modelo.html`, trocar textos e dados, apagar o que não usa
 - Fontes: IBM Plex Sans (texto) e IBM Plex Mono (números, eixos, rótulos), do Google Fonts.
 
 ## Versões
+- v1.3.1 (2026-10-20): `base.css` zera a margem do `body` (página só com `base.css`, como a metodologia do Pricing,
+  ficava 8 px mais baixa e à direita); as metodologias do Forecast e do Risk Lab deixam de repetir o `body { margin: 0 }`.
 - v1.3 (2026-10-20): marca do menu maior (`1.25rem`); as metodologias voltam ao título grande de texto corrido (a escala
   única da v1.2 foi desfeita; ficam duas escalas, painel e texto).
 - v1.2 (2026-10-20): espaçamento entre seções sem valor por funcionalidade (Risk Lab de 40 para 34 px nos painéis e 56 px
