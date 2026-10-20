@@ -4,7 +4,7 @@
   const PAGINA = document.getElementById("simulador") ? "simulador" : "acompanhamento";
   const CHAVES = ["estado", "referencia", ...{
     acompanhamento: ["dias_nivel", "dias_perfil", "semanas_perfil", "revisoes", "desvio_mensal", "dias_blocos", "horas", "contribuicao", "perfis", "perfis_dia", "calor", "media_mes", "indicadores", "mecanismos_se"],
-    simulador: ["calendario", "confianca", "backtest", "janela_padrao", "premissas_janelas", "premissas_mensal", "premissas_hist", "trajetoria", "ponta_janelas", "ponta_horas", "ponta_mensal", "ponta_dias", "ref_fora", "estresse", "desempenho", "sensibilidade", "media12", "ponta_quantis"],
+    simulador: ["calendario", "confianca", "backtest", "janela_padrao", "premissas_janelas", "premissas_mensal", "premissas_hist", "trajetoria", "ponta_janelas", "ponta_horas", "ponta_mensal", "ponta_dias", "ref_fora", "ref_fora_tipo", "piso_hist", "estresse", "desempenho", "sensibilidade", "media12", "ponta_quantis"],
   }[PAGINA]];
   const D = {};
   try {
@@ -46,7 +46,13 @@
   const corAno = a => `var(--a${a}, var(--ink))`;
   const dica = document.getElementById("dica");
   function dicaEm(el, txt) {
-    el.addEventListener("pointermove", e => { dica.innerHTML = typeof txt === "function" ? txt(e) : txt; dica.style.left = e.clientX + "px"; dica.style.top = e.clientY + "px"; dica.hidden = false; });
+    // a dica muda de lado perto da borda direita ou de baixo da tela, para não ser cortada (pesquisa: D090)
+    el.addEventListener("pointermove", e => {
+      dica.innerHTML = typeof txt === "function" ? txt(e) : txt; dica.hidden = false; dica.style.transform = "none";
+      const w = dica.offsetWidth, h = dica.offsetHeight;
+      const x = e.clientX + 12 + w > innerWidth - 8 ? e.clientX - 12 - w : e.clientX + 12, y = e.clientY + 12 + h > innerHeight - 8 ? e.clientY - 12 - h : e.clientY + 12;
+      dica.style.left = Math.max(8, x) + "px"; dica.style.top = Math.max(8, y) + "px";
+    });
     el.addEventListener("pointerleave", () => { dica.hidden = true; });
   }
   function S(svg, tag, at, txt) { const e = document.createElementNS(ns, tag); for (const k in at) if (at[k] != null) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; }
@@ -571,10 +577,10 @@
     const cal = [...D.calendario].sort((a, b) => a.mes < b.mes ? -1 : 1);
     const TIPOS_SIM = [["útil", "parte_util", "Dia útil"], ["sábado", "parte_sabado", "Sábado"], ["domingo/feriado", "parte_domingo", "Domingo/feriado"]];
     const CAMPOS = ["horas_piso", "frac_fora", "premio_ponta"];
-    const NF = 24 - NP;
     const JANS = D.premissas_janelas;
     let JAN = String(D.janela_padrao);
-    // valor padrão de cada premissa (D061): horas no piso e prêmio da janela; desconto das outras horas = média dos 12 meses
+    // valor padrão de cada premissa: horas no piso e prêmio da janela; desconto das outras horas = média dos 12 meses,
+    // um número só para os três tipos de dia (modelo v2, D087; D.ref_fora traz o mesmo valor em cada tipo)
     const padrao = (t, k) => (k === "frac_fora" && D.ref_fora && D.ref_fora[t].valor != null ? D.ref_fora[t].valor : JANS[JAN][t][k]);
     const copiaJan = () => Object.fromEntries(TIPOS_SIM.map(([t]) => [t, Object.fromEntries(CAMPOS.map(k => [k, padrao(t, k)]))]));
     const editouPrem = () => TIPOS_SIM.some(([t]) => CAMPOS.some(k => Math.abs(PREM[t][k] - padrao(t, k)) > 1e-6) || Object.values(FIX[t]).some(v => v != null));
@@ -584,17 +590,18 @@
     // padrão (D073): 5% dos dias úteis com a ponta no p90 das horas de ponta do mês corrente
     const P90_MES = D.sensibilidade.preco, PCT0 = D.sensibilidade.pct;  // prontos do Python (publicacao.contas_simulador)
     let PCT = PCT0;
+    let LEG_SENS = "", FORA_DICA = "", FORA_EF = "";
     const escolherPct = e => { const b = e.target.closest("[data-q]"); if (!b || (e.type === "keydown" && e.key !== "Enter" && e.key !== " ")) return; e.preventDefault(); PCT = +b.dataset.q; atualizar(); };
-    const ESTR0 = JSON.parse(JSON.stringify(ESTR));
     // preço da ponta: por padrão acompanha o DECOMP (DECOMP + prêmio da janela ou do cenário); se o usuário digitar um
     // preço, ele fica fixo e o prêmio passa a ser preço − DECOMP (D058)
     const FIX = Object.fromEntries(TIPOS_SIM.map(([t]) => [t, { ponta: null, sens: null }]));
     const premioEf = (t, k, Dm) => (k === "sens" && t !== "útil" ? premioEf(t, "ponta", Dm) : k === "sens" && FIX[t][k] == null && P90_MES != null ? P90_MES - Dm : FIX[t][k] != null ? FIX[t][k] - Dm : k === "ponta" ? PREM[t].premio_ponta : ESTR[t][k]);
     const precoEf = (t, k, Dm, P) => Math.max(Dm + premioEf(t, k, Dm), P);
+    const premios = (k, Dm) => Object.fromEntries(TIPOS_SIM.map(([t]) => [t, premioEf(t, k, Dm)]));
     // mês padrão: o primeiro cuja RV0 ainda não saiu (o próximo mês a ser decidido)
     let MES_I = Math.max(0, cal.findIndex(c => !c.rv0_publicada));
     let DEC = Math.round(ref.decomp_vigente);
-    // conta do mês: web/risk_lab_dessem/simulador_conta.js (a mesma do Python, com teste de paridade)
+    // conta do mês, do resumo e dos dias: web/risk_lab_dessem/simulador_conta.js (a mesma do Python, com teste de paridade)
     const CONTA = window.ContaSimulador.criar(NV, NP);
     function prever(c, Dm, cenario) {
       const P = c.piso;
@@ -604,7 +611,7 @@
       const conf = D.confianca.filter(r => r.h === c.h), k = conf.find(r => r.direcao_prevista === dir), e = conf[0];
       return { pld, tot, delta, ...comp, porTipo, dir, acerto: k ? k.acerto : null, meses: k ? k.meses : 0, lo: Math.max(pld - e.erro_p90, P), hi: pld - e.erro_p10, e };
     }
-    // controles do mês e do DECOMP
+    // linha de entrada: mês, DECOMP, janela e premissas padrão (D090)
     const selMesSim = document.getElementById("sel-mes"), inpDec = document.getElementById("inp-decomp");
     cal.forEach((c, i) => { const o = document.createElement("option"); o.value = i; o.textContent = `${rot(c.mes)} · ${c.h === 1 ? "1 mês" : c.h + " meses"} de antecedência`; selMesSim.appendChild(o); });
     selMesSim.value = MES_I; inpDec.value = DEC;
@@ -613,52 +620,56 @@
     inpDec.addEventListener("blur", () => { inpDec.value = DEC; });
     document.getElementById("btn-decomp").addEventListener("click", () => { DEC = Math.round(ref.decomp_vigente); inpDec.value = DEC; atualizar(); });
 
-    // quadro de premissas (editável)
+    // tabela única (D090): premissa × útil, sábado, domingo/feriado, "No mês", "Peso" e a linha "Desvio do mês"
     const tPrem = document.querySelector("#t-prem tbody");
     const LINHAS_PREM = [
       { k: "horas_piso", rot: "Vale no piso", un: "h/dia, de 8", dica: "Horas do vale (8h–15h) no piso por dia: média dos dias da janela, por tipo de dia.", passo: 0.1, de: v => v, para: v => Math.min(Math.max(v, 0), NV), casas: 1 },
-      { k: "frac_fora", rot: "Outras horas", un: "% do espaço", dica: "Desconto das horas fora do piso e da ponta sobre o DECOMP, em % do espaço DECOMP − piso. Padrão: média dos 12 meses encerrados (com DECOMP acima do piso), que acertou mais no backtest.", passo: 1, de: v => v * 100, para: v => v / 100, casas: 0,
-        extra: t => { const c = cal[MES_I], esp = Math.max(DEC - c.piso, 0), v = PREM[t].frac_fora * esp; const jv = JANS[JAN][t].frac_fora; return `${sn(v, 0)} R$ · janela ${sn(jv * 100, 0)}%`; } },
+      { k: "frac_fora", rot: "Outras horas", un: "% do espaço · todos os dias", unico: true, dica: "Desconto das horas fora do piso e da ponta sobre o DECOMP, em % do espaço DECOMP − piso, um número só para os três tipos de dia. Padrão: média dos 12 meses encerrados (com DECOMP acima do piso), sem separar tipo de dia; dá o mesmo resultado que os três valores por tipo no backtest (D087).", passo: 0.5, de: v => v * 100, para: v => v / 100, casas: 1,
+        extra: () => { const c = cal[MES_I], esp = Math.max(DEC - c.piso, 0), v = PREM["útil"].frac_fora * esp, jt = JANS[JAN].todos, rt = D.ref_fora_tipo;
+          // D089: com a janela no piso (espaço < R$ 20) o % não é comparável; mostra o desvio em R$/h
+          const jan = jt.espaco_fora != null && jt.espaco_fora < 20 ? `janela ${JAN}d no piso: ${sn(jt.desvio_fora, 0)} R$/h` : `janela ${JAN}d ${sn(jt.frac_fora * 100, 0)}%`;
+          const efeito = esp > 0 ? `${sn(v, 1)} R$/h sobre o DECOMP` : "DECOMP no piso: sem efeito", porTipo = rt ? `12 meses por tipo: útil ${sn(rt["útil"].valor * 100, 0)}% · sáb. ${sn(rt["sábado"].valor * 100, 0)}% · dom. ${sn(rt["domingo/feriado"].valor * 100, 0)}%` : "";
+          FORA_DICA = `<b>${efeito}</b><br>${jan}${porTipo ? "<br>" + porTipo : ""}<br>Padrão: média dos 12 meses encerrados, um número para todos os dias (D087).`;
+          return efeito; } },
       { k: "ponta", rot: "Preço da ponta", un: "R$/MWh 18h–21h", dica: "Preço médio da ponta = DECOMP digitado + prêmio da janela (preço − DECOMP dos mesmos dias). Digite um preço para fixá-lo.", passo: 1, preco: true, casas: 0 },
-      { k: "sens", rot: "Sensibilidade", un: "ponta útil · % dias", dica: "Preço da ponta do dia útil no cenário (padrão: p90 das horas de ponta do mês corrente) e % dos dias úteis nesse preço, escolhido na régua.", passo: 1, preco: true, casas: 0, so_util: true },
     ];
     const inpPrem = {}, extraPrem = {};
     function montarPrem() {
       tPrem.replaceChildren();
       LINHAS_PREM.forEach(L => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td><span class="rotulo-prem" title="${L.dica || ""}">${L.rot}</span>${L.un ? `<small style="display:block;color:var(--ink-3)">${L.un}</small>` : ""}</td>`;
+        tr.innerHTML = `<td><span class="rotulo-prem" title="${L.dica || ""}">${L.rot}</span>${L.un ? `<small style="display:block;color:var(--ink-3)">${L.un}</small>` : ""}<small class="peso-lbl" data-pl="${L.k}"></small></td>`;
         TIPOS_SIM.forEach(([t]) => {
-          if (L.so_util && t !== "útil") return;
+          if (L.unico && t !== "útil") return;
           const td = document.createElement("td"); td.className = "n";
-          if (L.so) { td.dataset.k = L.k; td.dataset.t = t; }
-          else {
-            const inp = document.createElement("input"); inp.type = "number"; inp.step = String(L.passo);
-            inp.setAttribute("aria-label", `${L.rot} · ${t}`);
-            const ler = () => (L.preco ? precoEf(t, L.k, DEC, cal[MES_I].piso) : L.de(PREM[t][L.k]));
-            inp.value = +ler().toFixed(L.casas);
-            inp.addEventListener("input", () => { const v = Number(inp.value); if (inp.value === "" || !isFinite(v)) return;
-              if (L.preco) FIX[t][L.k] = Math.max(v, 0); else PREM[t][L.k] = L.para(v);
-              atualizar(); });
-            inp.addEventListener("blur", () => { inp.value = +ler().toFixed(L.casas); });
-            inpPrem[L.k + "|" + t] = inp; td.appendChild(inp);
-            if (L.extra || L.preco) { const sm = document.createElement("small"); sm.style.cssText = "display:block;color:var(--ink-3);margin-top:2px"; td.appendChild(sm); extraPrem[L.k + "|" + t] = sm; }
-          }
+          if (L.unico) td.colSpan = 3;
+          const inp = document.createElement("input"); inp.type = "number"; inp.step = String(L.passo);
+          inp.setAttribute("aria-label", L.unico ? `${L.rot} · todos os dias` : `${L.rot} · ${t}`);
+          const ler = () => (L.preco ? precoEf(t, L.k, DEC, cal[MES_I].piso) : L.de(PREM[t][L.k]));
+          inp.value = +ler().toFixed(L.casas);
+          inp.addEventListener("input", () => { const v = Number(inp.value); if (inp.value === "" || !isFinite(v)) return;
+            if (L.preco) FIX[t][L.k] = Math.max(v, 0); else if (L.unico) TIPOS_SIM.forEach(([u]) => { PREM[u][L.k] = L.para(v); }); else PREM[t][L.k] = L.para(v);
+            atualizar(); });
+          inp.addEventListener("blur", () => { inp.value = +ler().toFixed(L.casas); });
+          inpPrem[L.k + "|" + t] = inp;
+          if (L.unico) {
+            // desconto único (D087) num campo só, no eixo da coluna Útil, com os detalhes na dica
+            const w = document.createElement("div"); w.className = "lin-campo centro"; w.append(inp);
+            w.insertAdjacentHTML("beforeend", '<span class="info" tabindex="0" aria-label="Detalhes do desconto das outras horas">ⓘ</span>');
+            dicaEm(w.lastElementChild, () => FORA_DICA + (FORA_EF ? "<br>" + FORA_EF : "")); td.appendChild(w);
+          } else td.appendChild(inp);
+          if (L.extra || L.preco) { const sm = document.createElement("small"); sm.style.cssText = "display:block;color:var(--ink-3);margin-top:2px"; td.appendChild(sm); extraPrem[L.k + "|" + t] = sm; }
+          if (!L.unico) td.insertAdjacentHTML("beforeend", `<small class="contrib" data-c="${L.k}|${t}"></small>`);
           tr.appendChild(td);
-          if (L.so_util && t === "útil") {
-            const tdR = document.createElement("td"); tdR.colSpan = 2; tdR.className = "regua-cel";
-            tdR.innerHTML = '<div class="regua" id="regua-sens"></div><small id="leg-sens" style="display:block;color:var(--ink-3);margin-top:4px"></small>';
-            tdR.querySelector(".regua").addEventListener("click", escolherPct);
-            tdR.querySelector(".regua").addEventListener("keydown", escolherPct);
-            tr.appendChild(tdR);
-          }
         });
+        tr.insertAdjacentHTML("beforeend", `<td class="n col-mes" data-m="${L.k}"></td><td class="n col-mes" data-p="${L.k}"></td>`);
         tPrem.appendChild(tr);
       });
+      tPrem.insertAdjacentHTML("beforeend", `<tr class="destaque"><td>Desvio do mês<small class="peso-lbl" data-pl="tot"></small></td>${TIPOS_SIM.map(([t]) => `<td class="n" data-dt="${t}"></td>`).join("")}<td class="n col-mes" data-m="tot"></td><td class="n col-mes">100%</td></tr>`);
     }
     function marcarEditados() {
       const j = JANS[JAN];
-      LINHAS_PREM.filter(L => !L.so).forEach(L => TIPOS_SIM.forEach(([t]) => {
+      LINHAS_PREM.forEach(L => TIPOS_SIM.forEach(([t]) => {
         const inp = inpPrem[L.k + "|" + t];
         if (!inp) return;
         if (L.preco) {
@@ -672,14 +683,44 @@
           return;
         }
         inp.classList.toggle("editado", Math.abs(padrao(t, L.k) - PREM[t][L.k]) > 1e-6);
-        if (L.extra) extraPrem[L.k + "|" + t].textContent = L.extra(t);
+        if (L.extra) extraPrem[L.k + "|" + t].innerHTML = L.extra(t);
       }));
-      [["útil", "th-util", "Útil"], ["sábado", "th-sab", "Sábado"], ["domingo/feriado", "th-dom", "Dom./feriado"]].forEach(([t, id, nome]) => { document.getElementById(id).innerHTML = `${nome}<small style="display:block;color:var(--ink-3);font-weight:400">${n(j[t].dias)} dias</small>`; });
-      tPrem.querySelectorAll("td[data-k]").forEach(td => { const L = LINHAS_PREM.find(x => x.k === td.dataset.k); td.textContent = L.f(td.dataset.t, j); });
+      const c = cal[MES_I];
+      [["útil", "th-util", "Útil", "parte_util"], ["sábado", "th-sab", "Sábado", "parte_sabado"], ["domingo/feriado", "th-dom", "Dom./<wbr>feriado", "parte_domingo"]].forEach(([t, id, nome, col]) => { document.getElementById(id).innerHTML = `${nome}<small style="display:block;color:var(--ink-3);font-weight:400">${pct(c[col])} do mês<br>${n(j[t].dias)} dias</small>`; });
+    }
+    function voltarPadrao() {
+      PREM = copiaJan(); TIPOS_SIM.forEach(([t]) => { FIX[t] = { ponta: null, sens: null }; }); PCT = PCT0; montarPrem(); atualizar();
     }
     abas("abas-jan", Object.keys(JANS).filter(x => /^\d+$/.test(x)).map(x => [x, `${x}d${+x === D.janela_padrao ? " (padrão)" : ""}`]), JAN, v => { JAN = v; PREM = copiaJan(); TIPOS_SIM.forEach(([t]) => { FIX[t].ponta = null; }); montarPrem(); atualizar(); });
-    document.getElementById("btn-prem").addEventListener("click", () => { PREM = copiaJan(); TIPOS_SIM.forEach(([t]) => { FIX[t] = { ponta: null, sens: null }; }); PCT = PCT0; montarPrem(); atualizar(); });
+    // "↺ Premissas padrão" volta também a janela de 14 dias (pesquisa: antes ficava na janela escolhida e parecia não fazer nada)
+    document.getElementById("btn-prem").addEventListener("click", () => {
+      JAN = String(D.janela_padrao); document.querySelectorAll("#abas-jan button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === JAN)));
+      voltarPadrao(); });
     montarPrem();
+    // sensibilidade presa à tabela (D090, D093): preço da ponta útil no cenário (FIX["útil"].sens) e régua do %
+    {
+      const inp = document.getElementById("inp-sens"), ler = () => precoEf("útil", "sens", DEC, cal[MES_I].piso);
+      inp.value = Math.round(ler());
+      inp.addEventListener("input", () => { const v = Number(inp.value); if (inp.value === "" || !isFinite(v)) return; FIX["útil"].sens = Math.max(v, 0); atualizar(); });
+      inp.addEventListener("blur", () => { inp.value = Math.round(ler()); });
+      inpPrem["sens|útil"] = inp; extraPrem["sens|útil"] = document.getElementById("sens-extra");
+      const rg = document.getElementById("regua-sens"); rg.addEventListener("click", escolherPct); rg.addEventListener("keydown", escolherPct);
+      dicaEm(document.getElementById("info-sens"), () => LEG_SENS);
+      // a grade da sensibilidade copia as larguras reais das colunas da tabela (campo no eixo da coluna Útil)
+      const grade = document.querySelector(".sim-sens.grade"), tabela = document.getElementById("t-prem");
+      if (grade && tabela && window.ResizeObserver) {
+        const ajustar = () => { const ths = [...tabela.querySelectorAll("thead th")].filter(th => getComputedStyle(th).display !== "none");
+          grade.style.gridTemplateColumns = ths.map(th => th.getBoundingClientRect().width + "px").join(" "); };
+        new ResizeObserver(ajustar).observe(tabela); ajustar();
+      }
+    }
+    function marcarSens() {
+      const inp = inpPrem["sens|útil"], sm = extraPrem["sens|útil"];
+      inp.classList.toggle("editado", FIX["útil"].sens != null);
+      if (document.activeElement !== inp) inp.value = Math.round(precoEf("útil", "sens", DEC, cal[MES_I].piso));
+      const pr = premioEf("útil", "sens", DEC);
+      sm.textContent = FIX["útil"].sens == null && P90_MES != null ? `p90 de ${rot(D.sensibilidade.mes)}` : FIX["útil"].sens != null ? `fixado · prêmio ${sn(pr, 0)}` : `${n(DEC)} ${pr < 0 ? "−" : "+"} ${n(Math.abs(pr), 0)}`;
+    }
     let HP_PER = "6m";  // período comum aos três gráficos do histórico (D073)
     const ponta = acompanharPonta(() => HP_PER, (t, p) => { PREM[t].premio_ponta = p; FIX[t].ponta = null; atualizar(); },
       t => ({ premio: PREM[t].premio_ponta, livre: FIX[t].ponta == null, dec: DEC, piso: cal[MES_I].piso }));
@@ -699,7 +740,9 @@
         const diasJ = dias, dias_ = estendido ? TR.dias.slice(-60) : dias, naJan = r => r[0] >= j.inicio && r[0] <= j.fim;
         const w = svg.viewBox.baseVal.width || 340, h = svg.viewBox.baseVal.height || 96, m = { l: 34, r: 6, t: estendido ? 18 : 8, b: 16 }, N = dias_.length;
         if (!N) return;
-        const vals = dias_.flatMap(r => [r[iT[col]], ref2 ? r[iT[ref2]] : null]).filter(v => v != null);
+        // D089: no desconto, dias com DECOMP no piso (espaço < R$ 20) não definem a escala; aparecem vazados e limitados
+        const fracEsp = col === "frac_fora";
+        const vals = dias_.filter(r => !fracEsp || r[iT.espaco] >= 20).flatMap(r => [r[iT[col]], ref2 ? r[iT[ref2]] : null]).filter(v => v != null);
         const ax = eixo(Math.min(y0 ?? Infinity, ...vals), Math.max(y1 ?? -Infinity, ...vals), 2);
         const bw = (w - m.l - m.r) / N, x = i => m.l + (i + 0.5) * bw, y = v => m.t + (h - m.t - m.b) * (1 - (v - ax.a) / (ax.b - ax.a));
         ax.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 4, y: y(t) + 3, "text-anchor": "end" }, fmt(t)); });
@@ -708,14 +751,15 @@
           if (i0 > 0) { const xs_ = x(i0) - bw / 2; S(svg, "line", { x1: xs_, x2: xs_, y1: m.t - 12, y2: h - m.b, stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3" });
             S(svg, "text", { x: xs_ + 4, y: m.t - 4, class: "forte", style: "fill:var(--accent)" }, `janela de ${diasJ.length} dias →`); } }
         dias_.forEach((r, i) => {
-          const v = r[iT[col]], cor = corTipo(r[1]);
+          const v0 = r[iT[col]], cor = corTipo(r[1]), piso = fracEsp && r[iT.espaco] < 20, v = piso && v0 != null ? Math.max(Math.min(v0, ax.b), ax.a) : v0;
           if (v != null) {
             if (barras) S(svg, "rect", { x: x(i) - Math.min(bw * 0.35, 7), y: Math.min(y(v), base), width: Math.min(bw * 0.7, 14), height: Math.max(1, Math.abs(y(v) - base)), fill: cor, rx: 1.5, opacity: estendido && !naJan(r) ? 0.4 : 1 });
+            else if (piso) S(svg, "circle", { cx: x(i), cy: y(v), r: N > 45 ? 2 : 3.2, fill: "none", stroke: cor, "stroke-width": 1.2, opacity: 0.5 });
             else S(svg, "circle", { cx: x(i), cy: y(v), r: N > 45 ? 2 : 3.2, fill: cor });
           }
           if (i === 0 || i === N - 1 || (r[0].endsWith("-01") && i > Math.max(2, N * 0.06) && i < Math.min(N - 3, N * 0.94))) S(svg, "text", { x: x(i), y: h - 4, "text-anchor": "middle" }, dataBr(r[0]).slice(0, 5));
           const a = S(svg, "rect", { x: x(i) - bw / 2, y: m.t, width: bw, height: h - m.t - m.b, fill: "transparent" });
-          dicaEm(a, `<b>${dataBr(r[0])} ${diaSem(r[0])}</b> · ${r[1] || "—"}<br>vale no piso ${n(r[iT.horas_piso], 0)} de 8 h · outras horas ${sn(r[iT.frac_fora] * 100, 0)}% do espaço<br>ponta média R$ ${n(r[iT.ponta_media], 0)} (prêmio ${sn(r[iT.premio_ponta], 0)}) · hora mais cara ${n(r[iT.ponta_max_hora], 0)}<br>DECOMP ${n(r[iT.decomp], 1)} · espaço ${n(r[iT.espaco], 1)}`);
+          dicaEm(a, `<b>${dataBr(r[0])} ${diaSem(r[0])}</b> · ${r[1] || "—"}<br>vale no piso ${n(r[iT.horas_piso], 0)} de 8 h · outras horas ${r[iT.espaco] < 20 ? `${sn(r[iT.frac_fora] * 20, 1)} R$/h sobre o DECOMP (no piso)` : `${sn(r[iT.frac_fora] * 100, 0)}% do espaço`}<br>ponta média R$ ${n(r[iT.ponta_media], 0)} (prêmio ${sn(r[iT.premio_ponta], 0)}) · hora mais cara ${n(r[iT.ponta_max_hora], 0)}<br>DECOMP ${n(r[iT.decomp], 1)} · espaço ${n(r[iT.espaco], 1)}`);
         });
         if (ref2) S(svg, "path", { d: dias_.map((r, i) => `${i ? "L" : "M"}${x(i) - bw / 2},${y(r[iT[ref2]])}L${x(i) + bw / 2},${y(r[iT[ref2]])}`).join(""), fill: "none", stroke: "var(--ink)", "stroke-width": 1.4, "stroke-dasharray": "3 2" });
       };
@@ -724,23 +768,102 @@
       mini("g-tr-ponta", "ponta_media", v => n(v), 0, null, true, "decomp", true);
     }
 
-    // peso de cada premissa no desvio do mês escolhido
+    // peso de cada premissa no desvio do mês escolhido, dentro da tabela (colunas "No mês" e "Peso")
     const GRUPOS = [["vpiso", "Vale no piso", "var(--b-vale)", 1], ["fora", "Outras horas", "var(--b-demais)", 1], ["ponta", "Ponta", "var(--b-ponta)", 1]];
-    function desenharPeso(r, c) {
-      const tipos = TIPOS_SIM.filter(([t]) => r.porTipo[t]);
-      const curto = { "útil": "Útil", "sábado": "Sábado", "domingo/feriado": "Dom./feriado" };
-      document.querySelector("#t-peso thead").innerHTML = `<tr><th>Horas</th>${tipos.map(([t]) => `<th class="n">${curto[t]}<small>${pct(r.porTipo[t].s)} do mês</small></th>`).join("")}<th class="n">Mês</th><th class="n">Peso</th></tr>`;
-      const absTot = GRUPOS.reduce((a, [k]) => a + Math.abs(r[k]), 0) || 1;
-      document.querySelector("#t-peso tbody").innerHTML = GRUPOS.map(([k, nome, cor]) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${cor};margin-right:6px"></i>${nome}</td>${tipos.map(([t]) => `<td class="n">${sn(r.porTipo[t].s * r.porTipo[t][k], 1)}</td>`).join("")}<td class="n"><b>${sn(r[k], 1)}</b></td><td class="n">${pct(Math.abs(r[k]) / absTot)}</td></tr>`).join("") +
-        `<tr class="destaque"><td>Desvio</td>${tipos.map(([t]) => { const d = r.porTipo[t]; return `<td class="n">${sn(d.s * (d.vpiso + d.fora + d.ponta), 1)}</td>`; }).join("")}<td class="n"><b>${sn(r.delta, 1)}</b></td><td class="n">100%</td></tr>`;
+    const G_DE = { horas_piso: "vpiso", frac_fora: "fora", ponta: "ponta" };
+    function desenharPeso(r) {
+      const tipos = TIPOS_SIM.filter(([t]) => r.porTipo[t]), absTot = GRUPOS.reduce((a, [k]) => a + Math.abs(r[k]), 0) || 1;
+      const curtoT = { "útil": "útil", "sábado": "sáb.", "domingo/feriado": "dom." }, q = sel => tPrem.querySelector(sel);
+      Object.entries(G_DE).forEach(([k, g]) => {
+        const m = q(`[data-m="${k}"]`), p = q(`[data-p="${k}"]`), pl = q(`[data-pl="${k}"]`), peso = pct(Math.abs(r[g]) / absTot);
+        if (m) m.innerHTML = `<b>${sn(r[g], 1)}</b>`;
+        if (p) p.textContent = peso;
+        if (pl) pl.textContent = `no mês ${sn(r[g], 1)} · peso ${peso}`;
+        if (k === "frac_fora") FORA_EF = "Efeito no mês por tipo: " + tipos.map(([t]) => `${curtoT[t]} ${sn(r.porTipo[t].s * r.porTipo[t][g], 1)}`).join(" · ");
+        else TIPOS_SIM.forEach(([t]) => { const cc = q(`[data-c="${k}|${t}"]`); if (cc) cc.textContent = r.porTipo[t] ? `efeito ${sn(r.porTipo[t].s * r.porTipo[t][g], 1)}` : "—"; });
+      });
+      TIPOS_SIM.forEach(([t]) => { const cc = q(`[data-dt="${t}"]`), d = r.porTipo[t]; if (cc) cc.textContent = d ? sn(d.s * (d.vpiso + d.fora + d.ponta), 1) : "—"; });
+      const mt = q('[data-m="tot"]'); if (mt) mt.innerHTML = `<b>${sn(r.delta, 1)}</b>`;
+      const pt = q('[data-pl="tot"]'); if (pt) pt.textContent = `no mês ${sn(r.delta, 1)} · peso 100%`;
     }
 
     // régua da sensibilidade (0–100%) e âncora no histórico de 12 meses da ponta dos dias úteis
     function desenharSens(r, c, mix, pu) {
-      document.getElementById("regua-sens").innerHTML = [5, 25, 50, 75, 100].map(q => `<span role="button" tabindex="0" data-q="${q}" class="${q === PCT ? "sel" : ""}"><b>${q}%</b>${n(mix(q / 100), 1)}</span>`).join("") +
-  "";
+      document.getElementById("regua-sens").innerHTML = [5, 25, 50, 75, 100].map(q => `<span role="button" tabindex="0" data-q="${q}" class="${q === PCT ? "sel" : ""}"><b>${q}%</b>${n(mix(q / 100), 1)}</span>`).join("");
       const dias = (D.ponta_dias || {})["útil"] || [], k = dias.filter(v => v >= pu).length;
-      document.getElementById("leg-sens").textContent = `PLD do mês por % dos dias úteis com a ponta em R$ ${n(pu)} (clique para escolher). Nos últimos 12 meses, a ponta ficou em R$ ${n(pu)} ou mais em ${pct(dias.length ? k / dias.length : null)} dos dias úteis (${k} de ${dias.length}).`;
+      LEG_SENS = `PLD do mês por % dos dias úteis com a ponta em R$ ${n(pu)} (clique para escolher). Nos últimos 12 meses, a ponta ficou em R$ ${n(pu)} ou mais em ${pct(dias.length ? k / dias.length : null)} dos dias úteis (${k} de ${dias.length}).`;
+    }
+
+    // dias do mês (D095): cada dia recebe o dia típico do seu tipo; a média dos dias é o PLD previsto do mês
+    let DIAS_CSV = null;
+    function desenharDias(r, c, sensMes, pu) {
+      const L = CONTA.diasMes(c, DEC, PREM, premios("ponta", DEC), premios("sens", DEC), PCT), N = L.length || 1;
+      const pldMes = Math.max(L.reduce((a, x) => a + x.pld_dia, 0) / N, c.piso), confere = Math.abs(pldMes - r.pld) < 0.05;
+      const estU = (L.find(x => x._cod === "u") || {}).pld_dia_ponta_estressada;
+      document.querySelector("#t-dias thead").innerHTML = `<tr><th>Data</th><th>Tipo</th><th class="n">Piso<small>h/dia</small></th><th class="n">Outras<small>R$</small></th><th class="n">Ponta<small>R$</small></th><th class="n">PLD dia<small>R$/MWh</small></th><th class="n" title="PLD esperado do dia útil com a ponta em R$ ${n(pu)} em ${n(PCT)}% dos dias úteis: (1 − ${n(PCT)}%) × PLD do dia + ${n(PCT)}% × PLD do dia com essa ponta. Com a ponta em R$ ${n(pu)} o dia todo: ${n(estU, 1)}.">Estresse ${n(PCT)}%<small>ponta ${n(pu)}</small></th></tr>`;
+      document.querySelector("#t-dias tbody").innerHTML = L.map(x => `<tr class="${x._cod === "u" ? "" : "fds"}"><td>${dataBr(x.data).slice(0, 5)} ${x.dia}</td><td>${x.tipo}</td><td class="n">${n(x.horas_piso, 1)}</td><td class="n">${n(x.outras_horas, 1)}</td><td class="n">${n(x.ponta, 1)}</td><td class="n"><b>${n(x.pld_dia, 1)}</b></td><td class="n">${n(x.pld_dia_esperado_com_pct, 1)}</td></tr>`).join("") +
+        `<tr class="destaque"><td colspan="5">Média dos ${L.length} dias${confere ? " = PLD previsto ✓" : ""}</td><td class="n"><b>${n(pldMes, 1)}</b></td><td class="n">${n(Math.max(L.reduce((a, x) => a + x.pld_dia_esperado_com_pct, 0) / N, c.piso), 1)}</td></tr>`;
+      const nU = L.filter(x => x._cod === "u").length, nS = L.filter(x => x._cod === "s").length, nD = L.length - nU - nS;
+      document.getElementById("dias-txt").innerHTML = `${nU} úteis, ${nS} sábados, ${nD} domingos e feriados · média dos dias <b>${n(pldMes, 1)}</b>${confere ? " = PLD previsto ✓" : ""}`;
+      document.getElementById("dias-leg").textContent = `No modelo, todos os dias do mesmo tipo têm o mesmo preço: a tabela mostra como o PLD do mês se forma pelo calendário, não uma previsão de cada dia. PLD do dia = [horas do vale no piso × piso + (20 − horas no piso) × outras horas + 4 × ponta] / 24. A última coluna é o PLD esperado de cada dia útil com a ponta em R$ ${n(pu)} em ${n(PCT)}% dos dias úteis, (1 − p) × PLD do dia + p × PLD do dia com essa ponta; a média dela é o PLD com a sensibilidade (não são dias específicos).`;
+      DIAS_CSV = { c, L, pldMes, sensMes, pu };
+    }
+    // CSV para o Excel em português: separador ";", vírgula decimal, BOM para os acentos
+    function baixarCsv() {
+      if (!DIAS_CSV) return;
+      const { c, L, pldMes, sensMes, pu } = DIAS_CSV, j = JANS[JAN], f = (v, k = 2) => v == null || !isFinite(v) ? "" : v.toFixed(k).replace(".", ",");
+      const meta = [["Simulação do PLD médio do mês (SE/CO)", ""], ["Mês", c.mes], ["DECOMP médio digitado (R$/MWh)", f(DEC)], ["Piso (R$/MWh)", f(c.piso)],
+        ["Premissas", `janela de ${JAN} dias (${dataBr(j.inicio)} a ${dataBr(j.fim)})${editouPrem() ? ", editadas" : ""}`],
+        ["Desconto das outras horas (% do espaço)", f(PREM["útil"].frac_fora * 100, 1)], ["PLD previsto do mês (R$/MWh)", f(pldMes)],
+        ["Sensibilidade", `ponta útil a R$ ${f(pu, 0)} em ${PCT}% dos dias úteis: ${f(sensMes)} R$/MWh`]];
+      const cab = ["Data", "Dia", "Tipo", "Vale no piso (h/dia)", "Outras horas (R$/MWh)", "Ponta 18h-21h (R$/MWh)", "PLD do dia (R$/MWh)", `PLD do dia com a ponta útil a R$ ${f(pu, 0)} o dia todo (R$/MWh)`, `PLD esperado do dia com a ponta útil a R$ ${f(pu, 0)} em ${PCT}% dos dias úteis (R$/MWh)`];
+      const linhas = L.map(x => [`${x.data.slice(8, 10)}/${x.data.slice(5, 7)}/${x.data.slice(0, 4)}`, x.dia, x.tipo, f(x.horas_piso, 1), f(x.outras_horas), f(x.ponta), f(x.pld_dia), x._cod === "u" ? f(x.pld_dia_ponta_estressada) : "", f(x.pld_dia_esperado_com_pct)]);
+      const csv = "﻿" + [...meta.map(m => m.join(";")), "", cab.join(";"), ...linhas.map(l => l.join(";")), ["Média", "", "", "", "", "", f(pldMes), "", f(sensMes)].join(";")].join("\r\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `simulacao_pld_${c.mes}_decomp${Math.round(DEC)}.csv`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+    document.getElementById("btn-csv").addEventListener("click", baixarCsv);
+
+    // resumo para a mesa (D091): cada item com o valor, uma linha de leitura e o método na dica (ⓘ); números da
+    // conta CONTA.resumo (a mesma de simulador.resumo_mesa, com teste de paridade)
+    function desenharResumo(res, c, ante, editado) {
+      const R = CONTA.resumo(D, c, DEC, PREM, premios("ponta", DEC), premios("sens", DEC), PCT, editado), r = R._r;
+      const h = c.h, nomeDir = DIR[R.direcao].toLowerCase(), H = R.direcao_hist, inicioBt = rot((D.backtest.filter(x => x.h === h).map(x => x.mes).sort()[0]) || "2024-07");
+      const sens = R.sensibilidade.pld, pu = R.sensibilidade.preco_ponta_util, [lo, hi] = R.faixa_10_90;
+      const pesos = GRUPOS.map(([k, nome]) => [nome.toLowerCase(), R.de_onde_vem[k].valor, R.de_onde_vem[k].peso]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+      const p12 = R.premio_ponta.media_12m, p12t = TIPOS_SIM.map(([t]) => sn(p12[t], 0)).join(" / "), pjt = TIPOS_SIM.map(([t]) => sn(PREM[t].premio_ponta, 0)).join(" / ");
+      const E = R.erro_medio, A = R.alertas;
+      const dPld = `Média do PLD de ${rotLongo(c.mes)} se o DECOMP médio do mês for R$ ${n(DEC)}; se o DECOMP esperado for outro, digite-o no topo. Conta: vale no piso, outras horas e ponta por tipo de dia, ponderados pelo calendário; nenhuma hora abaixo do piso (metodologia, passo 4).`;
+      const itens = [
+        { l: "Direção", v: H.pouco_historico ? `${DIR[R.direcao]} · pouco histórico` : `${DIR[R.direcao]} · acertou ${pct(H.acertos_desde_mar25 / H.previsoes_desde_mar25)}`,
+          c: H.pouco_historico ? (H.previsoes_desde_jul24 ? `Previu ${nomeDir} ${H.previsoes_desde_jul24}× com ${ante}; acertou ${H.acertos_desde_jul24}.` : `O modelo nunca previu ${nomeDir} com ${ante}.`) + `<br>${DIR[R.direcao]} ocorreu em ${H.meses_com_a_direcao.length} de ${H.meses_total} meses desde ${inicioBt}.`
+            : `Previu ${nomeDir} ${H.previsoes_desde_mar25}× com ${ante}; veio ${nomeDir} em ${H.acertos_desde_mar25}.`,
+          d: (H.pouco_historico ? `Pouco histórico = menos de 5 previsões da mesma direção desde mar/2025, poucas para medir a confiança. ${H.meses_com_a_direcao.length ? `Meses com ${nomeDir}: ${H.meses_com_a_direcao.map(rot).join(", ")}. ` : ""}Contagem desde ${inicioBt}, com ${ante} de antecedência.` : `Previsões de ${nomeDir} com ${ante} desde mar/2025 (regime atual).`) + " Backtest fora da amostra com o DECOMP realizado; direção pela zona neutra de ±5 R$/MWh sobre o DECOMP." },
+        { l: "Faixa provável", v: `${n(lo)} a ${n(hi)}`, c: "",
+          d: `Do 10º ao 90º percentil dos erros (previsto − oficial) dos meses já encerrados com ${ante} de antecedência, somados ao previsto${lo <= c.piso + 0.5 ? `; o limite de baixo é o piso (${n(c.piso, 2)})` : ""}. Erro médio = média do erro absoluto desde mar/2025${h > 1 && E.um_mes != null ? ` (com 1 mês de antecedência: R$ ${n(E.um_mes, 0)})` : ""}.` },
+        { l: "De onde vem", leve: true, v: pesos.map(([nm, v, p]) => `${nm} ${sn(v, 1)} (${pct(p)})`).join(" · "), c: "",
+          d: `Contribuição de cada grupo de horas ao desvio do mês (R$/MWh), já ponderada pelo calendário: ${pesos.map(([nm, v, p]) => `${nm} ${sn(v, 1)} (${pct(p)})`).join(" · ")}. Comparação: mesma conta trocando só o prêmio da ponta de cada tipo de dia pela média dos 12 meses encerrados (útil / sáb. / dom.: ${p12t} em vez de ${pjt}) dá ${n(R.pld_ponta_na_media_12m, 1)}.` },
+        { l: "Estresse de ponta", leve: true, v: PCT > 0 ? `ponta útil a R$ ${n(pu)} em ${n(PCT)}% dos dias → <b>${n(sens, 1)}</b> (${sn(sens - R.pld_previsto, 1)})` : "escolha o % na régua ao lado", c: "",
+          d: (FIX["útil"].sens == null && P90_MES != null ? `R$ ${n(pu)} = p90 das horas de ponta (18h–21h) dos dias úteis do mês corrente. ` : "") + LEG_SENS + " Conta: (1 − p) × previsto + p × cenário com a ponta no preço escolhido." },
+        { l: "Quando muda", v: c.rv0_publicada ? `RV0 publicada em ${dataBr(c.rv0).slice(0, 5)}` : `RV0 ~${dataBr(c.rv0).slice(0, 5)}`,
+          c: c.rv0_publicada ? `Erro médio de 1 mês: R$ ${n(E.um_mes, 0)}.` : `Erro médio R$ ${n(E.antecedencia, 0)} → R$ ${n(E.apos_rv0, 0)} após a RV0.`,
+          d: (c.rv0_publicada ? "" : `Até a RV0 de ${rot(c.mes)} sair, vale a precisão de ${ante}; depois, a de ${h - 1} ${h - 1 === 1 ? "mês" : "meses"}. `) + "Antecedência contada pela RV0: 1 mês se a RV0 do mês já saiu; senão, 1 + as RV0 ainda não publicadas até a do mês (D057). Data da RV0 futura estimada como a sexta antes do sábado que abre a semana operativa do dia 1º." },
+      ];
+      const corD = `var(--${R.direcao === "desconto" ? "t-dom" : R.direcao === "prêmio" ? "v1" : "ink-2"})`;
+      // alertas no fim do card, cada um só quando vale
+      const alertas = [], hp = A.historico_no_piso, esp = DEC - c.piso;
+      if (A.decomp_perto_do_piso) alertas.push(`DECOMP ${esp < 5 ? "no piso" : "perto do piso"}: só há espaço para prêmio; o desconto das outras horas não atua.` + (hp ? ` Nos ${hp.meses} meses no piso desde 2021: média ${sn(hp.media, 1)}, máx. ${sn(hp.max, 1)} (${rot(hp.mes_max)})${hp.previsao_acima_de_todos ? `; ${sn(R.desvio, 1)} fica acima de todos` : ""}.` : ""));
+      const pju = R.premio_ponta.janela["útil"], p12u = p12["útil"];
+      if (A.ponta_afastada_da_media_12m) alertas.push(`Prêmio da ponta útil na janela (${sn(pju, 0)}) ${pju > p12u ? "bem acima" : "bem abaixo"} da média de 12 meses (${sn(p12u, 0)}): o resultado depende disso.`);
+      if (A.premissas_editadas) alertas.push("Premissas editadas: o histórico e a faixa valem para as premissas padrão.");
+      res.innerHTML = `<div class="res-k">Resumo para a mesa · ${rot(c.mes)} · ${ante}</div>
+        <div class="res-num"><b>${n(R.pld_previsto, 1)}</b><span>R$/MWh previsto · DECOMP ${n(DEC)} <span class="info" id="info-pld" tabindex="0" aria-label="O que é o PLD previsto">ⓘ</span></span></div>
+        <div class="res-dir" style="color:${corD}">${R.direcao === "neutro" ? `Neutro: ${sn(R.desvio, 1)} R$/MWh sobre o DECOMP` : `${DIR[R.direcao]} de ${sn(R.desvio, 1)} R$/MWh`}</div>
+        <div class="res-itens">${itens.map(it => `<div class="res-item"><div class="res-l">${it.l} <span class="info" tabindex="0" aria-label="Como é calculado">ⓘ</span></div><div class="res-v${it.leve ? " leve" : ""}">${it.v}</div>${it.c ? `<div class="res-c">${it.c}</div>` : ""}</div>`).join("")}</div>` +
+        (alertas.length ? `<ul class="res-alertas">${alertas.map(a => `<li>${a}</li>`).join("")}</ul>` : "");
+      res.querySelectorAll(".res-item .info").forEach((el, i) => dicaEm(el, itens[i].d));
+      dicaEm(res.querySelector("#info-pld"), dPld);
+      return r;
     }
     function atualizar() {
       const c = cal[MES_I], r = prever(c, DEC), cen = prever(c, DEC, "sens");
@@ -748,20 +871,19 @@
       const pu = precoEf("útil", "sens", DEC, c.piso);
       const ante = c.h === 1 ? "1 mês" : `${c.h} meses`;
       document.getElementById("tt-simmes").textContent = `Simulação de ${rotLongo(c.mes)}`;
-      document.getElementById("sim-pld").textContent = n(r.pld, 1);
-      document.getElementById("sim-pld-d").textContent = `R$/MWh de PLD previsto com DECOMP ${n(DEC)}`;
-      document.getElementById("sim-dir").innerHTML = `<span style="color:var(--${r.dir === "desconto" ? "t-dom" : r.dir === "prêmio" ? "v1" : "ink-2"})">${DIR[r.dir]}</span>`;
-      document.getElementById("sim-dir-d").textContent = `${sn(r.delta, 1)} R$/MWh sobre o DECOMP`;
-      document.getElementById("sim-sens-txt").innerHTML = PCT > 0
-        ? `<b>Sensibilidade de ponta:</b> com a ponta do dia útil em R$ ${n(pu)} em ${n(PCT)}% dos dias úteis, PLD <b>${n(sens, 1)}</b> (${sn(sens - r.pld, 1)} sobre o previsto).`
-        : "Sensibilidade de ponta: escolha o % dos dias úteis na régua do quadro de premissas.";
       const j = JANS[JAN], editado = editouPrem();
-      document.getElementById("leg-sim").textContent = `${rotLongo(c.mes)}: ${pct(c.parte_util)} dias úteis, ${pct(c.parte_sabado)} sábados, ${pct(c.parte_domingo)} domingos e feriados; piso R$ ${n(c.piso, 2)}${c.piso_estimado ? " (piso do ano ainda não publicado: usado o último)" : ""}. Premissas: ${JAN} dias, ${dataBr(j.inicio)} a ${dataBr(j.fim)}${editado ? " (editadas)" : ""}. ` +
+      const longo = `${rotLongo(c.mes)}: ${pct(c.parte_util)} dias úteis, ${pct(c.parte_sabado)} sábados, ${pct(c.parte_domingo)} domingos e feriados; piso R$ ${n(c.piso, 2)}${c.piso_estimado ? " (piso do ano ainda não publicado: usado o último)" : ""}. Premissas: ${JAN} dias, ${dataBr(j.inicio)} a ${dataBr(j.fim)}${editado ? " (editadas)" : ""}. ` +
         (c.rv0_publicada ? `A RV0 do mês saiu em ${dataBr(c.rv0)}: confiança medida como previsão de 1 mês.` : `RV0 do mês ainda não publicada (prevista para ~${dataBr(c.rv0)}): confiança medida como previsão de ${ante}, o lado conservador; passa a ${c.h - 1 === 1 ? "1 mês" : (c.h - 1) + " meses"} quando a RV0 ${c.h === 2 ? "do mês" : "anterior"} sair.`) +
         (MES_I === 0 && c.rv0_publicada ? " O mês já está em curso: parte dele já foi realizada e não entra na conta." : "");
-      document.getElementById("sub-prem").textContent = `janela ${dataBr(j.inicio).slice(0, 5)}–${dataBr(j.fim).slice(0, 5)}`;
+      // rodapé curto (D090); o texto completo vai para a dica
+      const lg = document.getElementById("leg-sim");
+      lg.innerHTML = `Piso R$ ${n(c.piso, 2)}${c.piso_estimado ? " (estimado)" : ""} · premissas de ${JAN} dias (${dataBr(j.inicio).slice(0, 5)}–${dataBr(j.fim).slice(0, 5)})${editado ? ", editadas" : ""} · ${c.rv0_publicada ? `RV0 publicada em ${dataBr(c.rv0).slice(0, 5)}` : `RV0 prevista ~${dataBr(c.rv0).slice(0, 5)}`} <span class="info" tabindex="0" aria-label="Detalhes">ⓘ</span>`;
+      dicaEm(lg.querySelector(".info"), `${longo}<br>Campos editáveis: borda azul = editado; detalhes na dica de cada linha e na metodologia.`);
+      document.getElementById("sub-prem").textContent = `Janela ${dataBr(j.inicio).slice(0, 5)}–${dataBr(j.fim).slice(0, 5)}`;
       desenharSens(r, c, mix, pu);
-      marcarEditados(); desenharPeso(r, c); desenharTraj(); desenharHMTodos();
+      desenharResumo(document.getElementById("sim-resumo"), c, ante, editado);
+      desenharDias(r, c, sens, pu);
+      marcarEditados(); marcarSens(); desenharPeso(r); desenharTraj(); desenharHMTodos();
       marcarChips();
       document.getElementById("veredito").innerHTML = r.acerto === null
         ? `Com DECOMP de R$ ${n(DEC)} em ${rotLongo(c.mes)}, o modelo indica <strong>${DIR[r.dir].toLowerCase()}</strong> de ${sn(r.delta, 1)} R$/MWh, sem histórico de acerto para essa direção.` + ` Faixa 10–90% pelo erro do backtest: ${n(r.lo)} a ${n(r.hi)}.` + (PCT > 0 ? ` Com a ponta do dia útil em R$ ${n(pu)} em ${n(PCT)}% dos dias úteis, ${n(sens, 1)}.` : "")
@@ -778,16 +900,32 @@
       const xs = todas.filter(d => d >= ini);
       const porT = Object.fromEntries(TIPOS.map(([t]) => [t, new Map(HP.tipos[t].map(r => [r[0], r]))]));
       const rotXd = (d, i) => (d.endsWith("-01") && (d.slice(5, 7) === "01" || i === 0) ? { t: rot(d.slice(0, 7)), forte: true } : d.endsWith("-01") && (HP_PER === "6m" || +d.slice(5, 7) % 3 === 1) ? MES[+d.slice(5, 7) - 1] : null);
-      const refs = col => (col === "frac_fora" && D.ref_fora ? TIPOS.map(([t, nome, cor]) => ({ nome: nome + " 12m", cor, larg: 1.1, tracejado: true, opac: 0.9, pts: xs.map(d => [d, D.ref_fora[t].valor]) })) : []);
       const graf = (id, col, fmt, y0, y1, ref2) => linhas(document.getElementById(id), { w: 520, h: 210, ml: 40, mr: 44, xs, y0, y1, nt: 4, fmtY: fmt, rotX: rotXd, rotFim: true,
-        series: refs(col).concat(ref2 ? [{ nome: "DECOMP", cor: "var(--ink-3)", larg: 1.2, tracejado: true, pts: xs.map(d => { const r = porT["útil"].get(d); return [d, r ? r[iCol[ref2]] : null]; }) }] : []).concat(TIPOS.map(([t, nome, cor]) => { const pts = xs.map(d => { const r = porT[t].get(d); return [d, r ? r[iCol[col]] : null]; }); const u = [...pts].reverse().find(p => p[1] != null);
+        series: (ref2 ? [{ nome: "DECOMP", cor: "var(--ink-3)", larg: 1.2, tracejado: true, pts: xs.map(d => { const r = porT["útil"].get(d); return [d, r ? r[iCol[ref2]] : null]; }) }] : []).concat(TIPOS.map(([t, nome, cor]) => { const pts = xs.map(d => { const r = porT[t].get(d); return [d, r ? r[iCol[col]] : null]; }); const u = [...pts].reverse().find(p => p[1] != null);
           return { nome, cor, larg: t === "útil" ? 1.8 : 1.1, pts, rotFim: u ? fmt(u[1]) : null }; })),
         dica: d => `<b>${dataBr(d)}</b> · ${HP.janela} dias antes<br>` + TIPOS.map(([t, nome]) => { const r = porT[t].get(d); return r ? `${nome}: ${fmt(r[iCol[col]])}${ref2 ? ` (prêmio ${sn(r[iCol.premio_ponta], 0)} sobre DECOMP ${n(r[iCol.decomp], 0)})` : ` · espaço ${n(r[iCol.espaco])}`}` : ""; }).join("<br>") });
       graf("g-hp-piso", "horas_piso", v => n(v, 1), 0, 8);
-      graf("g-hp-fora", "frac_fora", v => sn(v * 100, 0) + "%", -1, 0.2);
-      if (D.ref_fora) { const cur = { "útil": "útil", "sábado": "sáb.", "domingo/feriado": "dom." };
-        document.getElementById("ref12-fora").innerHTML = `<b>Padrão do simulador = média de 12 meses</b> (${rot(D.ref_fora["útil"].de)}–${rot(D.ref_fora["útil"].ate)}, meses com DECOMP acima do piso): ` + TIPOS.map(([t, , cor]) => `<span style="color:${cor}">${cur[t]} ${sn(D.ref_fora[t].valor * 100, 0)}%</span>`).join(" · "); }
-      document.getElementById("leg-hp").textContent = `Linhas: média dos ${HP.janela} dias anteriores a cada data, por tipo de dia (o último ponto é hoje); embaixo, cada dia da janela. As horas no piso são premissa do simulador; o desconto medido na janela é só informativo: o simulador usa a média de 12 meses (tracejado), que acertou mais no backtest. O período no topo vale para todos os gráficos do bloco; o tipo de dia, só para o preço da ponta.`;
+      // desconto das outras horas (D087): uma curva só, todas as horas fora da ponta e do piso, e a média de 12 meses
+      // D089: janela com DECOMP no piso (espaço médio < R$ 20 ou ≥ 25% dos dias no piso) = trecho esmaecido: o desvio
+      // desses dias entra sem espaço correspondente (ou é dividido pelo mínimo de R$ 20) e o % não é comparável
+      { const fmtF = v => sn(v * 100, 0) + "%", porTd = new Map((HP.tipos.todos || []).map(r => [r[0], r])), ESP_MIN = 20;
+        const val = d => { const r = porTd.get(d); return r ? r[iCol.frac_fora] : null; };
+        const baixo = d => { const r = porTd.get(d); return r != null && (r[iCol.espaco] < ESP_MIN || (r[iCol.frac_dias_piso] ?? 0) >= 0.25); };
+        const ptsOk = xs.map(d => [d, baixo(d) ? null : val(d)]);
+        const ptsBaixo = xs.map((d, i) => [d, baixo(d) || (i > 0 && baixo(xs[i - 1])) || (i + 1 < xs.length && baixo(xs[i + 1])) ? Math.min(val(d), 0.5) : null]);
+        const u = [...xs].reverse().find(d => val(d) != null);
+        linhas(document.getElementById("g-hp-fora"), { w: 520, h: 210, ml: 40, mr: 52, xs, y0: -0.5, y1: 0.2, nt: 4, fmtY: fmtF, rotX: rotXd, rotFim: true,
+          series: (D.ref_fora ? [{ nome: "média 12m", cor: "var(--ink-3)", larg: 1.2, tracejado: true, opac: 0.9, pts: xs.map(d => [d, D.ref_fora.todos.valor]) }] : [])
+            .concat([{ nome: "DECOMP no piso", cor: TIPOS[0][2], larg: 1.4, tracejado: true, opac: 0.35, pts: ptsBaixo, rotFim: u && baixo(u) ? "no piso" : null },
+              { nome: "todos os dias", cor: TIPOS[0][2], larg: 1.8, pts: ptsOk, rotFim: u && !baixo(u) ? fmtF(val(u)) : null }]),
+          dica: d => { const r = porTd.get(d); if (!r) return `<b>${dataBr(d)}</b>`;
+            const cab = `<b>${dataBr(d)}</b> · ${HP.janela} dias antes · espaço ${n(r[iCol.espaco])}<br>`;
+            const nPiso = Math.round((r[iCol.frac_dias_piso] ?? 0) * HP.janela);
+            if (baixo(d)) return cab + `${nPiso} de ${HP.janela} dias com DECOMP no piso: ${fmtF(r[iCol.frac_fora])} não é comparável (o desvio desses dias entra sem espaço; abaixo de R$ 20 a conta divide por 20)` + (r[iCol.espaco] < ESP_MIN ? `<br>desvio de ${sn(r[iCol.frac_fora] * ESP_MIN, 1)} R$/h sobre o DECOMP` : "");
+            return cab + `todos os dias: ${fmtF(r[iCol.frac_fora])}<br>` + TIPOS.map(([t, nome]) => { const x = porT[t].get(d); return x ? `${nome}: ${fmtF(x[iCol.frac_fora])}` : ""; }).join(" · "); } }); }
+      if (D.ref_fora) { const rt = D.ref_fora_tipo, cur = { "útil": "útil", "sábado": "sáb.", "domingo/feriado": "dom." };
+        document.getElementById("ref12-fora").innerHTML = `<b>Padrão do simulador = ${sn(D.ref_fora.todos.valor * 100, 1)}%</b>, média de 12 meses (${rot(D.ref_fora.todos.de)}–${rot(D.ref_fora.todos.ate)}, meses com DECOMP acima do piso), um número para todos os dias` + (rt ? `<br><small>Por tipo de dia, só para leitura: ` + TIPOS.map(([t, , cor]) => `<span style="color:${cor}">${cur[t]} ${sn(rt[t].valor * 100, 0)}%</span>`).join(" · ") + `</small>` : ""); }
+      document.getElementById("leg-hp").textContent = `Linhas: média dos ${HP.janela} dias anteriores a cada data, por tipo de dia (o último ponto é hoje); embaixo, cada dia da janela. As horas no piso são premissa do simulador; o desconto das outras horas aparece numa curva só (todas as horas fora da ponta e do piso; por tipo de dia na dica; trecho tracejado claro = janela com DECOMP no piso, espaço médio abaixo de R$ 20 ou ao menos um quarto dos dias no piso, em que o % não é comparável) e é só informativo: o simulador usa a média de 12 meses (tracejado), um número para todos os dias, que acertou mais no backtest. O período no topo vale para todos os gráficos do bloco; o tipo de dia, só para o preço da ponta.`;
     }
     desenharHP();
 

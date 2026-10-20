@@ -139,6 +139,76 @@
      "pld_com_decomp_vigente": 85.72
     }
    ]
+  },
+  "2026-10-19T22:28:46": {
+   "publicado_em": "2026-10-19T22:28:47",
+   "motivo": "modelo v2: desconto das outras horas num número só (D087, promocao-quant-v3)",
+   "insumos": {
+    "deck_dessem": "2026-10-15",
+    "pld_publicado": "2026-10-10",
+    "decomp": "2026-10 sem3 pub1 (RV2)",
+    "modelo": "v2"
+   },
+   "origem": "2026-10-16",
+   "decomp_vigente": 57.35,
+   "premissas": {
+    "útil": {
+     "dias": 9,
+     "horas_piso": 7.1111,
+     "frac_fora": -0.0646,
+     "premio_ponta": 238.7992
+    },
+    "sábado": {
+     "dias": 2,
+     "horas_piso": 8.0,
+     "frac_fora": -0.0646,
+     "premio_ponta": 3.485
+    },
+    "domingo/feriado": {
+     "dias": 3,
+     "horas_piso": 8.0,
+     "frac_fora": -0.0646,
+     "premio_ponta": 2.5375
+    }
+   },
+   "previsao": [
+    {
+     "mes": "2026-10",
+     "h": 1,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 84.46
+    },
+    {
+     "mes": "2026-11",
+     "h": 2,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 82.72
+    },
+    {
+     "mes": "2026-12",
+     "h": 3,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 85.72
+    },
+    {
+     "mes": "2027-01",
+     "h": 4,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 83.19
+    },
+    {
+     "mes": "2027-02",
+     "h": 5,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 83.1
+    },
+    {
+     "mes": "2027-03",
+     "h": 6,
+     "piso": 57.31,
+     "pld_com_decomp_vigente": 85.72
+    }
+   ]
   }
  }
 }

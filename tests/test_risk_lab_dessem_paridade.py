@@ -4,7 +4,9 @@ Conferência única da migração (docs/promocao_pld_horario.md da pesquisa, se�
 QE_PARIDADE_RISK_LAB_DESSEM=<pasta reports/promocao/AAAA-MM-DD da pesquisa> e com o app tendo ingerido
 os mesmos arquivos brutos (decks até a data da pasta, PLD publicado até a data do manifesto): com
 mais dias, as chaves de "últimos N meses" e o mês corrente mudam. Os períodos fechados (R1 a R7)
-não mudam e são os que ficam congelados em tests/referencias/risk_lab_dessem/.
+não mudam e são os que ficam congelados em tests/referencias/risk_lab_dessem/. Desde a leva promocao-quant-v3
+(pasta 2026-10-15_v3), também o exemplo do simulador (R9), o resumo para a mesa (R10) e os dias do mês (R11), com
+tolerância de R$ 0,01.
 """
 
 import json
@@ -127,3 +129,59 @@ def test_R8_bloco7_e_R9_backtest(arm):
     bt = ler_parquet(arm, chaves.PROC_BACKTEST)
     r = pd.read_parquet(Path(PASTA) / "R9_backtest_v1s.parquet")
     _igual(bt, r.drop(columns="versao"), ["mes", "h"], atol=0.01)
+
+
+def _perto(a, b, cam="", tol=0.01):
+    if isinstance(b, dict):
+        assert set(a) == set(b), (cam, set(a) ^ set(b))
+        for k in b:
+            _perto(a[k], b[k], f"{cam}.{k}", tol)
+    elif isinstance(b, list):
+        assert len(a) == len(b), cam
+        for i, (x, y) in enumerate(zip(a, b)):
+            _perto(x, y, f"{cam}[{i}]", tol)
+    elif isinstance(a, float) or isinstance(b, float):
+        assert abs(a - b) <= tol, (cam, a, b)
+    else:
+        assert a == b, (cam, a, b)
+
+
+def test_R9_exemplo_do_simulador(arm):
+    from qe_risk_lab_dessem import simulador as S
+
+    ref = json.loads((Path(PASTA) / "R9_simulador_exemplo.json").read_text(encoding="utf-8"))
+    b = S.Base(arm)
+    o = pd.Timestamp(ref["origem"])
+    pr = S.premissas_na_origem(b, o)
+    c = next(x for x in S.calendario(b, o) if x["mes"] == ref["mes_alvo"])
+    D, P = ref["decomp_digitado"], ref["piso"]
+    assert c["piso"] == P
+    for t, p in ref["premissas"].items():
+        _perto({k: pr[t][k] for k in p}, p, t)
+    for t, dt in ref["dia_tipico"].items():
+        _perto(S.dia_s(pr[t], D, P), dt, t)
+    assert abs(S.prever_mes(pr, c, D) - ref["pld_previsto"]) <= 0.01
+
+
+@pytest.fixture(scope="module")
+def pagina(arm):
+    manifesto = json.loads((Path(PASTA) / "manifesto.json").read_text(encoding="utf-8"))
+    d = publicacao.dados(arm) | publicacao.dados_simulador(arm, manifesto["decks_dessem_ate"])
+    return json.loads(json.dumps(d))  # como a página lê (chaves em texto)
+
+
+def test_R10_resumo_e_R11_dias_do_mes(pagina):
+    from qe_risk_lab_dessem import simulador as S
+
+    r10 = json.loads((Path(PASTA) / "R10_resumo_mesa.json").read_text(encoding="utf-8"))
+    r11 = json.loads((Path(PASTA) / "R11_dias_mes.json").read_text(encoding="utf-8"))
+    for ref, ref_dias in zip(r10, r11):
+        c, prem, premio, ps = S.estado_padrao(pagina, ref["mes"], ref["decomp"])
+        pct = ref["sensibilidade"]["pct_dias_uteis"]
+        res = S.resumo_mesa(pagina, c, ref["decomp"], prem, premio, ps, pct)
+        _perto(res, ref, f"R10 {ref['decomp']}")
+        dias = S.dias_mes(c, ref["decomp"], prem, premio, ps, pct)
+        _perto(dias, ref_dias["dias"], f"R11 {ref['decomp']}")
+        n = len(dias)
+        assert abs(sum(x["pld_dia"] for x in dias) / n - ref_dias["media_pld_dia"]) <= 0.01
+        assert abs(ref_dias["media_pld_dia"] - ref_dias["pld_previsto"]) <= 0.01

@@ -14,6 +14,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 - **Nenhuma dependência de execução de outro repositório:** os dados entram só pela caixa de entrada
   `data/entrada/<fonte>/` (formato em `docs/entrada.md`); nada de ler pastas do analytics.
 - Decisões de método continuam registradas em `docs/metodologia.md` do analytics.
+- **Changelog:** `CHANGELOG.md` (Keep a Changelog). Cada promoção ganha uma entrada com data, a tag de origem
+  (`promocao-quant-vN`) e as decisões (Dxxx); levas seguintes leem só a seção 11 do pacote de promoção.
 - Nova funcionalidade: seguir `docs/nova_funcionalidade.md`. Pesquisa do PLD horário em
   `../risk-lab-dessem-analytics` — repositório independente (não depende deste app, e este app não depende
   dele): ao promover, o método é reimplementado aqui e conferido contra os resultados de referência de lá.
@@ -87,7 +89,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 - Rótulos obrigatórios do simulador: janela de 14 dias escolhida dentro da amostra (D057); backtest condicional ao
   DECOMP (entra o realizado); premissas fora da amostra.
 - Definições e parâmetros do método (vale, ponta, tolerância do piso, janela, 12 meses, limiar de direção…) só em
-  `qe_risk_lab_dessem.modelo.MODELO` (hoje `v1`). Mudar = versão nova (decisão na pesquisa, `congelar`, tag
+  `qe_risk_lab_dessem.modelo.MODELO` (hoje `v2`: desconto das outras horas único, D087; metodologia do v1 em
+  `web/risk_lab_dessem/metodologia-v1.html`). Mudar = versão nova (decisão na pesquisa, `congelar`, tag
   `risk_lab_dessem-modelo-<versão>`, metodologia da versão anterior guardada, como nas bandeiras).
 - Feriados dos meses sem deck: lista `FERIADOS_FUTUROS` (até mar/2027). Equivalência "sem patamar pesado" × AAC001
   conferida em 2026-10-14 (1.347 dias, 34 feriados, sem divergência): trocar pelo AAC001 é decisão da pesquisa.

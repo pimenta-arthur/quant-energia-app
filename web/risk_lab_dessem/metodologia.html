@@ -15,6 +15,7 @@
   [hidden] { display: none !important; }
   main section { display: grid; gap: 14px; }
   main section h3 { font-size: 1.05rem; margin-top: 6px; }
+  .aviso-versao { margin: 0; font-size: 0.85rem; color: var(--ink-2); border-left: 3px solid var(--accent); padding-left: 10px; }
 </style>
 </head>
 <body>
@@ -27,7 +28,8 @@
   </nav>
 
   <header>
-    <span class="rotulo">Risk Lab DESSEM · metodologia do simulador · modelo v1 (v1 simplificada) · outubro de 2026</span>
+    <span class="rotulo">Risk Lab DESSEM · metodologia do simulador · modelo v2 (v1 simplificada, desconto único) · outubro de 2026</span>
+    <p class="aviso-versao">Modelo v2, em uso desde 19/10/2026: o desconto das outras horas passou a ser um número só para os três tipos de dia (D087). <a href="metodologia-v1.html">Metodologia do modelo v1</a> (um desconto por tipo de dia, D061), em uso de 14/10 a 19/10/2026.</p>
     <h1>Como o PLD médio do mês é simulado a partir do DECOMP</h1>
     <p class="lead">O simulador não tenta prever o DESSEM do zero. Ele parte do DECOMP médio que a mesa espera para o mês e estima quanto o PLD horário vai se afastar dele, olhando o que o DESSEM fez nas últimas semanas: quantas horas o vale foi ao piso, quanto as demais horas ficaram abaixo do DECOMP e quanto a ponta pagou acima dele.</p>
     <div class="indice" aria-label="Nesta página">
@@ -97,8 +99,8 @@
       <span class="n">2</span>
       <div>
         <h3>Desconto das outras horas (f)</h3>
-        <p class="texto">Quanto as outras horas ficam abaixo do DECOMP, em fração do espaço. É estrutural (estável por tipo de dia: útil perto de 0%, sábado −15%, domingo/feriado −23%), por isso vem da média dos 12 meses encerrados, não da janela. Meses com o DECOMP no piso ficam de fora, porque com espaço zero a fração não informa nada.</p>
-        <div class="eq">f<sub>tipo,mês</sub> = média(PLD − DECOMP) / max(média(DECOMP − piso), 20) nas outras horas do mês<br>f<sub>tipo</sub> = média de f<sub>tipo,mês</sub> nos 12 meses encerrados com espaço ≥ R$ 20 (D061)</div>
+        <p class="texto">Quanto as outras horas ficam abaixo do DECOMP, em fração do espaço. É estrutural, por isso vem da média dos 12 meses encerrados, não da janela. É <b>um número só para os três tipos de dia</b>, medido em todas as horas fora da ponta e do piso de cada mês: por tipo, o desconto é diferente (hoje útil −2%, sábado −15%, domingo/feriado −23%), mas o número único acertou igual ou melhor no backtest e é uma curva só para acompanhar (D087). Meses com o DECOMP no piso ficam de fora, porque com espaço zero a fração não informa nada.</p>
+        <div class="eq">f<sub>mês</sub> = média(PLD − DECOMP) / max(média(DECOMP − piso), 20) nas outras horas do mês, todos os dias<br>f = média de f<sub>mês</sub> nos 12 meses encerrados com espaço ≥ R$ 20 (D087)</div>
       </div>
     </div>
 
@@ -116,7 +118,7 @@
       <div>
         <h3>Dia típico e mês</h3>
         <p class="texto">Com o DECOMP médio D do mês informado pelo usuário e o piso P do ano, cada tipo de dia vira um dia típico; o mês é a média pelo calendário, com os feriados nacionais. Nenhuma hora fica abaixo do piso.</p>
-        <div class="eq">outras<sub>tipo</sub> = max(D + f<sub>tipo</sub> × (D − P), P)<br>PLD do dia<sub>tipo</sub> = [ n × P + (20 − n) × outras<sub>tipo</sub> + 4 × ponta<sub>tipo</sub> ] / 24<br>PLD do mês = max( Σ<sub>tipo</sub> parte do mês<sub>tipo</sub> × PLD do dia<sub>tipo</sub>, P )</div>
+        <div class="eq">outras = max(D + f × (D − P), P)<br>PLD do dia<sub>tipo</sub> = [ n<sub>tipo</sub> × P + (20 − n<sub>tipo</sub>) × outras + 4 × ponta<sub>tipo</sub> ] / 24<br>PLD do mês = max( Σ<sub>tipo</sub> parte do mês<sub>tipo</sub> × PLD do dia<sub>tipo</sub>, P )</div>
         <p class="texto">A contribuição de cada grupo ao desvio (vale no piso, outras horas, ponta) é a mesma conta separada por parcela, e aparece no topo da simulação como "peso de cada premissa".</p>
       </div>
     </div>
@@ -124,18 +126,18 @@
 
   <section id="exemplo" aria-labelledby="h-ex">
     <h2 id="h-ex">Exemplo: novembro de 2026 com DECOMP 150</h2>
-    <p class="texto">Premissas de 13/10/2026 (janela de 30/09 a 13/10), piso R$ 57,31. Novembro tem 63% de dias úteis, 13% de sábados e 23% de domingos e feriados.</p>
+    <p class="texto">Premissas de 13/10/2026 (janela de 30/09 a 13/10), piso R$ 57,31. Novembro tem 63% de dias úteis, 13% de sábados e 23% de domingos e feriados. Desconto das outras horas: f = −6,5% (média de out/2025 a set/2026), o mesmo nos três tipos.</p>
     <div class="rolagem">
       <table>
         <thead><tr><th>Tipo de dia</th><th class="n">n (vale no piso)</th><th class="n">f</th><th class="n">Outras horas</th><th class="n">Prêmio da ponta</th><th class="n">Ponta</th><th class="n">PLD do dia</th></tr></thead>
         <tbody>
-          <tr><td>Útil</td><td class="n">7,0</td><td class="n">−2%</td><td class="n">148,1</td><td class="n">+127</td><td class="n">276,9</td><td class="n">143,1</td></tr>
-          <tr><td>Sábado</td><td class="n">8,0</td><td class="n">−15%</td><td class="n">135,8</td><td class="n">+3</td><td class="n">153,5</td><td class="n">112,6</td></tr>
-          <tr><td>Domingo/feriado</td><td class="n">8,0</td><td class="n">−23%</td><td class="n">129,1</td><td class="n">+3</td><td class="n">152,5</td><td class="n">109,1</td></tr>
+          <tr><td>Útil</td><td class="n">7,0</td><td class="n">−6,5%</td><td class="n">144,0</td><td class="n">+127</td><td class="n">276,9</td><td class="n">140,9</td></tr>
+          <tr><td>Sábado</td><td class="n">8,0</td><td class="n">−6,5%</td><td class="n">144,0</td><td class="n">+3</td><td class="n">153,5</td><td class="n">116,7</td></tr>
+          <tr><td>Domingo/feriado</td><td class="n">8,0</td><td class="n">−6,5%</td><td class="n">144,0</td><td class="n">+3</td><td class="n">152,5</td><td class="n">116,5</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="eq">Dia útil: [7 × 57,31 + 13 × 148,1 + 4 × 276,9] / 24 = 143,1<br>Mês: 0,633 × 143,1 + 0,133 × 112,6 + 0,233 × 109,1 = <b>131,1</b> → desconto de −18,9 R$/MWh<br>Peso: vale no piso −28,4 · outras horas −4,0 · ponta +13,6</div>
+    <div class="eq">Outras horas: 150 − 0,065 × (150 − 57,31) = 144,0<br>Dia útil: [7 × 57,31 + 13 × 144,0 + 4 × 276,9] / 24 = 140,9<br>Mês: 0,633 × 140,9 + 0,133 × 116,7 + 0,233 × 116,5 = <b>132,0</b> → desconto de −18,0 R$/MWh<br>Peso: vale no piso −28,4 · outras horas −3,2 · ponta +13,6<br><small>Com um desconto por tipo de dia (D061: −2%, −15%, −23%), o mês daria 131,1.</small></div>
   </section>
 
   <section id="sensibilidade" aria-labelledby="h-sens">
@@ -158,7 +160,7 @@
     <h2 id="h-bt">Como foi testado</h2>
     <p class="texto">O backtest simula alguém na rodada da RV0 do mês-alvo (M+1) ou de meses anteriores (M+2 a M+6), de julho de 2024 a setembro de 2026. Do mês-alvo só entram o DECOMP médio realizado (o simulador mede o desvio, não prevê o DECOMP) e o calendário. Toda premissa vem de dias ou meses anteriores à data:</p>
     <ul class="lista texto">
-      <li><span class="tag">Premissas</span><span>Janela de 14 dias antes da data; desconto das outras horas pela média dos 12 meses já encerrados.</span></li>
+      <li><span class="tag">Premissas</span><span>Janela de 14 dias antes da data; desconto das outras horas pela média dos 12 meses já encerrados, um número para todos os dias.</span></li>
       <li><span class="tag">Erros e faixa</span><span>Só de meses-alvo já encerrados na data. Nunca de meses posteriores.</span></li>
       <li><span class="tag">Escolhas</span><span>A janela de 14 dias e a forma de cada premissa foram escolhidas comparando alternativas nos mesmos meses: essa comparação é dentro da amostra.</span></li>
       <li><span class="tag">Oráculos</span><span>Testes com valores realizados do mês-alvo no lugar das premissas medem limites e aparecem sempre identificados.</span></li>
@@ -168,8 +170,8 @@
       <table>
         <thead><tr><th>Erro médio do PLD do mês (R$/MWh)</th><th class="n">M+1</th><th class="n">M+2</th><th class="n">M+3</th></tr></thead>
         <tbody>
-          <tr><td>mar/2025–set/2026 (19 meses)</td><td class="n">14,5</td><td class="n">20,8</td><td class="n">25,3</td></tr>
-          <tr><td>jul/2024–set/2026 (27 meses)</td><td class="n">13,1</td><td class="n">18,3</td><td class="n">24,2</td></tr>
+          <tr><td>mar/2025–set/2026 (19 meses)</td><td class="n">13,7</td><td class="n">20,0</td><td class="n">24,4</td></tr>
+          <tr><td>jul/2024–set/2026 (27 meses)</td><td class="n">12,4</td><td class="n">17,7</td><td class="n">24,0</td></tr>
           <tr><td>Referência: PLD = DECOMP (mar/2025–set/2026)</td><td class="n">28,5</td><td class="n">28,5</td><td class="n">28,5</td></tr>
           <tr><td>Direção certa (mar/2025–set/2026)</td><td class="n">84%</td><td class="n">84%</td><td class="n">84%</td></tr>
         </tbody>
@@ -183,6 +185,7 @@
           <tr><td>Quatro premissas ou três?</td><td>Empatam em todos os horizontes (M+1 15,8 × 15,8); ficou com três (R45)</td><td>Fora da amostra</td></tr>
           <tr><td>Horas no piso numa conta só (20 horas)?</td><td>Pior a partir de M+2 (24,1 → 30,6): fora do vale o piso é raro e não persiste (R44, R45)</td><td>Fora da amostra</td></tr>
           <tr><td>Desconto das outras horas: janela ou média longa?</td><td>Média dos 12 meses melhor em todos os horizontes (M+1 15,8 → 14,5; M+2 24,1 → 20,8) (R46)</td><td>Fora da amostra</td></tr>
+          <tr><td>Desconto das outras horas: um número ou um por tipo de dia?</td><td>Um número igual ou melhor em todos os horizontes (mar/2025–set/2026: M+1 14,5 → 13,7; M+2 20,8 → 20,0; M+3 25,3 → 24,4); previsões diferem R$ 0,9 em média (R51)</td><td>Fora da amostra</td></tr>
           <tr><td>Horas no piso: janela ou média longa?</td><td>Janela de 14 dias a melhor em M+1 (14,5); médias longas erram para cima (R47)</td><td>Fora da amostra</td></tr>
           <tr><td>Ponta: preço ou prêmio?</td><td>Prêmio (15,8) melhor que o preço da janela (19,7) (D058)</td><td>Fora da amostra</td></tr>
           <tr><td>Ponta: qual janela?</td><td>Isolando a ponta (oráculo nas outras premissas): 14 dias a melhor em M+1 (5,5 no PLD do mês), média de 12 meses a melhor em M+2 (6,3). Mantida a janela de 14 dias, com acompanhamento das outras janelas na página (R48)</td><td>Oráculo / dentro da amostra</td></tr>
@@ -216,6 +219,7 @@
           <tr><td class="num">D057</td><td>Três premissas, janela de 14 dias, um mês por vez, antecedência pela RV0</td><td>Mesma qualidade, mais simples</td><td><span class="status ok">Decidido</span></td></tr>
           <tr><td class="num">D058</td><td>Ponta em preço para o usuário, prêmio na conta</td><td>Intuitivo sem perder qualidade</td><td><span class="status ok">Decidido</span></td></tr>
           <tr><td class="num">D061</td><td>Desconto das outras horas pela média dos 12 meses</td><td>Estrutural; erro menor em todos os horizontes</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D087</td><td>Desconto das outras horas: um número só para os três tipos de dia (média de 12 meses sem separar tipo)</td><td>Uma curva para acompanhar; backtest igual ou melhor</td><td><span class="status ok">Decidido</span></td></tr>
           <tr><td class="num">D063</td><td>Sensibilidade de ponta só no dia útil, com régua de 5% a 100% (padrão: 5% dos dias no p90 da ponta do mês, D073, D076)</td><td>É onde a ponta pesa</td><td><span class="status ok">Decidido</span></td></tr>
           <tr><td class="num">D064</td><td>Ponta na janela de 14 dias, com acompanhamento das janelas de 7, 30, 60 dias e 12 meses</td><td>14 dias é o melhor em M+1; o usuário decide se muda</td><td><span class="status ok">Decidido</span></td></tr>
           <tr><td class="num">—</td><td>Janela de 14 dias</td><td>Escolhida na mesma amostra do backtest</td><td><span class="status teste">Em teste</span></td></tr>

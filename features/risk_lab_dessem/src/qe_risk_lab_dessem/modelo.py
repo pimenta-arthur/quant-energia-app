@@ -4,7 +4,7 @@ Mudar uma definição ou parâmetro = versão nova do modelo (decisão registrad
 `qe risk_lab_dessem congelar`, tag `risk_lab_dessem-modelo-<versão>`), como nas bandeiras.
 """
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,9 @@ class Modelo:
     # simulador do PLD médio do mês, v1 simplificada (bloco 7; D057, D058, D061–D063, D073)
     janela: int  # dias da janela das horas no piso e do prêmio da ponta (D057, dentro da amostra)
     meses_ref_fora: int  # meses civis encerrados para o desconto das outras horas (D061)
+    # desconto das outras horas: True = um número só para os três tipos de dia, medido em todas as horas fora da
+    # ponta e do piso (D087); False = um por tipo de dia (D061)
+    desconto_unico: bool
     espaco_min: float  # R$/MWh: piso do espaço DECOMP − piso nas frações e meses aceitos (D061)
     limiar_direcao: float  # R$/MWh: desconto < −limiar < neutro < +limiar < prêmio
     janelas_pagina: tuple[int, ...]  # janelas mostradas no quadro de premissas
@@ -42,6 +45,7 @@ V1 = Modelo(
     limiar_desvio=0.5,
     janela=14,
     meses_ref_fora=12,
+    desconto_unico=False,
     espaco_min=20.0,
     limiar_direcao=5.0,
     janelas_pagina=(7, 14, 30, 60, 90),
@@ -55,7 +59,10 @@ V1 = Modelo(
     meses_a_frente=6,
 )
 
-MODELO = V1
+# v2 (pesquisa: D087, tag promocao-quant-v3): desconto das outras horas num número só para os três tipos de dia
+V2 = replace(V1, versao="v2", desconto_unico=True)
+
+MODELO = V2
 SUBMERCADOS = ["SE", "S", "NE", "N"]
 TIPOS_DIA = ["útil", "sábado", "domingo/feriado"]
 

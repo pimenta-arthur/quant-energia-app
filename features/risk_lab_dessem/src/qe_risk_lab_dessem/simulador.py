@@ -1,12 +1,13 @@
 """Simulador do PLD médio do mês, SE/CO: v1 simplificada (bloco 7; pesquisa: simulador.py, D057, D058,
-D061–D065, D073).
+D061–D065, D073, D087, D089, D091, D095).
 
 Entrada do usuário: DECOMP médio do mês D e o mês-alvo. Piso P do ano (ano sem limite publicado: o do
 último ano conhecido, sinalizado). Três premissas por tipo de dia (útil, sábado, domingo/feriado),
 medidas antes da data da previsão:
 1. horas do vale no piso por dia (janela de `MODELO.janela` dias);
 2. desconto das outras horas fora da ponta, em fração do espaço D − P: média dos 12 meses civis
-   encerrados antes da origem, só meses com espaço médio ≥ R$ 20 (D061);
+   encerrados antes da origem, só meses com espaço médio ≥ R$ 20 (D061); no modelo v2, um número só
+   para os três tipos de dia, medido em todas as horas fora da ponta e do piso (D087);
 3. prêmio da ponta sobre o DECOMP vigente (janela de `MODELO.janela` dias).
 
 Dia típico: PLD = [n × P + (20 − n) × max(D + f × max(D − P, 0), P) + 4 × max(D + prêmio, P)] / 24;
@@ -91,6 +92,9 @@ def premissas_s(w: pd.DataFrame) -> dict:
         "dias": int(dias),
         "horas_piso": float((w["grupo_s"] == "vale_piso").sum() / dias) if dias else 0.0,
         "frac_fora": float(max(f, -1.0)),
+        # D089: desvio (R$) e espaço médios das outras horas, para a página sinalizar janelas com DECOMP no piso
+        "desvio_fora": float(fora["desvio"].mean()) if len(fora) else 0.0,
+        "espaco_fora": float(fora["espaco"].mean()) if len(fora) else 0.0,
         "premio_ponta": float(pt["desvio"].mean()) if len(pt) else 0.0,
         "ponta_media": float(pt["pld_dessem"].mean()) if len(pt) else np.nan,
         "ponta_min_dia": float(pdia.min()) if len(pdia) else np.nan,
@@ -171,12 +175,23 @@ def ref_fora_em(mr: pd.DataFrame, origem: pd.Timestamp, tipo: str) -> dict:
     }
 
 
+def ref_fora_unica(mr: pd.DataFrame, origem: pd.Timestamp) -> dict:
+    """Desconto das outras horas do modelo v2 (D087): um número só para os três tipos de dia = a mesma
+    média de 12 meses, com o desconto do mês medido em todas as horas fora da ponta e do piso."""
+    return ref_fora_em(mr, origem, "todos")
+
+
+def ref_fora(mr: pd.DataFrame, origem: pd.Timestamp, tipo: str) -> dict:
+    """Desconto das outras horas que o simulador usa para o tipo de dia, conforme o modelo."""
+    return ref_fora_unica(mr, origem) if MODELO.desconto_unico else ref_fora_em(mr, origem, tipo)
+
+
 def premissas_na_origem(b: Base, origem: pd.Timestamp, mr: pd.DataFrame | None = None) -> dict:
     """Premissas que o simulador usa numa origem: janela padrão e desconto pela média de 12 meses."""
     mr = mensal_realizado_s(b.hs) if mr is None else mr
     pr = premissas_s_por_tipo(janela(b.hs, origem))
     for t in pr:
-        v = ref_fora_em(mr, origem, t)["valor"]
+        v = ref_fora(mr, origem, t)["valor"]
         if np.isfinite(v):
             pr[t]["frac_fora"] = v
     return pr
@@ -344,6 +359,9 @@ def historico_premissas_s(hs: pd.DataFrame, X: int, desde: str = "2024-07-01") -
         d["esp_soma"], d["esp_n"] = x.groupby("data")["espaco"].sum(), x.groupby("data").size()
         d["p_soma"] = x[x["grupo_s"] == "ponta"].groupby("data")["pld_dessem"].sum()
         d["dec_soma"] = x.groupby("data")["decomp_pld"].sum()
+        # D089: dias com DECOMP no piso (espaço médio do dia < R$ 20), para sinalizar janelas em que o % não é
+        # comparável
+        d["dia_piso"] = (x.groupby("data")["espaco"].mean() < MODELO.espaco_min).astype(float)
         d = d.fillna(0.0).reindex(pd.date_range(d.index.min(), datas.max())).fillna(0.0)
         r = d.rolling(f"{X}D", closed="left").sum().reindex(datas)
         esp = (r["e_fora"] / r["n_fora"]).clip(lower=MODELO.espaco_min)
@@ -359,6 +377,7 @@ def historico_premissas_s(hs: pd.DataFrame, X: int, desde: str = "2024-07-01") -
                     "ponta_media": (r["p_soma"] / r["n_ponta"]).values,
                     "decomp": (r["dec_soma"] / r["esp_n"]).values,
                     "espaco": (r["esp_soma"] / r["esp_n"]).values,
+                    "frac_dias_piso": (r["dia_piso"] / r["dias"]).values,
                 }
             )
         )
@@ -381,7 +400,7 @@ def historico_mensal_s(b: Base, desde: str = "2024-07") -> pd.DataFrame:
                 lin.update(
                     rv0=str(pd.Timestamp(o).date()),
                     rv0_horas_piso=p["horas_piso"],
-                    rv0_frac_fora=ref_fora_em(mr, o, r["tipo"])["valor"],
+                    rv0_frac_fora=ref_fora(mr, o, r["tipo"])["valor"],
                     rv0_premio=p["premio_ponta"],
                     rv0_ponta=r["decomp"] + p["premio_ponta"],
                 )
@@ -417,7 +436,8 @@ def calendario(b: Base, origem: pd.Timestamp) -> list[dict]:
             np.select([dow == 5, dow == 6], ["sábado", "domingo/feriado"], "útil"), index=dias
         )
         base[base.index.isin(pd.to_datetime(FERIADOS_FUTUROS))] = "domingo/feriado"
-        p = b.tipos.reindex(dias).fillna(base).value_counts(normalize=True)
+        tipo = b.tipos.reindex(dias).fillna(base)
+        p = tipo.value_counts(normalize=True)
         cal.append(
             {
                 "mes": str(per),
@@ -430,6 +450,12 @@ def calendario(b: Base, origem: pd.Timestamp) -> list[dict]:
                     f"parte_{n}": float(p.get(tp, 0.0))
                     for tp, n in zip(TIPOS_DIA, ["util", "sabado", "domingo"])
                 },
+                # D095: tipo de cada dia do mês (u útil, s sábado, d domingo, f feriado em dia de semana), para
+                # a tabela dos dias do simulador; mesma classificação das partes acima
+                "dias": "".join(
+                    "u" if tp == "útil" else "s" if tp == "sábado" else "d" if dw == 6 else "f"
+                    for tp, dw in zip(tipo.to_numpy(), dow.to_numpy())
+                ),
             }
         )
     return cal
@@ -445,3 +471,170 @@ def prever_mes(pr: dict, c: dict, D: float) -> float:
     return max(
         sum(s * dia_s(pr[t], D, c["piso"])["pld"] for t, s in partes.items() if s), c["piso"]
     )
+
+
+# --- resumo para a mesa (D091) e dias do mês (D095): a conta do navegador ------------------------------------
+# A página faz esta conta (depende do DECOMP digitado e das edições) em web/risk_lab_dessem/simulador_conta.js
+# (`resumo`, `diasMes`); aqui, a mesma conta sobre as chaves publicadas, para o teste de paridade Python × JS e a
+# conferência com a pesquisa (R10, R11).
+
+COL_PARTE = {"útil": "parte_util", "sábado": "parte_sabado", "domingo/feriado": "parte_domingo"}
+TIPO_COD = {"u": "útil", "s": "sábado", "d": "domingo/feriado", "f": "domingo/feriado"}
+NOME_COD = {"u": "útil", "s": "sábado", "d": "domingo", "f": "feriado"}
+DSEM = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"]
+
+
+def _dia_pagina(p: dict, D: float, P: float, premio: float) -> dict:
+    """`dia_s` com o prêmio da ponta à parte (a página separa o prêmio editado do resto das premissas)."""
+    d = dia_s({**p, "premio_ponta": premio}, D, P)
+    return {
+        **d,
+        "horas_piso": min(max(p["horas_piso"], 0.0), NV),
+        "outras_horas": max(D + p["frac_fora"] * max(D - P, 0.0), P),
+        "preco_ponta": max(D + premio, P),
+    }
+
+
+def resumo_mesa(
+    d: dict,
+    c: dict,
+    D: float,
+    prem: dict,
+    premio: dict,
+    premio_sens: dict,
+    pct: float,
+    editado=False,
+) -> dict:
+    """Números e condições do resumo para a mesa (D091) de um mês `c` do calendário, com o DECOMP D, as
+    premissas `prem` por tipo de dia, o prêmio da ponta efetivo `premio` e o do cenário de estresse
+    `premio_sens` (só o dia útil muda) e o % dos dias úteis no estresse."""
+    P, h = c["piso"], c["h"]
+    partes = {t: c[col] for t, col in COL_PARTE.items() if c[col]}
+    dias_t = {t: _dia_pagina(prem[t], D, P, premio[t]) for t in partes}
+    tot = sum(s * dias_t[t]["pld"] for t, s in partes.items())
+    cen = sum(s * _dia_pagina(prem[t], D, P, premio_sens[t])["pld"] for t, s in partes.items())
+    pld = max(tot, P)
+    delta = pld - D
+    z = MODELO.limiar_direcao
+    direcao = "desconto" if delta < -z else "prêmio" if delta > z else "neutro"
+    e = next(x for x in d["confianca"] if x["h"] == h)
+    comp = {
+        g: sum(s * dias_t[t][k] for t, s in partes.items())
+        for g, k in (("vpiso", "vale_piso"), ("fora", "fora"), ("ponta", "ponta"))
+    }
+    abs_tot = sum(abs(v) for v in comp.values()) or 1.0
+    # histórico da direção: backtest publicado (meses encerrados, mesma antecedência, DECOMP realizado)
+    bt = sorted((x for x in d["backtest"] if x["h"] == h), key=lambda x: x["mes"])
+    reg = [x for x in bt if x["mes"] >= MODELO.regime_desde]
+    prev_reg = [x for x in reg if x["direcao_prevista"] == direcao]
+    prev_todo = [x for x in bt if x["direcao_prevista"] == direcao]
+    erro = {x["h"]: x["erro"] for x in d["desempenho"]}
+    p12 = {t: d["ponta_janelas"][t]["ref12"]["premio"] for t in COL_PARTE}
+    pld12 = max(
+        sum(
+            s * _dia_pagina(prem[t], D, P, p12[t] if p12[t] is not None else premio[t])["pld"]
+            for t, s in partes.items()
+        ),
+        P,
+    )
+    ph = d["piso_hist"]
+    mx = max(ph, key=lambda x: x["delta"]) if ph else None
+    esp = D - P
+    pj, pu12 = premio["útil"], p12["útil"]
+    return {
+        "mes": c["mes"],
+        "antecedencia_meses": h,
+        "decomp": D,
+        "piso": P,
+        "pld_previsto": pld,
+        "desvio": delta,
+        "direcao": direcao,
+        "faixa_10_90": [max(pld - e["erro_p90"], P), pld - e["erro_p10"]],
+        "direcao_hist": {
+            "pouco_historico": len(prev_reg) < 5,
+            "previsoes_desde_mar25": len(prev_reg),
+            "acertos_desde_mar25": sum(x["direcao_real"] == direcao for x in prev_reg),
+            "previsoes_desde_jul24": len(prev_todo),
+            "acertos_desde_jul24": sum(x["direcao_real"] == direcao for x in prev_todo),
+            "meses_com_a_direcao": [x["mes"] for x in bt if x["direcao_real"] == direcao],
+            "meses_total": len(bt),
+        },
+        "erro_medio": {
+            "antecedencia": erro.get(h),
+            "um_mes": erro.get(1),
+            "apos_rv0": erro.get(max(h - 1, 1)),
+        },
+        "de_onde_vem": {g: {"valor": v, "peso": abs(v) / abs_tot} for g, v in comp.items()},
+        "pld_ponta_na_media_12m": pld12,
+        "premio_ponta": {"janela": premio, "media_12m": p12},
+        "alertas": {
+            "decomp_perto_do_piso": esp < MODELO.espaco_min,
+            "historico_no_piso": (
+                {
+                    "meses": len(ph),
+                    "media": sum(x["delta"] for x in ph) / len(ph),
+                    "max": mx["delta"],
+                    "mes_max": mx["mes"],
+                    "previsao_acima_de_todos": delta > mx["delta"],
+                }
+                if esp < 5 and ph
+                else None
+            ),
+            "ponta_afastada_da_media_12m": pu12 is not None
+            and abs(pj - pu12) > max(50, 0.5 * abs(pu12)),
+            "premissas_editadas": editado,
+        },
+        "sensibilidade": {
+            "preco_ponta_util": max(D + premio_sens["útil"], P),
+            "pct_dias_uteis": pct,
+            "pld": max((1 - pct / 100) * tot + pct / 100 * cen, P),
+        },
+    }
+
+
+def dias_mes(c: dict, D: float, prem: dict, premio: dict, premio_sens: dict, pct: float) -> list:
+    """Dias do mês (D095): cada dia recebe o dia típico do seu tipo; a média dos dias é o PLD previsto e a
+    média do PLD esperado com o % de estresse é o PLD com a sensibilidade (a conta do dia é linear na ponta)."""
+    P = c["piso"]
+    y, m = map(int, c["mes"].split("-"))
+    linhas = []
+    for i, cod in enumerate(c["dias"]):
+        t = TIPO_COD[cod]
+        base = _dia_pagina(prem[t], D, P, premio[t])
+        est = _dia_pagina(prem[t], D, P, premio_sens[t])
+        dt = pd.Timestamp(year=y, month=m, day=i + 1)
+        linhas.append(
+            {
+                "data": str(dt.date()),
+                "dia": DSEM[(dt.dayofweek + 1) % 7],
+                "tipo": NOME_COD[cod],
+                "horas_piso": base["horas_piso"],
+                "outras_horas": base["outras_horas"],
+                "ponta": base["preco_ponta"],
+                "pld_dia": base["pld"],
+                "pld_dia_ponta_estressada": est["pld"] if cod == "u" else None,
+                "pld_dia_esperado_com_pct": (1 - pct / 100) * base["pld"] + pct / 100 * est["pld"]
+                if cod == "u"
+                else base["pld"],
+            }
+        )
+    return linhas
+
+
+def estado_padrao(d: dict, mes: str, D: float) -> tuple[dict, dict, dict, dict]:
+    """Mês do calendário e premissas padrão da página (janela padrão, desconto de 12 meses, ponta útil do
+    estresse no preço padrão da sensibilidade), sem edições."""
+    c = next(x for x in d["calendario"] if x["mes"] == mes)
+    pj = d["premissas_janelas"]
+    jan = (
+        pj.get(d["janela_padrao"]) or pj[str(d["janela_padrao"])]
+    )  # chave int no Python, texto no JSON
+    ref = {t: d["ref_fora"][t]["valor"] for t in COL_PARTE}
+    prem = {
+        t: {**jan[t], "frac_fora": ref[t] if ref[t] is not None else jan[t]["frac_fora"]}
+        for t in COL_PARTE
+    }
+    premio = {t: prem[t]["premio_ponta"] for t in COL_PARTE}
+    p90 = d["sensibilidade"]["preco"]
+    premio_sens = {**premio, "útil": (p90 - D) if p90 is not None else premio["útil"]}
+    return c, prem, premio, premio_sens

@@ -31,28 +31,37 @@
   <section id="simulador" aria-labelledby="titulo">
     <p class="sub" id="veredito"></p>
     <div class="bloco" id="b-sim">
-      <div class="barra-abas"><h3 class="ttl" id="tt-simmes">Simulação do mês</h3>
-        <div class="controles"><div class="lin"><span>Mês</span><select id="sel-mes" aria-label="Mês simulado"></select>
-          <span>DECOMP médio</span><input id="inp-decomp" type="number" min="0" max="2000" step="1" aria-label="DECOMP médio do mês, R$/MWh">
-          <button type="button" class="btn-sec" id="btn-decomp">DECOMP vigente</button></div></div></div>
-      <div class="sim-grade">
-        <div class="sim-res">
-          <div class="sim-nums2">
-            <div class="tile"><span class="v" id="sim-pld"></span><span class="d" id="sim-pld-d"></span></div>
-            <div class="tile"><span class="v" id="sim-dir"></span><span class="d" id="sim-dir-d"></span></div>
-          </div>
-          <div class="mini-ttl"><b>Peso de cada premissa no desvio</b><span>R$/MWh, ponderado pelo mês</span></div>
-          <table id="t-peso" class="compacta"><thead></thead><tbody></tbody></table>
-          <p class="leg" id="sim-sens-txt"></p>
-        </div>
-        <div class="sim-prem" id="b-prem">
-          <div class="barra-abas"><div class="mini-ttl"><b>Premissas</b><span id="sub-prem"></span></div>
-            <div class="abas miud" id="abas-jan" role="group" aria-label="Janela das premissas"></div></div>
-          <table id="t-prem" class="compacta"><thead><tr><th>Premissa</th><th class="n" id="th-util">Útil</th><th class="n" id="th-sab">Sábado</th><th class="n" id="th-dom">Dom./feriado</th></tr></thead><tbody></tbody></table>
-          <div class="barra-abas"><span class="leg">Campos editáveis (borda azul = editado; detalhes na dica de cada linha e na <a href="metodologia.html#passos">metodologia</a>).</span><button type="button" class="btn-sec" id="btn-prem">Voltar às premissas</button></div>
-        </div>
+      <div class="sim-entrada">
+        <h3 class="ttl" id="tt-simmes">Simulação do mês</h3>
+        <label class="campo"><span>Mês</span><select id="sel-mes" aria-label="Mês simulado"></select></label>
+        <div class="campo"><span>DECOMP médio · R$/MWh</span><div class="lin-campo"><input id="inp-decomp" type="number" min="0" max="2000" step="1" aria-label="DECOMP médio do mês, R$/MWh"><button type="button" class="btn-sec" id="btn-decomp">vigente</button></div></div>
+        <div class="campo"><span id="sub-prem">Janela das premissas</span><div class="abas miud" id="abas-jan" role="group" aria-label="Janela das premissas"></div></div>
+        <button type="button" class="btn-sec reset" id="btn-prem">↺ Premissas padrão</button>
       </div>
-      <p class="leg" id="leg-sim"></p>
+      <div class="sim-corpo">
+        <div class="sim-esq">
+          <table id="t-prem" class="compacta"><thead><tr><th>Premissa</th><th class="n" id="th-util">Útil</th><th class="n" id="th-sab">Sábado</th><th class="n" id="th-dom">Dom./feriado</th><th class="n col-mes">No mês<small>R$/MWh</small></th><th class="n col-mes">Peso</th></tr></thead><tbody></tbody></table>
+          <div class="sim-pe">
+            <div class="sim-sens grade">
+              <span class="sens-rot"><span class="rotulo-prem">Sensibilidade</span><small>preço da ponta</small></span>
+              <span class="sens-inp"><input id="inp-sens" type="number" step="1" aria-label="Preço da ponta do dia útil no cenário, R$/MWh"></span>
+              <span class="sens-txt">ponta do dia útil <span class="info" id="info-sens" tabindex="0" aria-label="Como ler a sensibilidade">ⓘ</span> · <small id="sens-extra"></small></span>
+              <span class="sens-rot"><small>% dos dias úteis</small></span>
+              <div class="regua" id="regua-sens"></div>
+            </div>
+            <details class="sim-dias" id="sim-dias">
+              <summary>Ver os dias do mês</summary>
+              <div class="sim-dias-corpo">
+                <div class="barra-dias"><span id="dias-txt"></span><button type="button" class="btn-sec" id="btn-csv">Baixar CSV</button></div>
+                <div class="rolagem"><table id="t-dias" class="compacta"><thead></thead><tbody></tbody></table></div>
+                <p class="leg" id="dias-leg"></p>
+              </div>
+            </details>
+            <p class="leg" id="leg-sim"></p>
+          </div>
+        </div>
+        <aside class="sim-resumo" id="sim-resumo" aria-live="polite"></aside>
+      </div>
     </div>
 
     <div class="bloco">

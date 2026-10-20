@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Risk Lab DESSEM: Metodologia v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="pagina.css">
+<style>
+  html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  [hidden] { display: none !important; }
+  main section { display: grid; gap: 14px; }
+  main section h3 { font-size: 1.05rem; margin-top: 6px; }
+  .aviso-versao { margin: 0; font-size: 0.85rem; color: var(--ink-2); border-left: 3px solid var(--accent); padding-left: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./">Acompanhamento</a>
+    <a href="simulador.html">Simulador</a>
+    <a href="metodologia.html" aria-current="page">Metodologia</a>
+  </nav>
+
+  <header>
+    <span class="rotulo">Risk Lab DESSEM · metodologia do simulador · modelo v1 (v1 simplificada) · outubro de 2026</span>
+    <p class="aviso-versao"><strong>Versão anterior; em uso de 14/10/2026 a 19/10/2026.</strong> O simulador usa hoje o modelo v2, com o desconto das outras horas num número só para os três tipos de dia (D087): <a href="metodologia.html">metodologia atual</a>.</p>
+    <h1>Como o PLD médio do mês é simulado a partir do DECOMP</h1>
+    <p class="lead">O simulador não tenta prever o DESSEM do zero. Ele parte do DECOMP médio que a mesa espera para o mês e estima quanto o PLD horário vai se afastar dele, olhando o que o DESSEM fez nas últimas semanas: quantas horas o vale foi ao piso, quanto as demais horas ficaram abaixo do DECOMP e quanto a ponta pagou acima dele.</p>
+    <div class="indice" aria-label="Nesta página">
+      <a href="#pergunta">A pergunta</a>
+      <a href="#dados">Dados</a>
+      <a href="#definicoes">Definições</a>
+      <a href="#passos">Passo a passo</a>
+      <a href="#exemplo">Exemplo</a>
+      <a href="#sensibilidade">Sensibilidade de ponta</a>
+      <a href="#confianca">Confiança e faixa</a>
+      <a href="#backtest">Como foi testado</a>
+      <a href="#decisoes">Decisões</a>
+      <a href="#limites">Limitações</a>
+      <a href="#glossario">Glossário</a>
+    </div>
+  </header>
+
+  <section id="pergunta" aria-labelledby="h-perg">
+    <h2 id="h-perg">A pergunta</h2>
+    <p class="texto">Dado o DECOMP médio de um mês, o PLD médio desse mês, formado hora a hora pelo DESSEM, vai sair abaixo (desconto), perto (neutro) ou acima (prêmio) do DECOMP, e quanto? O desvio do mês é a diferença entre as duas médias no mês civil:</p>
+    <div class="eq">Δ = PLD<sub>DESSEM</sub> médio do mês civil − DECOMP médio do mês civil<br>DECOMP médio = PLD semanal da revisão vigente em cada dia (com limites), ponderado pelos dias<br>direção: desconto se Δ &lt; −5 · neutro de −5 a +5 · prêmio se Δ &gt; +5 (R$/MWh)</div>
+    <p class="texto">O foco é o mês seguinte (M+1). Mais longe que isso, o que move o desvio (piso no vale, preço da ponta) muda mais rápido do que qualquer janela consegue acompanhar. A página permite simular outros meses do calendário, com a confiança medida na antecedência correspondente.</p>
+  </section>
+
+  <section id="dados" aria-labelledby="h-dados">
+    <h2 id="h-dados">Dados usados</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Dado</th><th>Fonte</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td>PLD horário</td><td>CCEE, publicado. Dias com deck e ainda sem publicação: calculado do CMO do deck do DESSEM pela regra oficial (D048; diferença máxima de R$ 0,01 em 960 horas conferidas)</td><td>Realizado e premissas</td></tr>
+          <tr><td>DECOMP</td><td>Decks da CCEE: PLD semanal de cada revisão, com o piso e o teto do ano</td><td>DECOMP vigente de cada dia e média do mês</td></tr>
+          <tr><td>Decks do DESSEM</td><td>CCEE (resultados SEMREDE e entradas)</td><td>Tipo de dia (feriado = dia de semana sem patamar pesado), demanda e renovável no acompanhamento</td></tr>
+          <tr><td>Limites do PLD</td><td>CCEE, por ano</td><td>Piso de cada mês (2027 ainda sem publicação: usa o último)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="texto">O CMO e o balanço do ONS não entram: o PLD é calculado pela CCEE com os próprios decks, e é isso que o simulador reproduz.</p>
+  </section>
+
+  <section id="definicoes" aria-labelledby="h-def">
+    <h2 id="h-def">Definições</h2>
+    <ul class="lista texto">
+      <li><span class="tag">Vale</span><span>Horas de 8h a 15h (8 horas por dia; D054). É onde o PLD vai ao piso quando sobra água e sol.</span></li>
+      <li><span class="tag">Ponta</span><span>Horas de 18h a 21h (4 horas). É onde aparecem os preços altos.</span></li>
+      <li><span class="tag">Outras horas</span><span>As 20 horas fora da ponta que não estão no piso: o vale fora do piso e as demais horas (0h–7h, 16h–17h, 22h–23h).</span></li>
+      <li><span class="tag">Tipo de dia</span><span>Útil, sábado, domingo/feriado. Tudo é calculado por tipo de dia e recombinado pelo calendário do mês.</span></li>
+      <li><span class="tag">Espaço</span><span>DECOMP − piso. É o máximo que uma hora pode cair abaixo do DECOMP. Com o DECOMP no piso, o espaço é zero e não há desconto possível.</span></li>
+      <li><span class="tag">Janela</span><span>Os 14 dias antes da data da previsão (padrão; a página permite 7, 30, 60 e 90).</span></li>
+    </ul>
+  </section>
+
+  <section id="passos" aria-labelledby="h-passos">
+    <h2 id="h-passos">Passo a passo</h2>
+    <p class="texto">Três premissas por tipo de dia, um dia típico para cada tipo e a média pelo calendário do mês.</p>
+
+    <div class="passo-det">
+      <span class="n">1</span>
+      <div>
+        <h3>Horas do vale no piso (n)</h3>
+        <p class="texto">Média, nos dias da janela, de quantas das 8 horas do vale ficaram no piso. É conjuntural: segue a hidrologia e o acoplamento entre submercados das últimas semanas.</p>
+        <div class="eq">n<sub>tipo</sub> = horas do vale no piso / dias do tipo, na janela de 14 dias</div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">2</span>
+      <div>
+        <h3>Desconto das outras horas (f)</h3>
+        <p class="texto">Quanto as outras horas ficam abaixo do DECOMP, em fração do espaço. É estrutural (estável por tipo de dia: útil perto de 0%, sábado −15%, domingo/feriado −23%), por isso vem da média dos 12 meses encerrados, não da janela. Meses com o DECOMP no piso ficam de fora, porque com espaço zero a fração não informa nada.</p>
+        <div class="eq">f<sub>tipo,mês</sub> = média(PLD − DECOMP) / max(média(DECOMP − piso), 20) nas outras horas do mês<br>f<sub>tipo</sub> = média de f<sub>tipo,mês</sub> nos 12 meses encerrados com espaço ≥ R$ 20 (D061)</div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">3</span>
+      <div>
+        <h3>Preço da ponta</h3>
+        <p class="texto">A conta usa o prêmio da ponta sobre o DECOMP, medido na janela. O usuário vê e pode editar o preço (DECOMP + prêmio). O prêmio é o que persiste: o preço da ponta sobe e desce com o DECOMP (ponta ≈ 1,02 × DECOMP + 67 nos dias úteis desde 2025, correlação 0,62), enquanto o prêmio quase não depende dele (correlação 0,02). Usar o preço da janela direto piorou o erro do mês de 15,8 para 19,7 R$/MWh (D058).</p>
+        <div class="eq">prêmio<sub>tipo</sub> = média(PLD − DECOMP do dia) nas horas de 18h a 21h da janela<br>ponta<sub>tipo</sub> = max(D + prêmio<sub>tipo</sub>, piso)</div>
+      </div>
+    </div>
+
+    <div class="passo-det">
+      <span class="n">4</span>
+      <div>
+        <h3>Dia típico e mês</h3>
+        <p class="texto">Com o DECOMP médio D do mês informado pelo usuário e o piso P do ano, cada tipo de dia vira um dia típico; o mês é a média pelo calendário, com os feriados nacionais. Nenhuma hora fica abaixo do piso.</p>
+        <div class="eq">outras<sub>tipo</sub> = max(D + f<sub>tipo</sub> × (D − P), P)<br>PLD do dia<sub>tipo</sub> = [ n × P + (20 − n) × outras<sub>tipo</sub> + 4 × ponta<sub>tipo</sub> ] / 24<br>PLD do mês = max( Σ<sub>tipo</sub> parte do mês<sub>tipo</sub> × PLD do dia<sub>tipo</sub>, P )</div>
+        <p class="texto">A contribuição de cada grupo ao desvio (vale no piso, outras horas, ponta) é a mesma conta separada por parcela, e aparece no topo da simulação como "peso de cada premissa".</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="exemplo" aria-labelledby="h-ex">
+    <h2 id="h-ex">Exemplo: novembro de 2026 com DECOMP 150</h2>
+    <p class="texto">Premissas de 13/10/2026 (janela de 30/09 a 13/10), piso R$ 57,31. Novembro tem 63% de dias úteis, 13% de sábados e 23% de domingos e feriados.</p>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Tipo de dia</th><th class="n">n (vale no piso)</th><th class="n">f</th><th class="n">Outras horas</th><th class="n">Prêmio da ponta</th><th class="n">Ponta</th><th class="n">PLD do dia</th></tr></thead>
+        <tbody>
+          <tr><td>Útil</td><td class="n">7,0</td><td class="n">−2%</td><td class="n">148,1</td><td class="n">+127</td><td class="n">276,9</td><td class="n">143,1</td></tr>
+          <tr><td>Sábado</td><td class="n">8,0</td><td class="n">−15%</td><td class="n">135,8</td><td class="n">+3</td><td class="n">153,5</td><td class="n">112,6</td></tr>
+          <tr><td>Domingo/feriado</td><td class="n">8,0</td><td class="n">−23%</td><td class="n">129,1</td><td class="n">+3</td><td class="n">152,5</td><td class="n">109,1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="eq">Dia útil: [7 × 57,31 + 13 × 148,1 + 4 × 276,9] / 24 = 143,1<br>Mês: 0,633 × 143,1 + 0,133 × 112,6 + 0,233 × 109,1 = <b>131,1</b> → desconto de −18,9 R$/MWh<br>Peso: vale no piso −28,4 · outras horas −4,0 · ponta +13,6</div>
+  </section>
+
+  <section id="sensibilidade" aria-labelledby="h-sens">
+    <h2 id="h-sens">Sensibilidade de ponta</h2>
+    <p class="texto">Para responder "e se a ponta dos dias úteis ficar em R$ X durante p% do mês?". Nos outros dias úteis a ponta fica na premissa; sábados, domingos e feriados não mudam. Como o PLD do dia é linear no preço da ponta, a mistura é exata:</p>
+    <div class="eq">PLD com sensibilidade = max( (1 − p) × PLD previsto + p × PLD com a ponta do dia útil em X, P )<br>efeito ≈ p × 4/24 × parte de dias úteis × (X − ponta da premissa)</div>
+    <p class="texto">Exemplo (novembro, DECOMP 57): ponta de R$ 400 em 50% dos dias úteis → 0,5 × 4/24 × 0,633 × (400 − 184) = +11,4, de 70,8 para 82,2. O padrão é 5% dos dias úteis com a ponta no percentil 90 das horas de ponta do mês corrente (hoje R$ 346, com outubro até o dia 13); o percentil 80 do prêmio médio mensal de 12 meses (DECOMP + prêmio, hoje R$ 217) fica como referência. A página mostra, para calibrar o p, em quantos dias úteis dos últimos 12 meses a ponta ficou nesse preço ou acima, e as médias móveis de 7, 14, 30 e 60 dias do preço da ponta com a média dos 12 meses.</p>
+  </section>
+
+  <section id="confianca" aria-labelledby="h-conf">
+    <h2 id="h-conf">Antecedência, confiança e faixa</h2>
+    <ul class="lista texto">
+      <li><span class="tag">Antecedência</span><span>1 mês se a RV0 do mês já saiu; senão 1 + as RV0 ainda não publicadas até a do mês. Em 13/10/2026, novembro conta como 2 meses e passa a 1 quando a RV0 sair (prevista para ~30/10). É o lado conservador (D057).</span></li>
+      <li><span class="tag">Confirmou</span><span>Das vezes em que o backtest previu essa direção nessa antecedência, quantas aconteceram.</span></li>
+      <li><span class="tag">Faixa 10–90%</span><span>PLD previsto − p90 do erro até PLD previsto − p10 do erro, com os erros do backtest de mar/2025 a set/2026 na mesma antecedência. Em M+1: erro de −13,1 a +26,4, ou seja, de 26 abaixo a 13 acima do previsto. É em R$ fixos e não depende da direção.</span></li>
+    </ul>
+  </section>
+
+  <section id="backtest" aria-labelledby="h-bt">
+    <h2 id="h-bt">Como foi testado</h2>
+    <p class="texto">O backtest simula alguém na rodada da RV0 do mês-alvo (M+1) ou de meses anteriores (M+2 a M+6), de julho de 2024 a setembro de 2026. Do mês-alvo só entram o DECOMP médio realizado (o simulador mede o desvio, não prevê o DECOMP) e o calendário. Toda premissa vem de dias ou meses anteriores à data:</p>
+    <ul class="lista texto">
+      <li><span class="tag">Premissas</span><span>Janela de 14 dias antes da data; desconto das outras horas pela média dos 12 meses já encerrados.</span></li>
+      <li><span class="tag">Erros e faixa</span><span>Só de meses-alvo já encerrados na data. Nunca de meses posteriores.</span></li>
+      <li><span class="tag">Escolhas</span><span>A janela de 14 dias e a forma de cada premissa foram escolhidas comparando alternativas nos mesmos meses: essa comparação é dentro da amostra.</span></li>
+      <li><span class="tag">Oráculos</span><span>Testes com valores realizados do mês-alvo no lugar das premissas medem limites e aparecem sempre identificados.</span></li>
+    </ul>
+    <h3>Resultado do simulador da página (fora da amostra)</h3>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Erro médio do PLD do mês (R$/MWh)</th><th class="n">M+1</th><th class="n">M+2</th><th class="n">M+3</th></tr></thead>
+        <tbody>
+          <tr><td>mar/2025–set/2026 (19 meses)</td><td class="n">14,5</td><td class="n">20,8</td><td class="n">25,3</td></tr>
+          <tr><td>jul/2024–set/2026 (27 meses)</td><td class="n">13,1</td><td class="n">18,3</td><td class="n">24,2</td></tr>
+          <tr><td>Referência: PLD = DECOMP (mar/2025–set/2026)</td><td class="n">28,5</td><td class="n">28,5</td><td class="n">28,5</td></tr>
+          <tr><td>Direção certa (mar/2025–set/2026)</td><td class="n">84%</td><td class="n">84%</td><td class="n">84%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Comparações que definiram o método</h3>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Pergunta</th><th>Resultado (erro médio do mês, mar/2025–set/2026)</th><th>Tipo</th></tr></thead>
+        <tbody>
+          <tr><td>Quatro premissas ou três?</td><td>Empatam em todos os horizontes (M+1 15,8 × 15,8); ficou com três (R45)</td><td>Fora da amostra</td></tr>
+          <tr><td>Horas no piso numa conta só (20 horas)?</td><td>Pior a partir de M+2 (24,1 → 30,6): fora do vale o piso é raro e não persiste (R44, R45)</td><td>Fora da amostra</td></tr>
+          <tr><td>Desconto das outras horas: janela ou média longa?</td><td>Média dos 12 meses melhor em todos os horizontes (M+1 15,8 → 14,5; M+2 24,1 → 20,8) (R46)</td><td>Fora da amostra</td></tr>
+          <tr><td>Horas no piso: janela ou média longa?</td><td>Janela de 14 dias a melhor em M+1 (14,5); médias longas erram para cima (R47)</td><td>Fora da amostra</td></tr>
+          <tr><td>Ponta: preço ou prêmio?</td><td>Prêmio (15,8) melhor que o preço da janela (19,7) (D058)</td><td>Fora da amostra</td></tr>
+          <tr><td>Ponta: qual janela?</td><td>Isolando a ponta (oráculo nas outras premissas): 14 dias a melhor em M+1 (5,5 no PLD do mês), média de 12 meses a melhor em M+2 (6,3). Mantida a janela de 14 dias, com acompanhamento das outras janelas na página (R48)</td><td>Oráculo / dentro da amostra</td></tr>
+          <tr><td>Qual janela de dias?</td><td>M+1: 7 dias 16,0 · 14 dias 15,8 · 30 dias 19,4 · 60 dias 18,8</td><td>Dentro da amostra</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Rótulo</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td>Fora da amostra</td><td>Previsão feita só com o que existia na data</td></tr>
+          <tr><td>Dentro da amostra</td><td>Escolha feita e avaliada no mesmo período</td></tr>
+          <tr><td>Oráculo</td><td>Usa um dado do futuro para medir um limite</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="decisoes" aria-labelledby="h-dec">
+    <h2 id="h-dec">Decisões que definem o método</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>ID</th><th>Decisão</th><th>Motivo</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td class="num">D017</td><td>Desvio = PLD DESSEM médio − DECOMP médio do mês civil, com limites</td><td>É o que a mesa compara</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D031</td><td>Simulador v1: premissas recentes por tipo de dia aplicadas ao DECOMP informado</td><td>Simples e melhor que as alternativas testadas</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D048</td><td>Dias sem PLD publicado: calculado do deck pela regra oficial</td><td>Diferença máxima de R$ 0,01</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D054</td><td>Vale de 8h a 15h</td><td>8h no piso com mais frequência que 15h</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D055</td><td>Horas no piso numa conta só</td><td>Pior fora da amostra</td><td><span class="status teste">Rejeitada</span></td></tr>
+          <tr><td class="num">D057</td><td>Três premissas, janela de 14 dias, um mês por vez, antecedência pela RV0</td><td>Mesma qualidade, mais simples</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D058</td><td>Ponta em preço para o usuário, prêmio na conta</td><td>Intuitivo sem perder qualidade</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D061</td><td>Desconto das outras horas pela média dos 12 meses</td><td>Estrutural; erro menor em todos os horizontes</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D063</td><td>Sensibilidade de ponta só no dia útil, com régua de 5% a 100% (padrão: 5% dos dias no p90 da ponta do mês, D073, D076)</td><td>É onde a ponta pesa</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">D064</td><td>Ponta na janela de 14 dias, com acompanhamento das janelas de 7, 30, 60 dias e 12 meses</td><td>14 dias é o melhor em M+1; o usuário decide se muda</td><td><span class="status ok">Decidido</span></td></tr>
+          <tr><td class="num">—</td><td>Janela de 14 dias</td><td>Escolhida na mesma amostra do backtest</td><td><span class="status teste">Em teste</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="limites" aria-labelledby="h-lim">
+    <h2 id="h-lim">Limitações conhecidas</h2>
+    <ul class="lista texto">
+      <li><span class="tag">Viradas</span><span>O simulador repete o que aconteceu nas últimas semanas. Viradas de regime não são antecipadas (março de 2026: cheia de Belo Monte com o SE acoplado ao Norte, erro de +69).</span></li>
+      <li><span class="tag">Viés</span><span>Em M+1 o simulador ficou, em média, 7 R$/MWh acima do realizado: com o piso no vale crescendo em 2026, a janela fica atrasada. A ponta, ao contrário, tem sido subestimada.</span></li>
+      <li><span class="tag">DECOMP no piso</span><span>Com espaço quase zero, os descontos em % ficam instáveis; por isso o das outras horas vem da média de 12 meses e a página mostra o efeito em R$.</span></li>
+      <li><span class="tag">Prêmio</span><span>No período testado não houve mês de prêmio: quando o simulador prevê prêmio, ainda não há acerto para mostrar.</span></li>
+      <li><span class="tag">Amostra</span><span>19 meses no regime atual (27 desde jul/2024). As margens de acerto são de uns ±10 pontos.</span></li>
+      <li><span class="tag">Calendário</span><span>Feriados nacionais de out/2026 a mar/2027 a conferir com o calendário de patamares da CCEE; piso de 2027 ainda não publicado.</span></li>
+      <li><span class="tag">Submercados</span><span>Só SE/CO. O descolamento entre submercados fica para outra etapa.</span></li>
+    </ul>
+  </section>
+
+  <section id="glossario" aria-labelledby="h-glo">
+    <h2 id="h-glo">Glossário</h2>
+    <dl class="glossario texto">
+      <dt>PLD</dt><dd>Preço de Liquidação das Diferenças, calculado pela CCEE a partir do custo marginal dos seus próprios decks, limitado ao piso e ao teto do ano.</dd>
+      <dt>DESSEM</dt><dd>Modelo de programação diária, semi-horário; a CCEE usa o DESSEM para o PLD horário.</dd>
+      <dt>DECOMP</dt><dd>Modelo semanal, por patamar de carga; a CCEE publica o PLD semanal de cada revisão.</dd>
+      <dt>RV0, revisão</dt><dd>Rodadas semanais do DECOMP dentro do mês operativo; a RV0 é a primeira e sai na sexta antes da semana que contém o dia 1º.</dd>
+      <dt>Semana operativa</dt><dd>De sábado a sexta.</dd>
+      <dt>Piso</dt><dd>PLD mínimo do ano (R$ 57,31 em 2026).</dd>
+      <dt>Espaço</dt><dd>DECOMP − piso: quanto o preço ainda pode cair.</dd>
+      <dt>Prêmio da ponta</dt><dd>Média de PLD − DECOMP do dia nas horas de 18h a 21h.</dd>
+      <dt>M+1, M+2</dt><dd>Antecedência da previsão: 1 mês se a RV0 do mês já saiu, e assim por diante.</dd>
+      <dt>Deck</dt><dd>Conjunto de arquivos de entrada e saída de uma rodada oficial.</dd>
+    </dl>
+  </section>
+
+  <footer>Registro completo das decisões (D001–D064), questões em aberto e resultados (R01–R48) em <code>docs/metodologia.md</code> do repositório de pesquisa risk-lab-dessem-analytics. Backtest de referência reproduzível em <code>simulador.metodo_v1s</code>.</footer>
+</main>
+</body>
+</html>

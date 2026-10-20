@@ -26,7 +26,6 @@ h3.ttl { margin: 0; }
 .sim-nums .tile .v { font-size: 1.9rem; }
 table.compacta th, table.compacta td { padding: 5px 8px; font-size: 0.82rem; }
 table.compacta th small { display: block; color: var(--ink-3); font-weight: 400; }
-.regua-cel { text-align: left !important; }
 .det-tab summary { cursor: pointer; font-size: 0.8rem; color: var(--accent); margin-top: 6px; }
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px 16px; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
@@ -57,7 +56,8 @@ svg .forte { fill: var(--ink); font-weight: 500; }
 .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: grid; gap: 4px; align-content: start; }
 .tile .v { font-family: var(--f-display); font-weight: 600; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .tile .d { font-size: 0.88rem; color: var(--ink-2); }
-.dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 7px 10px; border-radius: 4px; max-width: 320px; transform: translate(12px, 12px); }
+/* dica com quebra de linha; o app.js troca o lado perto da borda da tela (pesquisa: D090) */
+.dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 7px 10px; border-radius: 4px; white-space: normal; max-width: min(360px, calc(100vw - 16px)); transform: translate(12px, 12px); }
 .aviso { font-size: 0.85rem; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 6px; }
 .mini-ttl { font-family: var(--f-data); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); display: flex; justify-content: space-between; gap: 6px; }
 .mini-ttl b { color: var(--ink); font-weight: 500; }
@@ -152,10 +152,6 @@ table.ind td small { display: block; color: var(--ink-3); font-size: 0.7rem; }
 .chips.grade2 button { padding: 3px 8px; font-size: 0.85rem; }
 .chips.grade2 button small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* régua de sensibilidade compacta (D073) */
-#t-prem .regua span { min-width: 52px; padding: 4px 6px; font-size: 0.85rem; }
-#t-prem .regua-cel small { max-width: 34rem; }
-
 /* sub-blocos dentro do histórico das premissas (D074) */
 .sub-bloco { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--rule); }
 
@@ -163,13 +159,7 @@ table.ind td small { display: block; color: var(--ink-3); font-size: 0.7rem; }
 .ref12 { margin: 2px 0 0; padding: 4px 8px; border-left: 3px solid var(--ink-2); background: var(--surface); font: 500 0.78rem/1.4 var(--f-data); color: var(--ink-2); }
 .ref12 b { color: var(--ink); font-weight: 500; }
 
-/* simulação e premissas num bloco só, em duas colunas (D075) */
-.sim-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; }
-@media (max-width: 900px) { .sim-grade { grid-template-columns: 1fr; } }
-.sim-res, .sim-prem { display: grid; gap: 8px; min-width: 0; }
-.sim-nums2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.sim-nums2 .tile { padding: 10px 12px; }
-.sim-nums2 .tile .v { font-size: 1.8rem; }
+/* quadro de premissas (D075) */
 #t-prem td, #t-prem th { padding: 5px 6px; }
 #t-prem td:first-child { min-width: 0; width: 9.5rem; }
 #t-prem input { width: 4.6rem; padding: 3px 6px; }
@@ -180,13 +170,112 @@ table.ind td small { display: block; color: var(--ink-3); font-size: 0.7rem; }
 .premissas-bt li { padding-bottom: 6px; }
 #t-metr th small { display: block; color: var(--ink-3); font-weight: 400; }
 
-/* régua de sensibilidade numa linha (D076) */
-#t-prem .regua { flex-wrap: nowrap; }
-#t-prem .regua span { min-width: 0; flex: 1 1 0; padding: 4px 4px; }
-
 /* desempenho mês a mês + matriz previu × veio (D076) */
 .bt-grade { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 900px) { .bt-grade { grid-template-columns: 1fr; } }
 table.mat td.n b { font-size: 1.05rem; }
 table.mat td.ok { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 table.mat td small { display: block; color: var(--ink-3); }
+
+/* bloco de simulação (pesquisa: D090, D092–D094): linha de entrada; à esquerda a tabela única (premissa × tipo de
+   dia, "No mês", "Peso"), a sensibilidade presa a ela, os dias do mês e o rodapé; à direita o resumo para a mesa */
+#b-sim { gap: 12px; }
+.sim-entrada { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 22px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.sim-entrada .ttl { margin: 0; flex: 1 1 100%; }
+.sim-entrada .reset { margin-left: auto; }
+.campo { display: grid; gap: 4px; }
+.campo > span { font-family: var(--f-data); font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+.lin-campo { display: flex; align-items: center; gap: 8px; }
+.lin-campo.centro { justify-content: center; gap: 6px; }
+#inp-decomp, #inp-sens { width: 5rem; font: 500 0.95rem var(--f-data); text-align: right; padding: 4px 6px; border: 1px solid var(--rule); border-radius: 4px; background: var(--bg); color: var(--ink); }
+#inp-sens.editado { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.info { cursor: help; color: var(--ink-3); font-size: 0.9rem; }
+.sim-corpo { display: grid; grid-template-columns: minmax(0, 40rem) minmax(16rem, 1fr); gap: 20px; align-items: stretch; }
+@media (min-width: 1101px) { .sim-corpo { grid-template-columns: minmax(0, 35rem) minmax(16rem, 1fr); } }
+@media (max-width: 1100px) { .sim-corpo { grid-template-columns: minmax(0, 1fr); } .sim-resumo { order: -1; } }
+.sim-esq { display: flex; flex-direction: column; justify-content: flex-start; gap: 12px; min-width: 0; }
+/* sensibilidade presa à tabela (D093); só o rodapé acompanha o fim do resumo */
+.sim-pe { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; }
+.sim-pe #leg-sim { margin: auto 0 0; }
+
+/* tabela única: largura fixa, textos auxiliares quebram linha, campos centrados */
+#t-prem { width: 100%; table-layout: fixed; }
+#t-prem td:first-child, #t-prem th:first-child { width: 9.2rem; }
+#t-prem td.n { white-space: normal; }
+#t-prem td.n, #t-prem th.n { text-align: center; }
+#t-prem td small { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+#t-prem td.n small { text-align: center; }
+#t-prem input { width: 100%; max-width: 4.6rem; margin-inline: auto; display: block; }
+#t-prem .lin-campo.centro input { margin-inline: 0; }
+#t-prem .col-mes { width: 4.6rem; text-align: right; }
+#t-prem small.contrib { color: var(--ink-2); }
+#t-prem small.peso-lbl { display: none; }
+#t-prem tr.destaque td { font-family: var(--f-data); }
+@media (min-width: 1101px) { #t-prem small.contrib { white-space: nowrap; font-size: 0.66rem; letter-spacing: -0.01em; } }
+/* desconto único (D087) num campo só, no eixo da coluna Útil */
+#t-prem td[colspan="3"] { text-align: left; }
+#t-prem td[colspan="3"] .lin-campo.centro { position: relative; width: calc(100% / 3); margin-left: -4px; }
+#t-prem td[colspan="3"] .lin-campo.centro .info { position: absolute; left: calc(50% + 2.3rem + 6px); }
+#t-prem td[colspan="3"] small { text-align: left; padding-left: max(0px, calc((100% / 3 - 4.6rem) / 2)); }
+
+/* sensibilidade na grade da tabela: campo no eixo da coluna Útil, texto à direita, régua embaixo */
+.sim-sens { padding-top: 10px; border-top: 1px solid var(--rule); }
+.sim-sens small { color: var(--ink-3); font-size: 0.72rem; }
+.sim-sens.grade { display: grid; grid-template-columns: 9.2rem repeat(3, minmax(0, 1fr)) 4.6rem 4.6rem; align-items: center; gap: 8px 0; }
+.sim-sens.grade .sens-rot { padding-left: 6px; display: grid; gap: 1px; }
+.sim-sens.grade .sens-rot small { font-size: 0.68rem; color: var(--ink-3); }
+.sim-sens.grade .sens-rot .rotulo-prem { font-size: 0.82rem; }
+.sim-sens.grade .sens-inp { display: flex; justify-content: center; padding-inline: 6px; }
+.sim-sens.grade #inp-sens { width: 100%; max-width: 4.6rem; padding: 3px 6px; font-size: 0.88rem; }
+.sim-sens.grade .sens-txt { grid-column: 3 / -1; padding-left: 6px; font-size: 0.8rem; color: var(--ink-2); }
+.sim-sens.grade .regua { grid-column: 2 / -1; padding-inline: 6px; flex-wrap: nowrap; }
+.sim-sens .regua span { flex: 1 1 0; min-width: 58px; padding: 4px 6px; font-size: 0.85rem; }
+
+/* resumo para a mesa (D091); altura mínima de 481 px lado a lado (D094: maior caso medido, DECOMP no piso com
+   três alertas; com menos texto sobra espaço no card e nada se move à esquerda) */
+.sim-resumo { border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; background: var(--bg); display: grid; gap: 4px; align-content: start; }
+@media (min-width: 1101px) { .sim-resumo { min-height: 481px; box-sizing: border-box; } }
+.sim-resumo .res-k { font-family: var(--f-data); font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+.sim-resumo .res-num { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sim-resumo .res-num b { font: 600 1.9rem var(--f-data); line-height: 1.1; }
+.sim-resumo .res-num span { font-size: 0.8rem; color: var(--ink-3); }
+.sim-resumo .res-dir { font-weight: 600; font-size: 1.02rem; }
+.sim-resumo .res-itens { display: grid; gap: 6px; }
+.sim-resumo .res-item { display: grid; grid-template-columns: 8.1rem minmax(0, 1fr); gap: 1px 10px; }
+.sim-resumo .res-l { grid-row: span 2; font-family: var(--f-data); font-size: 0.62rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink-3); padding-top: 2px; white-space: nowrap; }
+.sim-resumo .res-v { font-weight: 600; font-size: 0.88rem; }
+.sim-resumo .res-v.leve { font-weight: 400; font-size: 0.82rem; color: var(--ink-2); }
+.sim-resumo .res-c { font-size: 0.76rem; color: var(--ink-2); line-height: 1.4; }
+.sim-resumo .res-alertas { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+.sim-resumo .res-alertas li { border-left: 2px solid var(--ink-3); padding-left: 8px; font-size: 0.8rem; color: var(--ink-2); }
+
+/* dias do mês (D095): botão entre a sensibilidade e o rodapé, tabela e CSV */
+.sim-dias > summary { cursor: pointer; font-size: 0.82rem; color: var(--accent); width: max-content; }
+.sim-dias[open] > summary { margin-bottom: 8px; }
+.sim-dias-corpo { display: grid; gap: 8px; }
+.sim-dias .barra-dias { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--ink-2); }
+.sim-dias .rolagem { max-height: 360px; overflow: auto; }
+#t-dias { width: 100%; }
+#t-dias th, #t-dias td { padding: 3px 6px; font-size: 0.76rem; }
+#t-dias th small, #t-dias td small { display: block; color: var(--ink-3); font-weight: 400; font-size: 0.66rem; }
+#t-dias thead th { position: sticky; top: 0; background: var(--surface); }
+#t-dias tr.fds td { color: var(--ink-3); }
+#t-dias tr.destaque td { font-weight: 600; }
+
+@media (max-width: 560px) {
+  .sim-entrada { gap: 10px 14px; }
+  .sim-entrada .reset { width: 100%; }
+  #t-prem td:first-child, #t-prem th:first-child { width: 6.4rem; }
+  #t-prem td, #t-prem th { padding: 4px 3px; }
+  #t-prem th { white-space: normal; overflow-wrap: normal; letter-spacing: 0; font-size: 0.62rem; }
+  #t-prem .col-mes { display: none; }
+  #t-prem small.peso-lbl { display: block; color: var(--ink-2); margin-top: 3px; }
+  #t-prem td[colspan="3"] .lin-campo.centro { margin-left: 0; width: calc(100% / 3 - 4px); }
+  #t-prem input, .sim-sens.grade #inp-sens { padding: 3px 2px; font-size: 0.8rem; }
+  .sim-sens.grade { grid-template-columns: 6.4rem repeat(3, minmax(0, 1fr)); }
+  .sim-sens.grade .sens-rot { padding-left: 3px; }
+  .sim-sens.grade .sens-inp { padding-inline: 3px; }
+  .sim-sens.grade .regua { grid-column: 1 / -1; padding-inline: 3px; flex-wrap: wrap; }
+  .sim-resumo .res-item { grid-template-columns: 1fr; }
+  .sim-resumo .res-l { grid-row: auto; }
+}

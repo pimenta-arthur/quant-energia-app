@@ -600,7 +600,15 @@ def simulador(b, bt: pd.DataFrame) -> dict:
         [r.data.strftime("%Y-%m-%d"), r.tipo, *(_r(getattr(r, c), 3) for c in cols_tr)]
         for r in tr.itertuples()
     ]
-    cols = ["horas_piso", "frac_fora", "premio_ponta", "ponta_media", "decomp", "espaco"]
+    cols = [
+        "horas_piso",
+        "frac_fora",
+        "premio_ponta",
+        "ponta_media",
+        "decomp",
+        "espaco",
+        "frac_dias_piso",
+    ]
     hp = S.historico_premissas_s(h, MODELO.janela)
     hist = {
         t: [
@@ -655,7 +663,21 @@ def simulador(b, bt: pd.DataFrame) -> dict:
                 "tipo"
             )
         },
+        # D087: o simulador usa um número só (igual nos três tipos); por tipo de dia fica como diagnóstico
         "ref_fora": {
+            t: {**v, "valor": _r(v["valor"], 4)}
+            for t, v in {t: S.ref_fora(mr, origem, t) for t in [*S.TIPOS_DIA, "todos"]}.items()
+        },
+        # D091: meses com DECOMP no piso (espaço médio < R$ 5, SE, desde 2021) e o desvio do PLD sobre ele, para
+        # o resumo comparar a previsão com o histórico no piso
+        "piso_hist": [
+            {"mes": mes, "delta": _r(r.delta, 2)}
+            for mes, r in b.m.loc["2021-01":]
+            .assign(esp=lambda x: x["decomp"] - x["piso"])
+            .query("esp < 5")
+            .iterrows()
+        ],
+        "ref_fora_tipo": {
             t: {**v, "valor": _r(v["valor"], 4)}
             for t, v in {t: S.ref_fora_em(mr, origem, t) for t in [*S.TIPOS_DIA, "todos"]}.items()
         },
