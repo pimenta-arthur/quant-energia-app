@@ -13,7 +13,6 @@ body { margin: 0; }
 [hidden] { display: none !important; }
 section { gap: 12px; }
 .hero { display: grid; gap: 14px; }
-.hero h1, h2 { font-size: 1.5rem; }
 h3.ttl { margin: 0; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.8rem; color: var(--ink-3); }
 .meta .atualizado { margin-left: auto; }

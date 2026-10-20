@@ -1,4 +1,4 @@
-/* Padrão visual Quant Energia · v1.2 · 2026-10 · painel.css
+/* Padrão visual Quant Energia · v1.3 · 2026-10 · painel.css
    Camada das páginas de painel (projeções, acompanhamento), sobre base.css: topo com premissas, blocos,
    grades, abas, legendas curtas, tooltip, cartões de número, pequenos múltiplos, marcadores de cenário
    e espaçamento compacto. Regras de uso em GUIA.md. */
@@ -6,6 +6,7 @@
 body { margin: 0; }
 [hidden] { display: none !important; }
 .hero { display: grid; gap: 14px; }
+.hero h1 { font-size: 1.55rem; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.8rem; color: var(--ink-3); }
 .bloco { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
@@ -45,6 +46,7 @@ svg .forte { fill: var(--ink); font-weight: 500; }
 .barra-abas { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 .leg { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); margin: 0; }
 /* mais compacto */
+.hero h1, h2 { font-size: 1.5rem; }
 main { gap: 34px; }
 section { gap: 10px; }
 .bloco { padding: 14px; gap: 8px; }

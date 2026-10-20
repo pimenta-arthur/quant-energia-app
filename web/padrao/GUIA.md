@@ -1,4 +1,4 @@
-# Padrão visual Quant Energia · v1.2 · 2026-10
+# Padrão visual Quant Energia · v1.3 · 2026-10
 
 Guia das páginas do Quant Energia (bandeiras tarifárias, PLD horário) para reaproveitar o mesmo layout em
 páginas e projetos novos. Matriz em `quant-energia-app/web/padrao/`; em outro projeto, **copiar a pasta
@@ -31,12 +31,15 @@ Página nova: copiar `modelo.html`, trocar textos e dados, apagar o que não usa
 - Português do Brasil, com acentuação; números no formato pt-BR (`n()`, `pct()`, `sn()` de `graficos.js`).
 - Títulos institucionais que dizem o que o gráfico mostra ("Posicionamento no ábaco regulatório"), sem
   pergunta ou slogan; mesmo tamanho para os títulos de seção.
-- **Escala de títulos única** (v1.2, em `base.css`): h1 e h2 `1.5rem`, h3 `1.02rem`, nos painéis e nas metodologias. Não
-  redefinir o tamanho de h1, h2 ou h3 na página (exceção: títulos de blocos pequenos, como `.mini .ttl`). Espaçamento
-  entre seções (`main`): 56 px nas páginas de texto (só `base.css`) e 34 px nos painéis (`painel.css`); sem valor próprio
-  por funcionalidade.
-- **Marca e menu:** o link "Quant Energia" (`.nav .marca`) tem o mesmo tamanho em todas as páginas; classes locais não
-  usam o nome `.marca` (colidia com a marca do menu). Último item do menu: Metodologia.
+- **Duas escalas de títulos, a mesma em toda página do mesmo tipo:**
+  - painéis (`base.css` + `painel.css`): h1 e h2 `1.5rem`; blocos (`.ttl`, h3 de bloco) `1.02rem`;
+  - páginas de texto corrido, como as metodologias (só `base.css`): h1 grande `clamp(2rem, 5vw, 3rem)`, h2 `1.55rem`,
+    h3 `1.1rem`.
+  Não redefinir h1, h2 ou h3 na página (exceção: títulos de blocos pequenos, como `.mini .ttl`). Espaçamento entre
+  seções (`main`): 56 px nas páginas de texto e 34 px nos painéis; sem valor próprio por funcionalidade.
+- **Marca e menu:** o link "Quant Energia" (`.nav .marca`) tem o mesmo tamanho em todas as páginas (`1.25rem`, maior
+  que os links do menu, por ser o nome do projeto); classes locais não usam o nome `.marca` (colidia com a marca do
+  menu). Último item do menu: Metodologia.
 - Legendas curtas: o que é cada marca e de onde vem o dado. Explicação longa vai para a metodologia.
 - Datas: `09/10/26` (e `22:55`, discreto, quando há mais de uma publicação no dia); meses: `out/26`.
 - Rótulos padronizados numa mesma coluna: um formato só (ex.: todas as linhas com data; subtexto curto
@@ -79,8 +82,10 @@ Página nova: copiar `modelo.html`, trocar textos e dados, apagar o que não usa
 - Fontes: IBM Plex Sans (texto) e IBM Plex Mono (números, eixos, rótulos), do Google Fonts.
 
 ## Versões
-- v1.2 (2026-10-20): escala de títulos única no `base.css` (h1 e h2 1,5 rem, h3 1,02 rem; as metodologias deixam de ter
-  h1 grande), espaçamento entre seções sem valor por funcionalidade (Risk Lab de 40 para 34 px), regra da marca do menu.
+- v1.3 (2026-10-20): marca do menu maior (`1.25rem`); as metodologias voltam ao título grande de texto corrido (a escala
+  única da v1.2 foi desfeita; ficam duas escalas, painel e texto).
+- v1.2 (2026-10-20): espaçamento entre seções sem valor por funcionalidade (Risk Lab de 40 para 34 px nos painéis e 56 px
+  nas metodologias), regra da marca do menu, h3 das metodologias iguais entre as funcionalidades.
 - v1.1 (2026-10-20): tooltip com quebra de linha e troca de lado perto da borda (`graficos.js`, `painel.css`).
 - v1 (2026-10): primeira versão.
 
