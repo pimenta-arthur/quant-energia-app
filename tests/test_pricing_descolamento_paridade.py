@@ -190,3 +190,37 @@ def test_R9_backtest_pagina(arm):
     assert a[chave].astype(str).values.tolist() == r[chave].astype(str).values.tolist()
     num = [c for c in r.columns if c not in chave]
     _igual(a[num], r[num], 1e-9)
+
+
+# --- blocos 3 e 4: dados da página (R8_dados) e rodadas (R10) --------------------------------------------
+
+
+def test_R8_dados_da_pagina(arm, rodada):
+    from qe_pricing_descolamento import publicacao as P
+
+    _M, b, d, mod, _ = rodada
+    r8 = json.loads((Path(PASTA) / "R8_dados.json").read_text(encoding="utf-8"))
+    a = json.loads(json.dumps(P.dados(arm, d, r8["meta"]["rodada"], b, mod)))
+    for m in r8["meses"]:
+        for c in m["cen"]:
+            c["id"] = c["id"].split("|")[0]  # na v2.2, o cenário é só o ano climático
+    for k in ("meta", "sazonal_se", "historico", "meses"):
+        assert a[k] == r8[k], k
+
+
+@pytest.mark.parametrize("deck", ["2025-01", "2025-06", "2026-01", "2026-10"])
+def test_R10_resumo_das_rodadas(rodada, deck):
+    from qe_pricing_descolamento import publicacao as P
+
+    M, b, _d, _mod, _ = rodada
+    linha = next(
+        x
+        for x in json.loads(
+            (Path(PASTA) / "R10_historico_rodadas.json").read_text(encoding="utf-8")
+        )
+        if x["deck"] == deck
+    )
+    d = pd.Period(deck, "M")
+    x = P.resumo_rodada(b, d, M.treinar(b, d), linha["rodada"])
+    x["reconstruida"] = linha["reconstruida"]
+    assert json.loads(json.dumps(x)) == linha

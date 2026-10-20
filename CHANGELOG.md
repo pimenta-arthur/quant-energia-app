@@ -8,6 +8,26 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-19] Pricing Descolamento: página principal e rodadas (blocos 3 e 4)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, blocos 3 e 4; seção 7). Conferido contra
+`reports/promocao/2026-10/`: dados da página (R8_dados: meta, sazonalidade do SE, histórico mensal e os 50 meses com
+coeficientes, fundamentos e realizado) iguais; resumo das rodadas igual ao R10 (decks de jan/2025, jun/2025, jan/2026
+e out/2026).
+
+### Adicionado
+- Página `web/pricing_descolamento/` (Descolamento NE e N): curva do SE do ano ao mês, descolamento por produto com
+  preço justo e faixa, gráfico mensal, choque no SE, descolamento realizado e fundamentos do deck.
+- `qe pricing_descolamento publicar`: chaves em `serving/pricing_descolamento/` e registro das rodadas
+  (`historico_rodadas.json`); o histórico da pesquisa (R10) entra como legado, como está.
+- Conta da curva no navegador (`descolamento_conta.js`) e em Python (`conta.py`), com teste de paridade e teste de
+  que, com o SE plano de R$ 200, reproduz as faixas do modelo.
+
+### Alterado
+- Contas que a página da pesquisa fazia no navegador e não dependem do usuário (histórico realizado por período com a
+  comparação entre anos; fundamentos por produto) passam para o Python; conferidas contra as funções originais da
+  pesquisa (109 células e 81 produtos, sem diferença).
+
 ## [2026-10-19] Pricing Descolamento: backtest da página (bloco 5, dados)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, bloco 5; D025). Conferido contra o R9 de

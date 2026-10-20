@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Descolamento: NE e N</title>
+<!-- Padrão visual Quant Energia · v1 · 2026-10 · página de precificação do descolamento (NE e N × SE), portada de
+     pricing-descolamento-analytics (promocao-quant-v1). Dados: serving/pricing_descolamento/<chave>.json, gerados por
+     `uv run qe pricing_descolamento publicar`. O navegador recalcula o modelo exato para a curva de SE digitada
+     (descolamento_conta.js): d = −Σ_h c_h · máx(SE · perfil_h − piso, 0), por mês e cenário. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  main { grid-template-columns: minmax(0, 1fr); }  /* tabelas largas rolam dentro do bloco, não a página */
+  /* curva do SE: tabela de entrada */
+  .curva { width: 100%; min-width: 760px; }
+  .curva th, .curva td { padding: 6px 6px; border-bottom: 1px solid var(--rule); text-align: center; }
+  .curva th:first-child, .curva td:first-child { white-space: nowrap; text-align: left; position: sticky; left: 0; background: var(--surface); }
+  .curva td.ano-col { border-right: 1px solid var(--rule); }
+  .curva td.sem-col:last-of-type { border-right: 1px solid var(--rule); }
+  .curva input { width: 100%; min-width: 58px; font: 500 0.88rem var(--f-data); text-align: right; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; }
+  .curva input::placeholder { color: var(--ink-3); font-weight: 400; opacity: 1; }
+  .curva input:focus { outline: 2px solid var(--accent); outline-offset: 0; background: var(--surface); }
+  .curva input.digitado { border-color: var(--accent); background: var(--surface); }
+  .curva input.alerta { border-color: var(--v1); }
+  .curva input:disabled { visibility: hidden; }
+  .curva .meses-row td { background: var(--bg); }
+  .curva .meses-row .mlbl { display: block; font: 400 0.68rem var(--f-data); color: var(--ink-3); text-transform: lowercase; margin-bottom: 2px; }
+  .curva button.exp { white-space: nowrap; font: 500 0.8rem var(--f-data); color: var(--accent); background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; font-size: 0.88rem; color: var(--ink-2); }
+  .controles input[type=text] { width: 80px; font: 500 0.88rem var(--f-data); text-align: right; border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; background: var(--bg); color: var(--ink); }
+  .btn { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .btn.prim { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .controles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .avisos-curva { font-size: 0.82rem; color: var(--v1); display: grid; gap: 2px; }
+  .avisos-curva:empty { display: none; }
+  /* resultado: mesma grade da entrada, só leitura */
+  .curva.leitura .cel { font: 500 0.88rem var(--f-data); font-variant-numeric: tabular-nums; text-align: right; padding: 5px 6px; border: 1px solid transparent; border-radius: 4px; min-width: 58px; }
+  .curva.leitura .cel b { font-weight: 600; }
+  .curva.leitura .cel .fx { display: block; font-size: 0.68rem; color: var(--ink-3); white-space: nowrap; }
+  .curva.leitura td.ano-res .cel { background: var(--accent-soft); }
+  .curva.leitura .cel.vazio { color: var(--ink-3); }
+  /* resultado */
+  .tile .v.neg { color: var(--ink); }
+  .tile .f { font: 400 0.78rem var(--f-data); color: var(--ink-3); }
+  td .fx { display: block; white-space: nowrap; font-size: 0.72rem; color: var(--ink-3); }
+  tr.parcial td:first-child::after { content: " (parcial)"; color: var(--ink-3); font-size: 0.75rem; }
+  details.fund > summary { font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+  details.fund[open] > summary { margin-bottom: 10px; }
+  /* o choque fica dentro da seção de resultado (espaço de 10px); a margem iguala ao espaço entre seções (34px), como nos fundamentos */
+  #det-choque { margin-block: 24px; }
+  #det-hist { margin-top: 4px; }
+  /* botão do histórico com cara de link, na cor de destaque, sem negrito */
+  #det-hist > summary { font: 400 0.9rem var(--f-body); color: var(--accent); }
+  #det-hist[open] > summary { margin-bottom: 6px; }
+  .hist-in { display: grid; gap: 8px; }
+  .marca { font-size: 0.7rem; color: var(--ink-3); }
+  .dica { max-width: 480px; white-space: normal; }  /* base.css define nowrap; aqui o tooltip tem várias linhas */
+  td.vazio-msg { text-align: center !important; color: var(--ink-3); padding-block: 18px; font-size: 0.9rem; }
+  /* deltas do choque em destaque (fundo), antes das colunas de referência */
+  #det-choque td.delta, #det-choque th.delta { background: var(--accent-soft); }
+  .mini svg { width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./" aria-current="page">Descolamento NE e N</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo" id="rot-horiz">Horizonte</span>
+    <h1 id="titulo">Descolamento de Preço do NE e do N em Relação ao SE</h1>
+    <div class="meta" id="meta"></div>
+    <p class="leg" id="erro" hidden></p>
+  </section>
+
+  <!-- 1. entrada -->
+  <section aria-labelledby="s-curva">
+    <h2 id="s-curva">Curva do Sudeste</h2>
+    <p class="leg">Informe o PLD médio do SE (R$/MWh) no nível em que tiver preço: ano, semestre, trimestre ou mês. Vale o
+      nível mais específico; os demais períodos do mesmo ano são derivados (em cinza) para fechar a média ponderada
+      por horas. Pode colar uma linha do Excel em qualquer campo.</p>
+    <div class="controles">
+      <span>Preencher todos os anos com <input type="text" id="valor-todos" inputmode="decimal" value="" placeholder="R$" aria-label="Valor do SE para todos os anos"> R$/MWh</span>
+      <button type="button" class="btn prim" id="btn-todos">Aplicar</button>
+      <button type="button" class="btn" id="btn-limpar">Limpar curva</button>
+      <span>Dentro do período:</span>
+      <label><input type="radio" name="saz" value="plana" checked> plana</label>
+      <label><input type="radio" name="saz" value="hist"> sazonalidade histórica do SE</label>
+    </div>
+    <div class="bloco">
+      <div class="rolagem">
+        <table class="curva" id="curva"></table>
+      </div>
+      <div class="avisos-curva" id="avisos-curva"></div>
+      <p class="leg" id="leg-curva"></p>
+    </div>
+  </section>
+
+  <!-- 2. resultado -->
+  <section aria-labelledby="s-res">
+    <h2 id="s-res">Descolamento previsto</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-res">Descolamento do NE por produto, R$/MWh</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="abas" id="abas-sub" role="group" aria-label="Submercado">
+            <button type="button" data-v="NE" aria-pressed="true">NE</button>
+            <button type="button" data-v="N">N</button>
+          </div>
+          <div class="abas" id="abas-modo" role="group" aria-label="Medida">
+            <button type="button" data-v="d" aria-pressed="true">Descolamento</button>
+            <button type="button" data-v="pld">PLD implícito</button>
+          </div>
+        </div>
+      </div>
+      <div class="rolagem">
+        <table class="curva leitura" id="resumo"></table>
+      </div>
+      <p class="leg">Mesma grade da curva do Sudeste. Em cada produto: preço justo (média ponderada dos cenários climáticos) e, embaixo,
+        a faixa mínimo–máximo entre cenários. Os seletores valem para esta tabela e para o gráfico.</p>
+      <details class="fund" id="det-hist">
+      <summary>Descolamento realizado (histórico)</summary>
+      <div class="hist-in">
+        <div class="rolagem"><table class="curva leitura" id="hist-real"></table></div>
+        <p class="leg">Mesma grade e mesmos seletores da tabela acima, com o realizado desde 2021 (PLD da CCEE; física do DESSEM). Embaixo, o SE médio do período.
+          ▲ / ▼ = bem mais / menos descolado que a média do mesmo período nos anos disponíveis. Passe o mouse para ver o período contra a média histórica.</p>
+      </div>
+    </details>
+    </div>
+    <details class="fund" id="det-choque">
+      <summary>Choque no PLD do SE</summary>
+      <div class="bloco">
+        <div class="controles">
+          <span>Choque de <input type="text" id="choque" inputmode="decimal" value="10" aria-label="Tamanho do choque"></span>
+          <label><input type="radio" name="choque-un" value="rs" checked> R$/MWh</label>
+          <label><input type="radio" name="choque-un" value="pct"> % do SE</label>
+          <span class="abas" id="atalhos-choque" role="group" aria-label="Atalhos">
+            <button type="button" data-v="-30">−30</button><button type="button" data-v="-10">−10</button>
+            <button type="button" data-v="10" aria-pressed="true">+10</button><button type="button" data-v="30">+30</button>
+          </span>
+        </div>
+        <div class="rolagem"><table>
+          <thead><tr><th>Período</th><th class="n delta">Δ NE</th><th class="n delta ult">Δ N</th><th class="n">SE base</th><th class="n">SE com choque</th>
+            <th class="n">NE base</th><th class="n">NE com choque</th><th class="n">N base</th><th class="n">N com choque</th></tr></thead>
+          <tbody id="tab-sens"></tbody>
+        </table></div>
+        <p class="leg" id="leg-choque">O choque é aplicado à curva do SE informada, em todos os meses. A resposta não é simétrica: com o SE perto do piso, um
+          choque para baixo zera o descolamento em várias horas; ela também muda com a hora do dia em que o NE trava e com o semestre.</p>
+      </div>
+    </details>
+    <div class="legenda-mini" id="leg-graf"></div>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-graf">Descolamento do NE por mês, R$/MWh</div>
+      </div>
+      <svg id="g-mes" viewBox="0 0 1040 280" role="img" aria-label="Descolamento previsto por mês"></svg>
+      <p class="leg" id="leg-g"></p>
+    </div>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl">Preço justo por produto, R$/MWh</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="abas" id="abas-prod" role="group" aria-label="Produto">
+            <button type="button" data-v="mes">Mês</button>
+            <button type="button" data-v="tri">Trimestre</button>
+            <button type="button" data-v="sem">Semestre</button>
+            <button type="button" data-v="ano" aria-pressed="true">Ano</button>
+          </div>
+          <button type="button" class="btn" id="btn-csv">Copiar tabela</button><span class="leg" id="copiado" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Período</th><th class="n">SE</th><th class="n">NE justo</th><th class="n">N justo</th><th class="n">PLD NE</th><th class="n">PLD N</th><th class="n">% horas travadas NE</th></tr></thead>
+          <tbody id="tab-prod"></tbody>
+        </table>
+      </div>
+      <p class="leg">Preço justo = média ponderada dos cenários climáticos; abaixo, em cinza, a faixa mínimo–máximo entre cenários
+        (cada cenário agregado no período). Descolamento negativo = NE/N abaixo do SE. PLD implícito = SE + descolamento.</p>
+    </div>
+  </section>
+
+  <!-- 3. fundamentos -->
+  <section aria-labelledby="s-fund">
+    <details class="fund" id="det-fund">
+      <summary id="s-fund">Fundamentos do deck</summary>
+      <div style="display:grid;gap:12px">
+        <p class="leg">Insumos que entram no modelo, por mês (média dos cenários): projeção do deck (linha) e último realizado do
+          mesmo mês do calendário (pontos). Não dependem da curva do SE.</p>
+        <div class="mini6" id="mult"></div>
+        <div class="bloco">
+          <div class="barra-abas">
+            <div class="ttl">Fundamentos por produto, GW (trava em % das horas)</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div class="abas" id="abas-fund" role="group" aria-label="Produto">
+                <button type="button" data-v="mes">Mês</button>
+                <button type="button" data-v="tri">Trimestre</button>
+                <button type="button" data-v="sem">Semestre</button>
+                <button type="button" data-v="ano" aria-pressed="true">Ano</button>
+              </div>
+              <button type="button" class="btn" id="btn-fund">Copiar tabela</button><span class="leg" id="copiado-fund" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="rolagem"><table>
+            <thead><tr><th>Período</th><th class="n">Renov. NE</th><th class="n">Carga NE</th><th class="n">Carga N</th>
+              <th class="n">Hidr. N</th><th class="n">Sobra NE</th><th class="n">Lim. exp. NE</th>
+              <th class="n">Folga lim.</th><th class="n">Trava NE</th><th class="n">k NE</th></tr></thead>
+            <tbody id="tab-fund"></tbody>
+          </table></div>
+          <p class="leg">Em negrito, o valor que entra no modelo (projeção do deck; hidráulica do N = média dos cenários). Embaixo, em cinza,
+            o último realizado dos mesmos meses do calendário (para 2027 em diante a referência continua sendo o último ano realizado).
+            Sobra NE = renovável − carga do NE; folga lim. = limite de exportação do NE − sobra: quanto menor, mais o NE trava.
+            k = fração de (SE − piso) perdida nas horas em que trava.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- 4. evolução (registro do que vem depois; nada disto está implementado) -->
+  <section aria-labelledby="s-prox">
+    <h2 id="s-prox">Próximos passos</h2>
+    <div class="grid2">
+      <div class="bloco">
+        <div class="ttl">Curvas de compra e de venda</div>
+        <p class="leg">Preço de compra e de venda do descolamento em torno do preço justo, por produto, a partir da distribuição dos
+          cenários e do erro histórico do modelo, com backtest de resultado (PnL). Depende de alinhar com a mesa como o produto é negociado.</p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Descolamento do Sul</div>
+        <p class="leg">Física própria do Sul (descola para cima, no horário solar), com o mesmo desenho: entrada pela curva do SE e
+          faixa por cenário climático.</p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Comparar versões do modelo</div>
+        <p class="leg">Mostrar lado a lado a versão vigente (v2.2) e candidatas rodando em paralelo como modelo-sombra, a começar
+          pelo 7d-1S (k do 1º semestre pela sobra N+NE), com o histórico de acerto de cada uma a cada deck.</p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Mês corrente e atualização automática</div>
+        <p class="leg">Precificar o mês corrente com informação do próprio mês (revisões do DECOMP/DESSEM, realizado parcial) e
+          atualizar a página a cada deck novo, sem passo manual.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="aviso">
+    <span>Modelo estrutural horário condicionado à curva do SE informada; o SE nunca vem do NEWAVE. A faixa representa a
+      variabilidade climática (anos históricos), não um intervalo de confiança completo: não inclui o risco de regime
+      do 1º semestre (trava rasa × funda) nem o erro dos insumos do deck. O mês corrente não é precificado nesta versão.
+      Limitações e testes na metodologia (seção 33 da pesquisa).</span>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script src="descolamento_conta.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

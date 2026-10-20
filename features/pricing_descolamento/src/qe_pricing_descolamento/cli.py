@@ -9,7 +9,7 @@ from pathlib import Path
 import typer
 
 from qe_core.armazenamento import armazenamento, gravar_parquet, ler_parquet
-from qe_pricing_descolamento import chaves, ingestao, referencias, tratamento
+from qe_pricing_descolamento import chaves, ingestao, publicacao, referencias, tratamento
 
 app = typer.Typer(
     help="Pricing Descolamento: descolamento do PLD do NE e do N em relação ao SE.",
@@ -57,6 +57,29 @@ def backtest():
     typer.echo(
         f"backtest {M.MODELO.versao}: {x['deck'].nunique()} decks, {x['mes'].nunique()} meses-alvo, {len(x)} linhas"
     )
+
+
+@app.command()
+def publicar(
+    motivo: str | None = typer.Option(None, help="Por que esta rodada (padrão: o deck do NEWAVE)."),
+    forcar: bool = typer.Option(
+        False, help="Registra rodada mesmo com o deck e o modelo da última (exige --motivo)."
+    ),
+):
+    """Regrava serving/pricing_descolamento/ com o deck vigente e registra uma rodada se o deck ou o modelo mudou."""
+    try:
+        meta = publicacao.publicar(armazenamento(), motivo, forcar)
+    except publicacao.RodadaRepetida as e:
+        raise typer.BadParameter(str(e)) from e
+    typer.echo(
+        f"página publicada: deck {meta['deck']}, modelo {meta['versao']}, dados até {meta['dados_ate']}, "
+        f"horizonte {meta['horizonte'][0]} a {meta['horizonte'][1]}"
+    )
+    typer.echo(
+        f"rodada {meta['rodada']} "
+        + ("registrada" if meta["nova_rodada"] else "(mesmo deck e modelo da última)")
+    )
+    typer.echo("lembre de commitar data/serving/pricing_descolamento/")
 
 
 @app.command()

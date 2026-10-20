@@ -28,3 +28,13 @@ PROC_BACKTEST = f"{PROC}/backtest.parquet"
 def proc_dessem(tabela: str, mes: str) -> str:
     """T3 (`sist`: balanço horário) e T4 (`re`: restrições de intercâmbio horárias), uma partição por mês."""
     return f"{PROC}/dessem/{tabela}/mes={mes}.parquet"
+
+
+SERVING = "serving/pricing_descolamento"
+# registro das rodadas publicadas (uma linha por rodada, com o descolamento no SE de referência): não apagar nem
+# recalcular; as linhas de jan/2025 a out/2026 vêm da pesquisa (legado, reconstruídas até set/2026)
+SERVING_REGISTRO = f"{SERVING}/historico_rodadas.json"
+
+
+def serving(nome: str) -> str:
+    return f"{SERVING}/{nome}.json"

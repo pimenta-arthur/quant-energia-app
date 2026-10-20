@@ -117,6 +117,14 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   ano climático, D015, D022); definições de "descolado" e "travada" da base horária também vêm dele. Mudar = versão
   nova (decisão na pesquisa, `congelar`, tag `pricing_descolamento-modelo-<versão>`). Os coeficientes por cenário
   reproduzem o modelo para qualquer SE (teste): é o que a página vai usar.
+- Dia a dia: `qe pricing_descolamento tratar` → `publicar`. Rodada = publicação com o deck do NEWAVE vigente e a
+  versão do modelo (DESSEM e PLD novos não geram rodada sozinhos; `--forcar --motivo` para forçar).
+  `serving/pricing_descolamento/historico_rodadas.json` é o registro das rodadas: não apagar nem recalcular; as linhas
+  de jan/2025 a out/2026 vêm da pesquisa (R10, levado como está; até set/2026 são reconstruídas).
+- Página: contas que não dependem da curva digitada no Python (`publicacao`: histórico realizado por período e
+  fundamentos por produto); a conta da curva (resolver do ano ao mês, d por cenário, justo e faixa, choque) em
+  `web/pricing_descolamento/descolamento_conta.js` e em `qe_pricing_descolamento.conta`: mudar uma exige mudar a outra
+  (teste de paridade com node).
 - Testes: `tests/referencias/pricing_descolamento/` (períodos fechados até set/2026), regerados com `congelar`.
   Paridade com a pesquisa é opt-in (`QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta do pacote>`).
 
