@@ -70,6 +70,21 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
      versão, quadro de parâmetros gerado de `MODELO` e teste que exige a página de cada versão.
 - `serving/forecast_bandeiras/historico_projecoes.json` é o registro das rodadas publicadas: não apagar.
   Versionado no git com o resto de `serving/`.
+- **Página "Relato do DECOMP"** (`web/forecast_bandeiras/relato.html`; D034 do analytics): calcula a bandeira direto
+  dos relatos (`relato.rv0`) do DECOMP, sem o NEWAVE. PLD gatilho do relato da CCEE; GH_band e GSF do relato do ONS
+  (sem ele, do da CCEE, como aproximação de até ~1%); o CMO do relato do ONS nunca é PLD. Aceita várias execuções
+  (probabilidade de cada cor), PLD manual e premissas editáveis (GF_band e PLD mín/máx do último boletim).
+  - **A conta roda no navegador** (`relato_conta.js`, sem DOM, no padrão do `simulador_conta.js` do Risk Lab): o site do
+    GitHub Pages é estático e os relatos do usuário não saem do computador dele. Na fase FastAPI, trocar `calcular`
+    por uma chamada ao servidor sem mexer na página. A referência em Python é `qe_forecast_bandeiras.relato`.
+  - **Dados embutidos:** `relato_dados.py` grava `serving/forecast_bandeiras/relato_dados.js` (fatores da CCEE, limites do
+    ábaco, horas por patamar e semana, boletim) a cada `publicar`/`pagina`; a exportação exige o arquivo.
+  - **Mudou a conta?** Mexer em `relato.py` e `relato_conta.js` juntos: `tests/test_forecast_bandeiras_relato.py` compara
+    Python × JS com node (36 cenários) e confere PLD, GSF e cor de out/26, mai/26, abr/25 e mar/25 contra o boletim
+    (recortes de ~4 KB em `tests/referencias/forecast_bandeiras/relato/`, gerados por `gerar_recortes.py`).
+  - O boletim usou a reedição do deck (2ª publicação) em set/24 e mar/25: carregar a publicação que a CCEE usou.
+  - Mês do rótulo do relato diferente do mês escolhido só **alerta**, não bloqueia (estudo customizado parte de um deck
+    existente). Sem GFOM.
 
 ## Risk Lab DESSEM (PLD horário): etapas e testes
 - Promovido de `../risk-lab-dessem-analytics` em 2026-10-14 pelo pacote `docs/promocao_pld_horario.md` de lá,
