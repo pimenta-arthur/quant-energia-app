@@ -8,7 +8,7 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 
 ## Pesquisa × produto
 - A pesquisa (EDA, notebooks, backtest, decisões de método) fica nos repositórios de análise, como
-  `../forecast-bandeiras` (GitHub `forecast-bandeiras-analytics`). Aqui entra só código validado lá.
+  `../forecast-bandeiras-analytics`. Aqui entra só código validado lá.
 - **Não mudar o método ao portar.** A migração foi validada contra o analytics; hoje os testes usam
   referências congeladas do próprio app (`tests/referencias/`). O app não depende do analytics para rodar.
 - **Nenhuma dependência de execução de outro repositório:** os dados entram só pela caixa de entrada
