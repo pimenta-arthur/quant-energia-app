@@ -1,4 +1,4 @@
-# Padrão visual Quant Energia · v1 · 2026-10
+# Padrão visual Quant Energia · v1.1 · 2026-10
 
 Guia das páginas do Quant Energia (bandeiras tarifárias, PLD horário) para reaproveitar o mesmo layout em
 páginas e projetos novos. Matriz em `quant-energia-app/web/padrao/`; em outro projeto, **copiar a pasta
@@ -52,6 +52,8 @@ Página nova: copiar `modelo.html`, trocar textos e dados, apagar o que não usa
 ## Gráficos
 - SVG desenhado com `S()`; tooltip com `dicaEm()` em todo ponto ou barra (a página precisa de
   `<div class="dica" id="dica" hidden></div>`). Tooltip com o mês, o valor e a referência (oficial, anterior).
+- Tooltip quebra linha (largura máxima de 280 px, nunca maior que a tela; a página pode aumentar o máximo) e troca de
+  lado perto da borda direita ou de baixo da tela (`dicaEm`, desde a v1.1): a página não precisa reposicionar.
 - **Nada de marcador colorido sobre fundo colorido.** Sobre faixas que já têm cor (ábaco, regiões),
   cenários viram marcador neutro: círculo branco, contorno escuro e letra (`.cen-marca-svg`, legenda com
   `i.cen-marca`); ligações em cinza tracejado.
@@ -69,6 +71,10 @@ Página nova: copiar `modelo.html`, trocar textos e dados, apagar o que não usa
   coluna de rótulos fixa.
 - Funciona no celular (grades com `auto-fit`); temas claro e escuro conferidos antes de publicar.
 - Fontes: IBM Plex Sans (texto) e IBM Plex Mono (números, eixos, rótulos), do Google Fonts.
+
+## Versões
+- v1.1 (2026-10-20): tooltip com quebra de linha e troca de lado perto da borda (`graficos.js`, `painel.css`).
+- v1 (2026-10): primeira versão.
 
 ## Conferência antes de publicar
 - Abrir a página nos temas claro e escuro e numa largura de celular.

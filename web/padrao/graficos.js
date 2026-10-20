@@ -1,4 +1,4 @@
-/* Padrão visual Quant Energia · v1 · 2026-10 · graficos.js
+/* Padrão visual Quant Energia · v1.1 · 2026-10 · graficos.js
    Funções pequenas para gráficos em SVG e textos em pt-BR, sem biblioteca. Regras de uso em GUIA.md.
    Carregar antes do script da página: <script src="../padrao/graficos.js"></script>
    A página precisa de <div class="dica" id="dica" hidden></div> para os tooltips (dicaEm). */
@@ -33,14 +33,19 @@ function S(pai, tag, at = {}, txt) {
   return e;
 }
 
-/** tooltip que segue o ponteiro; `txt` pode ser HTML ou função(evento) → HTML */
+/** tooltip que segue o ponteiro; `txt` pode ser HTML ou função(evento) → HTML.
+ *  Fica à direita e abaixo do ponteiro; perto da borda direita ou de baixo da tela, troca de lado (v1.1). */
 function dicaEm(el, txt) {
   const dica = document.getElementById("dica");
   el.addEventListener("pointermove", e => {
     dica.innerHTML = typeof txt === "function" ? txt(e) : txt;
-    dica.style.left = e.clientX + "px";
-    dica.style.top = e.clientY + "px";
     dica.hidden = false;
+    dica.style.transform = "none";
+    const w = dica.offsetWidth, h = dica.offsetHeight;
+    const x = e.clientX + 12 + w > innerWidth - 8 ? e.clientX - 12 - w : e.clientX + 12;
+    const y = e.clientY + 12 + h > innerHeight - 8 ? e.clientY - 12 - h : e.clientY + 12;
+    dica.style.left = Math.max(8, x) + "px";
+    dica.style.top = Math.max(8, y) + "px";
   });
   el.addEventListener("pointerleave", () => { dica.hidden = true; });
 }

@@ -362,11 +362,5 @@
   document.getElementById("rot-horiz").textContent = `Horizonte: ${rotLongo(meta.horizonte[0])} a ${rotLongo(meta.horizonte[1])}`;
   document.getElementById("meta").innerHTML = `<span>Premissas:</span><span>Deck NEWAVE ${rot(meta.deck)}</span><span>Modelo ${meta.versao}</span>` +
     `<span>Dados horários até ${dataBr(meta.dados_ate)}</span><span>${M[0].cen.length} cenários climáticos</span><span class="atualizado">Rodada de ${dataHoraBr(meta.rodada)}</span>`;
-  // mantém o tooltip dentro da tela (os tooltips por ano climático são mais altos)
-  document.addEventListener("pointermove", e => {
-    const d = document.getElementById("dica"); if (d.hidden) return;
-    const r = d.getBoundingClientRect(), dx = e.clientX + 12 + r.width > innerWidth - 8, dy = e.clientY + 12 + r.height > innerHeight - 8;
-    d.style.transform = `translate(${dx ? `calc(-100% - 12px)` : "12px"}, ${dy ? `calc(-100% - 12px)` : "12px"})`;
-  });
   desenharCurva(); fundamentos(); tabelaFund(); historicoReal(); atualizar();
 })();
