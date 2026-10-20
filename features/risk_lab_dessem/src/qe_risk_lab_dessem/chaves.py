@@ -9,35 +9,24 @@ processed/ e serving/ são desta funcionalidade. As mesmas chaves valem no disco
   republicação da semana entra ao lado da anterior; o tratamento usa a mais recente.
 """
 
-import datetime as dt
+from qe_core.fontes import (  # noqa: F401 — raw/ das fontes comuns: definido em qe_core.fontes
+    ARQUIVOS_DESSEM,
+    MARCA_DESSEM,
+    OPCIONAIS_DESSEM,
+    RAW_DESSEM,
+    RAW_LIMITES,
+    RAW_PLD,
+    raw_dessem,
+    raw_pld,
+)
 
-RAW_PLD = "raw/ccee_pld"
-RAW_LIMITES = "raw/ccee_limites_pld/dados_pld.csv"
-RAW_DESSEM = "raw/ccee_dessem"
 RAW_DECOMP = "raw/ccee_decomp"
-
-
-def raw_pld(ano: int) -> str:
-    return f"{RAW_PLD}/pld_horario_{ano}.csv"
-
-
-def raw_dessem(dia: dt.date, arquivo: str = "") -> str:
-    return f"{RAW_DESSEM}/dia={dia:%Y-%m-%d}/{arquivo}"
 
 
 def raw_decomp(pmo: str, sem: int, pub: int, arquivo: str = "") -> str:
     return f"{RAW_DECOMP}/pmo={pmo}/sem={sem}/pub={pub}/{arquivo}"
 
 
-# arquivos usados de cada metade do deck diário do DESSEM (nome no zip → guardado como <nome>.gz);
-# PDO_OPER_USIH.DAT é opcional (ausente ou truncado em alguns decks: o dia fica sem esse dado)
-ARQUIVOS_DESSEM = {
-    "entrada": ["entdados.dat", "renovaveis.dat"],
-    "resultado": ["PDO_SIST.DAT", "PDO_OPER_USIH.DAT"],
-}
-OPCIONAIS_DESSEM = {"PDO_OPER_USIH.DAT"}
-# marca de cada metade ingerida: nome do zip, PMO, revisão e hash dos originais
-MARCA_DESSEM = {"entrada": "_entrada.json", "resultado": "_resultado.json"}
 # arquivos usados do DECOMP: prefixo do nome dentro do zip → nome guardado
 ARQUIVOS_DECOMP = {"deck": ("dadger", "dadger.gz"), "relatorio": ("sumario", "sumario.gz")}
 

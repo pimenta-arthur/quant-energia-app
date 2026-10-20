@@ -31,7 +31,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 - **Todo acesso a dados passa por `qe_core.armazenamento`** (chaves `raw/…`, `processed/…`,
   `serving/…`). Nunca abrir caminhos de `data/` diretamente nas etapas: isso quebra a ida para o S3.
 - `raw/` é por fonte e imutável (a ingestão não sobrescreve sem `--sobrescrever`); `processed/` e
-  `serving/` são por funcionalidade.
+  `serving/` são por funcionalidade. Fonte usada por mais de uma funcionalidade tem uma ingestão só, em
+  `qe_core.fontes`, que grava o que todas usam (a caixa de entrada apaga o original depois de gravar).
 - Leitores (`qe_core.leitores`) são funções puras sobre o caminho do arquivo.
 - Configuração só por variáveis `QE_*` (ou `.env`).
 - `data/` não vai para o git, exceto `data/serving/` (o que as páginas leem, inclusive os registros das rodadas):

@@ -25,12 +25,9 @@ def raw_patamares(ano: int) -> str:
     return f"raw/ccee_patamares/{ano}/AAC001.xlsx"
 
 
-RAW_NEWAVE = "raw/ccee_newave"
+from qe_core.fontes import ARQUIVOS_NEWAVE, RAW_NEWAVE, raw_newave  # noqa: F401 — fonte comum
+
 RAW_ECMWF = "raw/ecmwf"
-
-
-def raw_newave(deck: pd.Period, versao: str, arquivo: str = "") -> str:
-    return f"{RAW_NEWAVE}/deck={rotulo(deck)}/v={versao}/{arquivo}"
 
 
 def raw_ecmwf(emissao: str, arquivo: str = "") -> str:
@@ -79,10 +76,4 @@ SERVING_RELATO_DADOS = f"{SERVING}/relato_dados.js"
 # Registro das rodadas publicadas, como foram publicadas (não apagar nem recalcular).
 SERVING_REGISTRO = f"{SERVING}/historico_projecoes.json"
 
-ARQUIVOS_NEWAVE = (
-    ["ghtotsin.out", "sistema.dat", "c_adic.dat"]
-    + [f"eafbm00{i}.out" for i in range(1, 5)]
-    + [f"cmarg00{i}.out" for i in range(1, 5)]
-    + [f"cmarg00{i}-med.out" for i in range(1, 5)]
-)
 ARQUIVOS_PMO = ["relato.rv0", "ena.pdf", "renovaveis.csv"]

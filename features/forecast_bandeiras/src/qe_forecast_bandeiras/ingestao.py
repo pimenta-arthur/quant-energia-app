@@ -8,12 +8,11 @@ fonte, e a ingestão:
 4. só então apaga o original da entrada. Se algo falhar, o original fica onde está, com o motivo.
 
 raw/ é imutável: arquivo já gravado e diferente do novo não é sobrescrito sem `sobrescrever`
-(exceto o histórico da ANEEL, que é um conjunto atualizado pela fonte). O deck do NEWAVE é guardado
-por mês e versão (hash do conteúdo) e o ECMWF por data de emissão, então uma republicação do deck ou
+(exceto o histórico da ANEEL, que é um conjunto atualizado pela fonte). O deck do NEWAVE (fonte comum,
+qe_core.fontes) é guardado por mês e versão (hash do conteúdo) e o ECMWF por data de emissão, então uma republicação do deck ou
 uma emissão extra entram ao lado das anteriores. Formato de cada fonte: docs/entrada.md.
 """
 
-import hashlib
 import io
 import re
 import tempfile
@@ -25,14 +24,16 @@ from pathlib import Path
 
 import pandas as pd
 
+from qe_core import fontes
 from qe_core.armazenamento import Armazenamento, gravar_json
 from qe_core.entrada import NaoReconhecido, Resultado, gravar_conferido, gravar_relatorio, remover
-from qe_core.entrada import sha as _sha
 from qe_core.leitores import aneel, ccee, ons
 from qe_forecast_bandeiras import chaves
 
+# o deck do NEWAVE é fonte comum (também do descolamento): ingerido por qe_core.fontes, que grava em raw/ o
+# conjunto das bandeiras e o sistema_agrint; aqui só se filtram os meses que o tratamento das bandeiras refaz
 FONTES = {
-    "ccee_newave": "zip (ou arquivos) do deck do NEWAVE da CCEE",
+    "ccee_newave": fontes.COMUNS["ccee_newave"],
     "ons_pmo": "PMO do ONS: relato.rv0, PDF da ENA (Tabela 6) e renovaveis.csv",
     "ccee_infobandeira": "PDF do boletim InfoBandeira da CCEE",
     "ecmwf": "arquivos .txt de ENA do ECMWF (média, percentis e membros)",
@@ -139,36 +140,6 @@ def _validar(leitor, dados: bytes, sufixo: str, *args):
 # --- reconhecimento por fonte: {chave em raw/: conteúdo}, meses afetados e marca da ingestão ----
 
 
-def versao_deck(conteudo: dict[str, bytes]) -> str:
-    """Versão do deck = 8 primeiros caracteres do hash do conteúdo dos arquivos usados."""
-    h = hashlib.sha256()
-    for arq in chaves.ARQUIVOS_NEWAVE:
-        h.update(arq.encode())
-        h.update(_sha(conteudo[arq]).encode() if arq in conteudo else b"-")
-    return h.hexdigest()[:8]
-
-
-def _newave(p: Pacote, arm: Armazenamento):
-    gh = _achar(p, "ghtotsin.out")
-    if gh is None:
-        raise NaoReconhecido("não achei ghtotsin.out (deck do NEWAVE)")
-    faltam = [a for a in chaves.ARQUIVOS_NEWAVE if _achar(p, a) is None]
-    if faltam:
-        raise NaoReconhecido("deck incompleto, faltam: " + ", ".join(faltam))
-    m = re.search(
-        rf"PMO\s*-\s*({_RE_MES})\s*-\s*(\d{{4}})", _sem_acento(gh[:400].decode("latin-1"))
-    )
-    deck = _mes_conferido(p, _mes(m[2], m[1]) if m else None, "ghtotsin.out")
-    conteudo = {a: _achar(p, a) for a in chaves.ARQUIVOS_NEWAVE}
-    versao = versao_deck(conteudo)
-    marca = {
-        "chave": chaves.raw_newave(deck, versao, "_ingestao.json"),
-        "origem": p.origem.name,
-        "origem_sha256": _sha(p.origem.read_bytes()) if p.origem.is_file() else None,
-    }
-    return {chaves.raw_newave(deck, versao, a): d for a, d in conteudo.items()}, {deck}, marca
-
-
 def _pmo(p: Pacote, arm: Armazenamento):
     relato = _achar(p, "relato.rv0")
     ena = next(
@@ -258,7 +229,6 @@ def _aneel(p: Pacote, arm: Armazenamento):
 
 
 RECONHECER = {
-    "ccee_newave": _newave,
     "ons_pmo": _pmo,
     "ccee_infobandeira": _infobandeira,
     "ecmwf": _ecmwf,
@@ -276,7 +246,23 @@ def preparar_entrada(entrada: Path) -> None:
     (entrada / "relatorios").mkdir(parents=True, exist_ok=True)
 
 
+# chave do conjunto das bandeiras no deck do NEWAVE (o sistema_agrint, do descolamento, não muda o tratamento daqui)
+_CONJUNTO_BANDEIRAS = re.compile(rf"^{fontes.RAW_NEWAVE}/deck=(\d{{4}}-\d{{2}})/v=\w+/")
+
+
+def _newave(arm: Armazenamento, item: Path, sobrescrever: bool) -> Resultado:
+    r = fontes.ingerir_pacote(arm, "ccee_newave", item, sobrescrever)
+    r.meses = {
+        pd.Period(m[1], "M")
+        for c, s in r.gravados.items()
+        if s in ("novo", "sobrescrito") and (m := _CONJUNTO_BANDEIRAS.match(c))
+    }
+    return r
+
+
 def _ingerir_pacote(arm: Armazenamento, fonte: str, item: Path, sobrescrever: bool) -> Resultado:
+    if fonte == "ccee_newave":
+        return _newave(arm, item, sobrescrever)
     try:
         arquivos, meses, marca = RECONHECER[fonte](_ler_pacote(item), arm)
     except NaoReconhecido as e:

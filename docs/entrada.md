@@ -1,7 +1,13 @@
 # Caixa de entrada (arquivos baixados → raw/)
 
 Os arquivos brutos entram no app por `data/entrada/<fonte>/`. Cada funcionalidade lê só as pastas das
-suas fontes (bandeiras abaixo; PLD horário na seção própria). Você solta o arquivo **como baixou**
+suas fontes (bandeiras abaixo; PLD horário na seção própria).
+
+**Fontes comuns.** Uma fonte usada por mais de uma funcionalidade tem uma ingestão só, em `qe_core.fontes`:
+ela grava em `raw/` tudo o que qualquer funcionalidade usa, seja qual for o comando que a rodou (o original
+é apagado depois, então não pode haver duas ingestões disputando o mesmo arquivo). Hoje: `ccee_newave`
+(bandeiras e descolamento), `ccee_dessem`, `ccee_pld` e `ccee_limites_pld` (Risk Lab DESSEM e descolamento).
+Cada funcionalidade trata de novo só o que mudou nas chaves que ela usa. Você solta o arquivo **como baixou**
 (zip, PDF, txt, xlsx, csv; solto ou dentro de uma pasta, com zips dentro de zips se for o caso) na pasta
 da fonte e roda:
 
@@ -24,7 +30,7 @@ Não há segunda cópia: depois da ingestão, o dado existe só em `raw/`.
 
 | Pasta | O que soltar | Vai para `raw/` | Como o mês é identificado |
 |---|---|---|---|
-| `ccee_newave/` | zip do deck do NEWAVE (ou os arquivos soltos numa pasta) | `ccee_newave/deck=AAAA-MM/v=<hash>/`: `ghtotsin.out`, `eafbm001…004.out`, `cmarg001…004.out`, `cmarg001…004-med.out`, `sistema.dat`, `c_adic.dat` + `_ingestao.json` | cabeçalho do `ghtotsin.out` ("PMO - OUTUBRO - 2026") |
+| `ccee_newave/` (comum) | deck do NEWAVE: o deck com as saídas (`ghtotsin.out`, `cmarg…`) e/ou o zip mensal de entrada `NWAAAAMM.zip` (com ou sem `NWAAAAMM_kaPublicacao.zip` dentro); soltos ou numa pasta | dois conjuntos, cada um gravado quando está completo no pacote, com versão própria (hash): **bandeiras** em `ccee_newave/deck=AAAA-MM/v=<hash>/`: `ghtotsin.out`, `eafbm001…004.out`, `cmarg001…004.out`, `cmarg001…004-med.out`, `sistema.dat`, `c_adic.dat` + `_ingestao.json`; **sistema_agrint** (descolamento) em `ccee_newave/deck=AAAA-MM/sistema_agrint/v=<hash>/`: `sistema.dat`, `agrint.dat` + `_ingestao.json` (com a publicação) | cabeçalho do `ghtotsin.out` ("PMO - OUTUBRO - 2026"); no deck de entrada, o nome `NWAAAAMM` (ou a subpasta `AAAA-MM`) |
 | `ons_pmo/` | `relato.rv0`, PDF da ENA (Tabela 6) e `renovaveis.csv` do PMO revisão 0 (zip ou pasta) | `ons_pmo/AAAA-MM/relato.rv0`, `ena.pdf`, `renovaveis.csv` | cabeçalho do relato ("PMO - OUTUBRO/26") e texto do PDF ("OUTUBRO/2026"); o `renovaveis.csv` não traz o mês: só entra junto do relato/ENA ou numa subpasta `AAAA-MM` |
 | `ccee_infobandeira/` | PDF do boletim InfoBandeira | `ccee_boletim/AAAA-MM/infobandeira.pdf` | texto do PDF ("Nº 102 - outubro/2026") |
 | `ecmwf/` | `.txt` de ENA (`ENA_MLT_SUBSISTEMA_MENSAL_ECENSLT…_AAAAMMDD.txt`): média, percentis e 51 membros (soltos ou em zip) | `ecmwf/emissao=AAAA-MM-DD/<mesmo nome>` | data no fim do nome do arquivo |
@@ -35,7 +41,8 @@ Antes de aceitar, a ingestão roda o leitor do `qe_core` sobre o PDF da ENA, o b
 da ANEEL: arquivo que não passa na leitura fica na entrada.
 
 ## Regras
-- **Versões:** o deck do NEWAVE tem versão = hash do conteúdo dos 15 arquivos; um deck republicado no mesmo
+- **Versões:** o deck do NEWAVE tem versão = hash do conteúdo dos arquivos de cada conjunto (15 nas
+  bandeiras, 2 no `sistema_agrint`, que guarda a publicação da CCEE na marca); um deck republicado no mesmo
   mês entra como versão nova, ao lado da anterior. O ECMWF é guardado por emissão: uma emissão extra
   (ex.: dia 15) entra separada da do dia 1. A projeção usa a versão e a emissão mais recentes.
 - **Imutabilidade:** arquivo já gravado em `raw/` e diferente do novo não é substituído; o novo fica na
@@ -57,7 +64,7 @@ uv run qe risk_lab_dessem status       # último deck, último PLD publicado, di
 
 | Pasta | O que soltar | Vai para `raw/` | Como é identificado |
 |---|---|---|---|
-| `ccee_dessem/` | deck do DESSEM: o mensal `DES_AAAAMM.zip` ou os diários `DS_CCEE_MMAAAA_SEMREDE_RVnDdd.zip` (entrada) e `Resultado_DS_CCEE_…zip` (resultado), soltos ou numa pasta | `ccee_dessem/dia=AAAA-MM-DD/`: `entdados.dat.gz`, `renovaveis.dat.gz`, `PDO_SIST.DAT.gz`, `PDO_OPER_USIH.DAT.gz` + `_entrada.json` e `_resultado.json` (nome do deck, PMO, revisão, hash dos originais) | nome do zip diário: o `MMAAAA` é o mês operativo; na RV0, dias ≥ 20 são do mês civil anterior (`RV0D27` de 10/2026 = 27/09/2026) |
+| `ccee_dessem/` | deck do DESSEM: o mensal `DES_AAAAMM.zip` ou os diários `DS_CCEE_MMAAAA_SEMREDE_RVnDdd.zip` (entrada) e `Resultado_DS_CCEE_…zip` (resultado), soltos ou numa pasta | `ccee_dessem/dia=AAAA-MM-DD/`: `entdados.dat.gz`, `renovaveis.dat.gz`, `PDO_SIST.DAT.gz`, `PDO_OPER_USIH.DAT.gz`, `PDO_RESTOPER.DAT.gz` (descolamento) + `_entrada.json` e `_resultado.json` (nome do deck, PMO, revisão, hash dos originais) | nome do zip diário: o `MMAAAA` é o mês operativo; na RV0, dias ≥ 20 são do mês civil anterior (`RV0D27` de 10/2026 = 27/09/2026) |
 | `ccee_decomp/` | deck do DECOMP: o mensal `DCAAAAMM.zip` ou os semanais `DCAAAAMM-semN[_kaPublicacao].zip` e `Relatorio_Sumario-AAAAMM-semN….zip` | `ccee_decomp/pmo=AAAA-MM/sem=N/pub=K/`: `dadger.gz`, `sumario.gz` | nome do zip semanal (PMO, semana e publicação; sem sufixo = 1ª) |
 | `ccee_pld/` | `pld_horario_AAAA.csv` (um por ano, `;`) | `ccee_pld/pld_horario_AAAA.csv` | ano das datas do arquivo |
 | `ccee_limites_pld/` | `dados_pld.csv` (limites anuais) | `ccee_limites_pld/dados_pld.csv` | — (conjunto inteiro, sempre substitui) |
@@ -70,8 +77,8 @@ uv run qe risk_lab_dessem status       # último deck, último PLD publicado, di
   tratado quando as duas estão em `raw/`; `status` lista os dias incompletos. O zip mensal cresce ao
   longo do mês: baixá-lo de novo não duplica nada (dias já gravados dão "igual").
 - Antes de aceitar, a ingestão confere o dia do caso (registros TM do `entdados.dat` e "Data do
-  Caso" do `PDO_SIST.DAT`) e roda os leitores do dadger e do sumário. O `PDO_OPER_USIH.DAT` é
-  opcional (ausente ou truncado em alguns decks: o dia fica sem esse dado).
+  Caso" do `PDO_SIST.DAT`) e roda os leitores do dadger e do sumário. O `PDO_OPER_USIH.DAT` e o
+  `PDO_RESTOPER.DAT` são opcionais (ausentes ou truncados em alguns decks: o dia fica sem esse dado).
 - **DECOMP republicado** (`_2aPublicacao`) entra como `pub=2` ao lado da 1ª; o tratamento usa a
   última publicação de cada semana.
 - **PLD publicado**: o csv do ano corrente é republicado a cada atualização da CCEE e substitui o
