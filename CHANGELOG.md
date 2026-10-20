@@ -8,6 +8,19 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-19] Pricing Descolamento: metodologia e fundamentos (blocos 5 e 6)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, blocos 5 e 6; D025, D031–D035).
+Conferido contra `reports/promocao/2026-10/`: `R8_metodologia` (desempenho) e `R8_fundamentos` iguais. Com isso a
+promoção do descolamento está completa (R1 a R10 sem diferença).
+
+### Adicionado
+- Página de metodologia (`metodologia.html`): passo a passo, desempenho do backtest por trimestre e semestre,
+  comparação com assumir zero, repetir o ano anterior e a climatologia estatística, casos, histórico de rodadas,
+  versões e glossário; dados de `qe_pricing_descolamento.desempenho`.
+- Página de fundamentos (`fundamentos.html`): série mensal, mapa mês × hora, gargalos por semestre, poder explicativo
+  (AUC), curvas de resposta e k × sobra N+NE; dados de `qe_pricing_descolamento.fundamentos`.
+
 ## [2026-10-19] Pricing Descolamento: página principal e rodadas (blocos 3 e 4)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, blocos 3 e 4; seção 7). Conferido contra

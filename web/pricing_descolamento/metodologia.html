@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Descolamento: Metodologia</title>
+<!-- Padrão visual Quant Energia · v1 · 2026-10 · metodologia do modelo de descolamento (layout de texto: só base.css).
+     Texto fixo, revisado a cada versão do modelo; números (premissas, desempenho, histórico) vêm de metodologia_dados.js,
+     gerado por `uv run python -m pricing_descolamento_analytics.web`. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<style>
+  /* só desta página */
+  :root { --c-clim: #b35c1e; --c-rep: #1d8a84; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-clim: #e3a06c; --c-rep: #5ccac3; } }
+  :root[data-theme="dark"] { --c-clim: #e3a06c; --c-rep: #5ccac3; }
+  .abas-sel { display: flex; gap: 6px; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.88rem; color: var(--ink-2); }
+  .filtros select { font: 0.85rem var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; margin-left: 4px; }
+  .filtros label { display: inline-flex; align-items: center; gap: 6px; }
+  details.mais > summary { font-size: 0.9rem; margin-top: 8px; }
+  .abas-sel button { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .abas-sel button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .abas-sel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .meta-linha { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.82rem; color: var(--ink-3); }
+  .tecnico { margin-top: 4px; }
+  .tecnico > summary { font-size: 0.9rem; }
+  .tecnico[open] > summary { margin-bottom: 10px; }
+  .tecnico > div { display: grid; gap: 10px; }
+  td .fx { display: block; font-size: 0.72rem; color: var(--ink-3); white-space: nowrap; }
+  tr.recon td { color: var(--ink-2); }
+  tr.publicada td:first-child::after { content: " publicada"; font-family: var(--f-data); font-size: 0.68rem; color: var(--accent); }
+  .leg { font-size: 0.82rem; color: var(--ink-3); }
+  .dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4;
+    padding: 7px 10px; border-radius: 4px; max-width: 320px; white-space: normal; transform: translate(12px, 12px); }
+  [hidden] { display: none !important; }
+  .grafico svg { width: 100%; height: auto; }
+  .legenda i.l { height: 0; border-top: 2px solid; border-radius: 0; width: 16px; }
+  .versoes td:first-child { white-space: nowrap; font-family: var(--f-data); }
+  table.memorial { width: auto; font-size: 0.85rem; }
+  table.memorial th, table.memorial td { padding: 4px 12px; }
+  table.memorial small { font-family: var(--f-data); font-size: 0.68rem; color: var(--ink-3); }
+  .mult-desemp { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .mult-desemp .painel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+  .mult-desemp .painel h4 { margin: 0; font: 600 0.95rem var(--f-display); display: flex; justify-content: space-between; }
+  .mult-desemp .painel h4 span { font: 400 0.75rem var(--f-data); color: var(--ink-3); }
+  .mult-desemp svg { width: 100%; height: auto; }
+  .cartao .vs { font-size: 0.85rem; color: var(--ink-3); }
+  tr.modelo td { font-weight: 600; background: var(--accent-soft); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./">Descolamento NE e N</a>
+    <a href="metodologia.html" aria-current="page">Metodologia</a>
+    <a href="fundamentos.html">Fundamentos</a>
+  </nav>
+
+  <header>
+    <span class="rotulo">Metodologia · modelo <span id="m-versao">v2.2</span></span>
+    <h1>Como o descolamento do NE e do N é calculado</h1>
+    <p class="lead">O modelo estima quanto o PLD do Nordeste e do Norte fica abaixo do PLD do Sudeste, mês a mês, a partir da
+      curva do SE informada pela mesa e dos insumos físicos do último deck do NEWAVE.</p>
+    <div class="meta-linha" id="m-meta"></div>
+    <nav class="indice" aria-label="Seções">
+      <a href="#resumo">Em uma tela</a><a href="#passos">Passo a passo</a><a href="#desempenho">Desempenho</a>
+      <a href="#limites">Limitações</a><a href="#historico">Histórico</a><a href="#versoes">Versões</a><a href="#glossario">Glossário</a>
+    </nav>
+  </header>
+
+  <!-- em uma tela -->
+  <section id="resumo" aria-labelledby="t-resumo">
+    <h2 id="t-resumo">Em uma tela</h2>
+    <div class="fluxo">
+      <div class="passo"><span class="n">1 · Insumos</span><h3>Curva do SE e deck</h3>
+        <p>O SE vem da mesa, nunca do NEWAVE. Do deck vêm só os insumos físicos: renovável, carga e limites de intercâmbio.</p></div>
+      <div class="passo"><span class="n">2 · Quando trava</span><h3>Chance de o NE/N travar</h3>
+        <p>Em cada hora, a chance de a energia do NE/N ficar presa (sem conseguir ir ao SE), pela sobra física da região.</p></div>
+      <div class="passo"><span class="n">3 · Quanto descola</span><h3>Intensidade k</h3>
+        <p>Quando trava, o preço do NE/N cai uma fração k da distância entre o SE e o piso do PLD.</p></div>
+      <div class="passo"><span class="n">4 · Preço justo</span><h3>Média dos anos climáticos</h3>
+        <p>Cada ano histórico é um cenário de vento, sol e chuva. O preço justo é a média; a faixa vai do pior ao melhor ano.</p></div>
+    </div>
+    <div class="eq">descolamento do mês = − média das horas de [ chance de travar × k × máx(SE da hora − piso, 0) ]</div>
+  </section>
+
+  <!-- passo a passo -->
+  <section id="passos" aria-labelledby="t-passos">
+    <h2 id="t-passos">Passo a passo</h2>
+
+    <div class="passo-det"><span class="n">1</span><div>
+      <h3>Dados e corte de informação</h3>
+      <p class="texto">O modelo aprende com o histórico horário do DESSEM (geração, carga, fluxos e restrições de intercâmbio) e com o
+        PLD horário, desde 2021. Para um deck do mês D, só entram dados até o fim do mês D−2: é o que existia de fato na data do deck.
+        Do NEWAVE não se usa o preço, só os insumos de planejamento (carga, geração renovável, limites).</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">Fontes</span><span>CCEE: resultados diários do DESSEM (<code>PDO_SIST</code>, <code>PDO_RESTOPER</code>), PLD horário,
+            decks NEWAVE (<code>SISTEMA.DAT</code>, <code>AGRINT.DAT</code>). ONS: corte de geração (diagnóstico).</span></li>
+          <li><span class="tag">Corte</span><span>Treino e perfis com horas anteriores ao início do mês D−1. Testes automatizados verificam que a
+            previsão de um deck não muda quando se alteram dados posteriores a D−2.</span></li>
+          <li><span class="tag">PLD</span><span>PLD = CMO limitado ao piso e ao teto do ano. Descolamento = PLD do submercado − PLD do SE.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">2</span><div>
+      <h3>Por que o NE e o N descolam: dois regimes</h3>
+      <p class="texto">No <strong>1º semestre</strong> (período úmido) sobra energia no Norte e no Nordeste juntos, e o que trava é o tronco
+        de transmissão N/NE→SE: N e NE descolam juntos. No <strong>2º semestre</strong> (safra dos ventos) o Nordeste sozinho exporta perto do
+        limite e trava o limite de exportação do NE. Por isso o modelo é ajustado separadamente para cada semestre.</p>
+    </div></div>
+
+    <div class="passo-det"><span class="n">3</span><div>
+      <h3>Chance de travar</h3>
+      <p class="texto">Para cada hora, o modelo estima a probabilidade de o NE (e o N) estar descolado, a partir de duas medidas físicas:
+        quanto sobra de energia no N+NE e quão perto o NE está do limite de exportação. Quanto mais sobra e menor a folga, maior a chance.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <div class="eq">P(trava<sub>h</sub>) = logística( β<sub>0</sub> + β<sub>1</sub>·sobra N+NE<sub>h</sub> + β<sub>2</sub>·margem de exportação NE<sub>h</sub> )</div>
+        <ul class="lista">
+          <li><span class="tag">Sobra N+NE</span><span>renovável do NE + hidráulica do NE + (renovável + hidráulica − carga do N) − carga do NE, sem térmica
+            (a térmica é resultado do despacho, não insumo).</span></li>
+          <li><span class="tag">Margem</span><span>(renovável − carga do NE) − limite de exportação do NE.</span></li>
+          <li><span class="tag">Ajuste</span><span>regressão logística por semestre e por submercado, variáveis padronizadas, horas desde jan/2024 até D−2.
+            Alvo: hora com descolamento maior que R$ 1/MWh.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">4</span><div>
+      <h3>Intensidade quando trava (k)</h3>
+      <p class="texto">Quando trava, o preço do NE/N não vai necessariamente ao piso. O k mede quanto da distância entre o SE e o piso é perdida:
+        k = 1 significa NE no piso; k = 0,4 significa que caiu 40% do caminho. Na versão atual, cada ano climático usa o k observado
+        naquele mesmo ano e semestre (k pareado), porque anos de muita sobra travam fundo e anos de pouca sobra travam raso.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <div class="eq">k = média, nas horas travadas, de clip( (SE − PLD<sub>sub</sub>) ÷ (SE − piso), 0, 1 )</div>
+        <ul class="lista">
+          <li><span class="tag">Pareado</span><span>para o cenário do ano a e semestre s: k do mesmo ano e semestre, desde 2021, se o semestre estiver completo até
+            D−2, tiver pelo menos 50 horas travadas e folga média (SE − piso) de pelo menos R$ 50/MWh nessas horas.</span></li>
+          <li><span class="tag">Reserva</span><span>quando o ano não é elegível: média do semestre nas horas de treino desde 2024.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">5</span><div>
+      <h3>Cenários climáticos</h3>
+      <p class="texto">Cada ano histórico disponível (desde 2021) é um cenário: a forma horária de vento, sol, carga e a hidrologia do Norte daquele
+        ano, com a renovável e a carga do NE e do N levadas ao nível projetado pelo deck para o mês-alvo. Todos os anos têm o mesmo peso.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">Renovável NE</span><span>perfil horário do ano × nível do deck para o mês (sem correção de viés).</span></li>
+          <li><span class="tag">Carga</span><span>perfil horário do ano × carga do deck para o mês.</span></li>
+          <li><span class="tag">Hidráulica</span><span>N: a do próprio ano climático. NE: perfil do ano mais recente.</span></li>
+          <li><span class="tag">Limite</span><span>limite de exportação do NE do <code>AGRINT.DAT</code> do deck para o mês.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">6</span><div>
+      <h3>Do SE mensal ao SE de cada hora</h3>
+      <p class="texto">O SE da mesa é mensal; o descolamento depende do SE em cada hora, porque o NE trava mais em umas horas que em outras. O modelo
+        distribui o SE do mês pelas horas com o perfil médio do SE (preço da hora ÷ preço do mês) daquele mês do calendário. Em nenhuma hora o
+        descolamento pode levar o NE abaixo do piso.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <div class="eq">d<sub>mês</sub> = − Σ<sub>h</sub> c<sub>h</sub> · máx( SE · perfil<sub>h</sub> − piso, 0 ),&nbsp;&nbsp; c<sub>h</sub> = (soma de P(trava)·k nas horas h) ÷ horas do mês</div>
+        <p class="texto">Os c<sub>h</sub> e o perfil não dependem do SE; por isso a página recalcula o modelo exato para qualquer curva digitada.
+          Perfil do SE: média de 2021 até D−2 por mês do calendário e hora. Piso: o do ano do deck.</p>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">7</span><div>
+      <h3>Do mês ao produto: preço justo e faixa</h3>
+      <p class="texto">O preço justo de um produto (trimestre, semestre, ano) é a média dos meses ponderada pelas horas, com cada mês já sendo a média dos
+        anos climáticos. A faixa é o cenário mais e o menos descolado, com cada ano climático agregado no produto inteiro.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">Justo</span><span>média dos cenários em cada mês, depois média ponderada por horas dos meses.</span></li>
+          <li><span class="tag">Faixa</span><span>mínimo e máximo entre cenários, só com anos climáticos presentes em todos os meses do produto.</span></li>
+          <li><span class="tag">Ano parcial</span><span>o ano climático mais recente só cobre os meses até D−2. Ele entra no justo nos meses que tem e fica fora da
+            faixa de produtos que incluem meses sem ele; por isso o justo pode diferir um pouco da média simples dos anos completos.</span></li>
+        </ul>
+        <p class="texto"><strong>Exemplo:</strong> T1/2027, SE de R$ 200/MWh, deck out/26. Cada célula é o descolamento do NE (R$/MWh) do mês naquele ano
+          climático (passos 3 a 6).</p>
+        <div class="rolagem"><table class="memorial">
+          <thead><tr><th>Ano climático</th><th class="n">jan/27<br>744 h</th><th class="n">fev/27<br>672 h</th><th class="n">mar/27<br>744 h</th><th class="n">T1/27</th></tr></thead>
+          <tbody>
+            <tr><td>2021</td><td class="n">−0,2</td><td class="n">−11,4</td><td class="n">−43,8</td><td class="n">−18,7 <small>menos</small></td></tr>
+            <tr><td>2022</td><td class="n">−24,7</td><td class="n">−31,3</td><td class="n">−44,3</td><td class="n">−33,5</td></tr>
+            <tr><td>2023</td><td class="n">−8,5</td><td class="n">−13,8</td><td class="n">−42,9</td><td class="n">−22,0</td></tr>
+            <tr><td>2024</td><td class="n">−0,5</td><td class="n">−35,7</td><td class="n">−52,2</td><td class="n">−29,3</td></tr>
+            <tr><td>2025</td><td class="n">−18,5</td><td class="n">−36,5</td><td class="n">−79,3</td><td class="n">−45,1 <small>mais</small></td></tr>
+            <tr><td>2026</td><td class="n">−0,9</td><td class="n">−19,3</td><td class="n">−39,9</td><td class="n">−20,1</td></tr>
+            <tr class="destaque"><td>Preço justo</td><td class="n">−8,9</td><td class="n">−24,7</td><td class="n">−50,4</td><td class="n">−28,1</td></tr>
+          </tbody>
+        </table></div>
+        <div class="eq">justo T1 = (−8,9 × 744 − 24,7 × 672 − 50,4 × 744) ÷ 2.160 = −28,1 &nbsp;·&nbsp; faixa = −45,1 (2025) a −18,7 (2021)</div>
+        <p class="texto">Justo do mês = média dos anos (mesmo peso); justo do trimestre = média dos meses ponderada pelas horas; faixa = cada ano agregado no
+          trimestre do mesmo jeito (última coluna), do mais ao menos descolado (marcados "mais" e "menos"). O tooltip da página de precificação mostra esse detalhe para a curva digitada.</p>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">8</span><div>
+      <h3>A curva do SE na página</h3>
+      <p class="texto">O trader informa o SE no nível em que tiver preço: ano, semestre, trimestre ou mês. Vale o mais específico; os períodos não informados
+        são derivados para fechar a média do nível acima, ponderada por horas. Dentro de cada período sem preço próprio, a curva é plana
+        (opcionalmente, com a sazonalidade média do SE, que é instável entre anos).</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <div class="eq">SE dos períodos livres = ( SE do pai × horas do pai − Σ SE dos informados × horas ) ÷ horas dos livres</div>
+        <p class="texto">Exemplo: ano = 200 e 1º semestre = 250 dão 2º semestre ≈ 150,8. A forma da curva importa: com a mesma média anual de 200, uma curva
+          mais alta no 1º semestre aumenta o descolamento do ano, porque é nesse semestre que o NE mais trava.</p>
+      </div></details>
+    </div></div>
+  </section>
+
+  <!-- desempenho -->
+  <section id="desempenho" aria-labelledby="t-desemp">
+    <h2 id="t-desemp">O modelo funciona? Desempenho no backtest</h2>
+    <p class="texto">Teste do passado: para cada deck antigo, o modelo é treinado só com o que existia naquela data e prevê os trimestres e semestres
+      seguintes. O SE realizado entra como a curva da mesa, para isolar o erro do modelo do erro da curva do SE. Para saber se o erro é bom ou ruim,
+      o modelo é comparado, nos mesmos casos e com as mesmas informações, com três alternativas que não usam a física do modelo.</p>
+
+    <h3>As alternativas usadas na comparação</h3>
+    <ul class="lista">
+      <li><span class="tag">Assumir zero</span><span>Prever que não haverá descolamento: o PLD do NE e do N igual ao do SE em todos os meses. É a referência mínima,
+        o que se faria sem modelo e sem olhar o histórico. O erro dela é sempre o próprio descolamento realizado.</span></li>
+      <li><span class="tag">Repetir o ano anterior</span><span>Para cada mês, pega o mesmo mês do último ano já realizado na data do deck, mede quanto o NE descolou
+        como fração da distância entre o SE e o piso, e aplica essa fração ao SE informado.</span></li>
+      <li><span class="tag">Climatologia estatística</span><span>A mesma ideia, usando todos os anos disponíveis desde 2021, cada um como um cenário: preço justo = média
+        dos anos, faixa = do menor ao maior. É a alternativa probabilística: usa o comportamento histórico, mas não a física (sobra, limites, chance de travar).</span></li>
+    </ul>
+    <details class="tecnico"><summary>Como a climatologia estatística é calculada, com um exemplo</summary><div>
+      <div class="eq">fração do ano a = descolamento do mês em a ÷ (SE do mês em a − piso de a), limitada a [−1, 0]<br>
+        cenário do ano a = fração do ano a × (SE informado − piso)</div>
+      <ul class="lista">
+        <li><span class="tag">Anos</span><span>O mesmo mês do calendário em cada ano desde 2021, só os já realizados até D−2 (o último mês completo na data do deck).</span></li>
+        <li><span class="tag">Filtro</span><span>Fica de fora o ano em que, naquele mês, o SE ficou a menos de R$ 20/MWh do piso: com o SE no piso o preço não tem como descolar e
+          a fração não tem significado (foi o caso de 2022 a 2024 em boa parte do 1º semestre).</span></li>
+        <li><span class="tag">Produto</span><span>Preço justo: média dos anos em cada mês, depois média dos meses ponderada por horas, como no modelo. Faixa: o menor e o
+          maior valor entre os anos em cada mês, também ponderados por horas (dá uma faixa igual ou mais larga que a do modelo, o que favorece a alternativa na
+          comparação de cobertura).</span></li>
+      </ul>
+      <p class="texto">Exemplo: março de 2026, deck de jan/26, SE informado 301,9 (piso 57,31, folga 244,5).</p>
+      <div class="rolagem"><table>
+        <thead><tr><th>Ano</th><th class="n">SE em março</th><th class="n">NE − SE em março</th><th class="n">Fração</th><th class="n">Aplicada a mar/26</th></tr></thead>
+        <tbody>
+          <tr><td>2021</td><td class="n">109,0</td><td class="n">−31,0</td><td class="n">−0,52</td><td class="n">−128,0</td></tr>
+          <tr><td>2022, 2023, 2024</td><td class="n">no piso</td><td class="n">0,0</td><td class="n">—</td><td class="n">fora</td></tr>
+          <tr><td>2025</td><td class="n">327,3</td><td class="n">−268,4</td><td class="n">−1,00</td><td class="n">−244,2</td></tr>
+          <tr class="destaque"><td>Climatologia estatística</td><td></td><td></td><td></td><td class="n">−186,1 (−244,2 a −128,0)</td></tr>
+          <tr><td>Realizado</td><td></td><td></td><td></td><td class="n">−51,5</td></tr>
+        </tbody>
+      </table></div>
+      <p class="texto">Só sobram dois anos, ambos de trava funda. Sem a física, a estatística não sabe que 2026 tinha bem menos sobra no N+NE; o modelo, que olha a
+        sobra de cada cenário, ficou bem mais perto.</p>
+    </div></details>
+
+    <h3>Resultado em 2026</h3>
+    <p class="lead" id="d-sintese"></p>
+    <div class="grafico">
+      <div class="leg" id="d-barras-tit"></div>
+      <svg id="d-barras" viewBox="0 0 1040 190" role="img" aria-label="Erro médio de cada abordagem"></svg>
+    </div>
+    <ul class="lista" id="d-fatos"></ul>
+    <div class="rolagem"><table class="regime">
+      <thead id="d-reg-cab"></thead><tbody id="d-reg"></tbody>
+    </table></div>
+    <p class="leg">Descolamento realizado do NE por trimestre (R$/MWh, média ponderada por horas) e, em cinza, o SE médio do trimestre. Com o SE no piso
+      (2022–2024 em boa parte do ano) não há como o NE descolar.</p>
+    <div class="rolagem"><table>
+      <thead><tr><th>Abordagem</th><th class="n">NE 2026<br>trimestre</th><th class="n">NE 2026<br>semestre</th>
+        <th class="n">N 2026<br>trimestre</th><th class="n">Dentro da faixa<br>2026</th><th class="n">Largura média<br>da faixa 2026</th><th class="n">NE 2025<br>trimestre*</th></tr></thead>
+      <tbody id="d-comp"></tbody>
+    </table></div>
+    <p class="leg" id="d-comp-leg"></p>
+
+    <h3>Previsto × realizado nos trimestres de 2026 (NE)</h3>
+    <div class="legenda">
+      <span><i class="l" style="border-color:var(--ink)"></i>Realizado</span>
+      <span><i style="background:var(--accent);border-radius:50%"></i>Modelo v2.2 (barra = faixa)</span>
+      <span><i style="background:var(--c-clim)"></i>Climatologia estatística (barra = faixa)</span>
+      <span><i style="background:var(--c-rep);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Repetir o ano anterior</span>
+      <span><i class="l" style="border-color:var(--ink-3);border-top-style:dashed"></i>Assumir zero</span>
+    </div>
+    <div class="mult-desemp" id="d-mult"></div>
+    <p class="leg">Cada grupo é a previsão de um deck para o trimestre, do mais antigo ao mais novo, só decks que já tinham histórico do semestre. Atenção: cada painel
+      tem a sua escala (o T3 tem valores bem menores que o T1 e o T2).</p>
+
+    <h3>Previsto e realizado, caso a caso</h3>
+    <div class="filtros">
+      <div class="abas-sel" id="d-abas" role="group" aria-label="Produto">
+        <button type="button" data-v="trimestre">Trimestre</button><button type="button" data-v="semestre" aria-pressed="true">Semestre</button>
+      </div>
+      <label>Período <select id="d-f-per"></select></label>
+      <label>Deck <select id="d-f-deck"></select></label>
+      <label><input type="checkbox" id="d-f-dentro"> só onde o realizado ficou fora da faixa do modelo</label>
+      <span class="leg" id="d-f-n"></span>
+    </div>
+    <div class="rolagem"><table>
+      <thead><tr><th>Deck</th><th>Período</th><th class="n">SE</th><th class="n">NE real</th><th class="n">NE modelo</th><th class="n">NE clim. estatística</th>
+        <th class="n">NE repetir</th><th class="n">N real</th><th class="n">N modelo</th><th class="n">N clim. estatística</th><th class="n">N repetir</th></tr></thead>
+      <tbody id="d-casos"></tbody>
+    </table></div>
+    <p class="leg">R$/MWh. Modelo e climatologia estatística: preço justo em negrito e, embaixo, a faixa. Assumir zero prevê 0,0 em todos os casos. Só casos em que o
+      modelo já tinha histórico do semestre na data do deck.</p>
+
+    <div class="nota" id="d-erros">
+      <strong>Onde o modelo ainda erra</strong>
+      <ul class="lista" style="margin-top:8px">
+        <li><span class="tag">1º sem/2025</span><span>Na data dos decks de 2024 e jan/25 o modelo ainda não tinha nenhum histórico de 1º semestre com descolamento
+          (em 2024 o SE ficou no piso), e previa zero para um realizado de −103 (T1/25). Esses casos ficam fora da comparação: não havia dado para o método
+          aprender. Os decks atuais já têm esse histórico.</span></li>
+        <li><span class="tag">T2/2026</span><span>Previsto entre −32 e −37 contra −43 realizado: o NE travou nas horas de SE mais caro, que o perfil horário médio do
+          SE não capta.</span></li>
+        <li><span class="tag">Regime do k</span><span>Em anos que travam mais raso ou mais fundo que a média histórica (T1/26 raso, 1º sem/25 fundo), a intensidade erra.
+          É a principal fonte de erro do 1º semestre.</span></li>
+      </ul>
+    </div>
+
+    <details class="tecnico"><summary>Tabelas detalhadas (viés, CRPS e acerto por trimestre)</summary><div>
+      <div class="rolagem"><table>
+        <thead><tr><th>Produto</th><th>Alvo</th><th>Abordagem</th><th class="n">Casos</th><th class="n">Erro médio NE</th><th class="n">Viés NE</th>
+          <th class="n">Erro médio N</th><th class="n">Dentro da faixa</th><th class="n">Largura média</th><th class="n">CRPS NE</th></tr></thead>
+        <tbody id="d-comp-todos"></tbody>
+      </table></div>
+      <p class="leg">Largura média: distância média entre o mínimo e o máximo da faixa, em R$/MWh. Cobertura só tem valor junto com a largura: uma faixa mais
+        larga cobre mais sem ser melhor. CRPS: erro da distribuição prevista (preço justo e faixa juntos), que pune tanto errar o centro quanto abrir demais; só para quem tem faixa. Viés negativo = previu mais descolamento
+        que o realizado. Só casos em que o modelo já tinha histórico do semestre na data do deck; os demais ficam fora porque o método não tinha como prever.
+        Decks do backtest: <span id="d-decks"></span>.</p>
+      <h3>Acerto por trimestre fechado (NE)</h3>
+      <div class="rolagem"><table>
+        <thead><tr><th>Trimestre</th><th>Deck</th><th class="n">Realizado</th><th class="n">Previsto</th><th class="n">Faixa</th><th class="n">Erro</th></tr></thead>
+        <tbody id="t-acerto"></tbody>
+      </table></div>
+      <p class="leg">Previsão do deck mais recente antes do início do trimestre. "Sem treino" = o modelo ainda não tinha histórico daquele semestre e previa zero.</p>
+      <p class="texto">Por que a v1 (modelo estatístico anterior) não está na comparação: ela usa o SE dos cenários do NEWAVE, e não a curva informada, e foi testada em
+        outros decks. Compará-la misturaria o erro do modelo com o erro da curva do SE.</p>
+    </div></details>
+  </section>
+
+  <!-- limitações -->
+  <section id="limites" aria-labelledby="t-lim">
+    <h2 id="t-lim">Limitações conhecidas e como usar o preço</h2>
+    <ul class="lista">
+      <li><span class="tag">Regime do k</span><span>Há anos em que o NE vai ao piso quando trava (2025) e anos em que trava raso (início de 2026). O k vem do passado e não
+        antecipa o regime. É a maior fonte de erro do 1º semestre.</span></li>
+      <li><span class="tag">Forma do SE</span><span>O vale do SE ao meio-dia vem se aprofundando com a micro e minigeração solar; o perfil médio do modelo é mais achatado.
+        Corrigir isso melhora alguns trimestres e piora o 1º trimestre, ainda sem explicação conclusiva.</span></li>
+      <li><span class="tag">Insumos do deck</span><span>O modelo herda o erro das projeções do deck. Em 2026 os decks projetaram mais renovável no NE do que a efetiva
+        (a expansão virou corte de geração).</span></li>
+      <li><span class="tag">Treino curto</span><span>O descolamento do 1º semestre só entra no treino a partir de 2025; decks anteriores previam zero nesse semestre.</span></li>
+      <li><span class="tag">Amostra</span><span>Poucos trimestres realizados com descolamento. Diferenças menores que cerca de R$ 1/MWh entre versões não são conclusivas.</span></li>
+    </ul>
+    <div class="nota">Como usar: a faixa representa a variabilidade climática (os anos históricos), não um intervalo de confiança completo; ela não inclui o risco de
+      regime do k nem o erro dos insumos do deck. No 1º semestre, considere o risco de o ano travar mais raso ou mais fundo do que a média histórica.</div>
+  </section>
+
+  <!-- histórico de rodadas -->
+  <section id="historico" aria-labelledby="t-hist-tit">
+    <h2 id="t-hist-tit">Histórico de rodadas</h2>
+    <p class="texto">Como a visão do modelo mudou de um deck para o outro. Para comparar só o que vem do deck e dos dados novos, cada rodada é calculada com a mesma
+      curva de referência: SE plano em R$ <span id="h-ref">200</span>/MWh.</p>
+    <div class="grafico">
+      <div class="legenda" id="h-leg"></div>
+      <svg id="h-graf" viewBox="0 0 1040 260" role="img" aria-label="Descolamento do NE por ano ao longo dos decks"></svg>
+    </div>
+    <div class="rolagem"><table>
+      <thead><tr><th>Deck</th><th>Versão</th><th class="n">NE 2027</th><th class="n">NE 2028</th><th class="n">NE 2029</th><th class="n">N 2027</th>
+        <th class="n">N 2028</th><th class="n">Renov. NE 2027 (GW)</th><th class="n">Lim. exp. NE 2027 (GW)</th></tr></thead>
+      <tbody id="t-hist"></tbody>
+    </table></div>
+    <details class="mais" id="h-mais"><summary id="h-mais-txt">Rodadas anteriores</summary>
+      <div class="rolagem"><table>
+        <thead><tr><th>Deck</th><th>Versão</th><th class="n">NE 2027</th><th class="n">NE 2028</th><th class="n">NE 2029</th><th class="n">N 2027</th>
+          <th class="n">N 2028</th><th class="n">Renov. NE 2027 (GW)</th><th class="n">Lim. exp. NE 2027 (GW)</th></tr></thead>
+        <tbody id="t-hist-ant"></tbody>
+      </table></div>
+    </details>
+    <p class="leg">Rodadas reconstruídas (em cinza) mostram como a versão vigente teria visto cada deck do passado; não são o que foi publicado na época. A partir da
+      primeira rodada publicada, cada deck novo acrescenta uma linha. Quando a versão do modelo muda, a linha marca a mudança de método.</p>
+  </section>
+
+  <!-- versões -->
+  <section id="versoes" aria-labelledby="t-vers">
+    <h2 id="t-vers">Versões do modelo</h2>
+    <div class="rolagem"><table class="versoes">
+      <thead><tr><th>Versão</th><th>Data</th><th>O que mudou</th><th>Por quê</th></tr></thead>
+      <tbody>
+        <tr><td>v2 original</td><td>15/10/26</td><td>Modelo estrutural horário: chance de travar por regime, k por regime, cenários climáticos; renovável do NE do deck
+          corrigida pelo viés médio dos últimos 12 meses.</td><td>Ponto de partida acordado para os testes isolados.</td></tr>
+        <tr><td>v2.1</td><td>15/10/26</td><td>Renovável do NE = projeção do deck sem correção de viés.</td><td>A correção de viés piorava a previsão; erro médio do NE nos
+          trimestres de 2026 caiu de 21,6 para 15,9.</td></tr>
+        <tr class="destaque"><td>v2.2 (vigente)</td><td>16/10/26</td><td>k pareado com o ano climático (k do mesmo ano e semestre do cenário, desde 2021).</td><td>Anos de muita
+          sobra travam fundo e anos de pouca sobra, raso; erro médio 15,9 → 15,0 e CRPS 14,2 → 11,6.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>O que foi testado depois da v2.2 e não entrou</h3>
+    <p class="texto">Cada ideia foi testada isolada, contra a v2.2, com o critério de aceite definido antes de ver o resultado. Vários testes melhoram um período e
+      pioram outro; nenhum superou a v2.2 de forma robusta e sem troca entre trimestres.</p>
+    <div class="rolagem"><table>
+      <thead><tr><th>Tema</th><th>O que foi testado</th><th>O que se aprendeu</th></tr></thead>
+      <tbody>
+        <tr><td>Insumos do NE</td><td>Limite de exportação pelo observado; cenários de expansão renovável; descontar o corte de geração</td>
+          <td>O erro de 2026 veio da renovável projetada pelos decks, que não se corrige com o histórico; o limite não é a alavanca.</td></tr>
+        <tr><td>Hidrologia e treino</td><td>Hidrologia do N combinada entre anos; peso maior para anos recentes; treino desde 2021</td>
+          <td>Neutros ou com troca entre anos: melhoram 2026 e pioram 2025, ou o contrário.</td></tr>
+        <tr><td>Intensidade (k)</td><td>k por hora do dia; pela margem física; por trimestre; pela sobra do N+NE</td>
+          <td>O k depende de o ano travar raso ou fundo. O k pela sobra acerta o 1º semestre pelo motivo físico e é o candidato em destaque.</td></tr>
+        <tr><td>Forma horária do SE</td><td>Perfil dos anos recentes; perfil pela carga líquida do SE; perfil com peso por recência</td>
+          <td>A curva do SE de 2026 é mais funda que a histórica; corrigir melhora 2º a 4º trimestres e piora o 1º.</td></tr>
+        <tr><td>Mês corrente</td><td>Preço do DECOMP no mês do deck</td>
+          <td>O DECOMP não sinaliza bem o descolamento quando o modelo já tem histórico; o mês corrente precisa de outra dinâmica.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="nota"><span class="status ok">Candidato em destaque</span><br>
+      <strong>7d-1S</strong>: k do 1º semestre em função da sobra N+NE (muita sobra, trava funda; pouca sobra, trava rasa). Acerta a intensidade do 1º semestre
+      pelo motivo físico, mas piora o 2º trimestre de 2026. Roda em paralelo como modelo-sombra e será reavaliado com o 1º semestre de 2027, com critério
+      registrado antes: melhora maior que R$ 0,5/MWh no NE do 1º semestre, sem piorar nenhum trimestre nem o N.</div>
+  </section>
+
+  <!-- glossário -->
+  <section id="glossario" aria-labelledby="t-glos">
+    <h2 id="t-glos">Glossário</h2>
+    <dl class="glossario">
+      <dt>Descolamento</dt><dd>PLD do submercado (NE ou N) − PLD do SE. Negativo quando o NE/N fica abaixo do SE.</dd>
+      <dt>PLD implícito</dt><dd>SE + descolamento: o PLD do NE/N que o modelo prevê para a curva do SE informada.</dd>
+      <dt>Trava</dt><dd>Hora em que a energia do NE/N não consegue chegar ao SE (tronco N/NE→SE ou limite de exportação do NE no limite) e o preço separa.</dd>
+      <dt>k</dt><dd>Intensidade: fração da distância entre o SE e o piso que o NE/N perde quando trava (0 a 1).</dd>
+      <dt>Sobra</dt><dd>Energia renovável e hidráulica acima da carga da região. Sobra NE = renovável − carga do NE.</dd>
+      <dt>Folga até o limite</dt><dd>Limite de exportação do NE − sobra do NE. Quanto menor, mais o NE trava.</dd>
+      <dt>Ano climático</dt><dd>Um ano histórico usado como cenário de vento, sol, carga e hidrologia.</dd>
+      <dt>Preço justo</dt><dd>Média dos cenários climáticos, ponderada por horas nos produtos.</dd>
+      <dt>Faixa</dt><dd>Cenário mais e menos descolado; mede a variabilidade climática.</dd>
+      <dt>Piso</dt><dd>Limite inferior do PLD no ano. O descolamento nunca leva o NE/N abaixo dele.</dd>
+      <dt>D−2</dt><dd>Último mês completo de dados disponível na data do deck do mês D.</dd>
+      <dt>CRPS</dt><dd>Erro da distribuição prevista (faixa e preço justo juntos); quanto menor, melhor. Em R$/MWh.</dd>
+      <dt>Cobertura</dt><dd>Fração dos casos em que o realizado ficou dentro da faixa (tolerância de R$ 1/MWh).</dd>
+    </dl>
+  </section>
+
+  <footer>Documentação completa, registro de todos os testes e código: <a href="https://github.com/pimenta-arthur/pricing-descolamento-analytics/blob/v2-estrutural/docs/metodologia.md">repositório no GitHub</a>.</footer>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script>
+"use strict";
+// Dados: serving/pricing_descolamento/{meta, desempenho, historico_rodadas}.json (qe_pricing_descolamento.publicacao)
+(async function () {
+const MET = {};
+try {
+  for (const [k, arq] of [["meta", "meta"], ["desempenho", "desempenho"], ["historico", "historico_rodadas"]]) {
+    const r = await fetch(`/dados/pricing_descolamento/${arq}.json`, { cache: "no-cache" });
+    if (!r.ok) throw new Error(`${arq}: ${r.status}`);
+    MET[k] = await r.json();
+  }
+} catch (e) {
+  document.querySelector("main").insertAdjacentHTML("afterbegin", `<p class="leg">Dados indisponíveis (${e.message}). Rode: uv run qe pricing_descolamento publicar</p>`);
+  return;
+}
+const dn = (v, c = 1) => (v == null || !isFinite(v) ? "—" : (v < -0.5 * 10 ** -c ? "−" : "") + n(Math.abs(v), c));
+const rotDeck = d => rot(d);
+
+// premissas da rodada
+const mt = MET.meta;
+document.getElementById("m-versao").textContent = mt.versao;
+document.getElementById("m-meta").innerHTML = [`Deck NEWAVE ${rot(mt.deck)}`, `Dados horários até ${dataBr(mt.dados_ate)}`, `Horizonte ${rot(mt.horizonte[0])} a ${rot(mt.horizonte[1])}`,
+  `Piso ${n(mt.piso, 2)} e teto ${n(mt.teto, 2)} R$/MWh`, `Rodada de ${dataHoraBr(mt.rodada)}`].map(x => `<span>${x}</span>`).join("");
+
+// desempenho: comparação com alternativas
+const D = MET.desempenho, C = D.comparacao;
+const pega = (per, alvo, rec, ab) => C[per].find(r => r.alvo === alvo && r.recorte === rec && r.abordagem === ab) || {};
+const ABORD = [["modelo v2.2", "Modelo v2.2"], ["assumir zero", "Assumir zero"], ["climatologia", "Climatologia estatística"], ["repetir ano anterior", "Repetir o ano anterior"]];
+const nomeAb = k => ABORD.find(a => a[0] === k)[1];
+const mT = pega("trimestre", "2026", "treinada", "modelo v2.2"), mS = pega("semestre", "2026", "treinada", "modelo v2.2");
+const alts = ABORD.slice(1).map(([k, r]) => ({ k, r, e: pega("trimestre", "2026", "treinada", k).eam_NE })).sort((a, b) => a.e - b.e);
+const melhor = alts[0], ganho = 1 - mT.eam_NE / melhor.e, cl = pega("trimestre", "2026", "treinada", "climatologia");
+document.getElementById("d-sintese").innerHTML = `O modelo errou <strong>R$ ${n(mT.eam_NE, 1)}/MWh</strong> por trimestre, <strong>${n(ganho * 100)}% menos</strong>
+  que a alternativa de menor erro.`;
+// barras horizontais: erro médio por trimestre em 2026 (NE), modelo em destaque
+(function () {
+  const svg = document.getElementById("d-barras"), w = 1040, h = 190, mg = { l: 210, r: 70, t: 6, b: 6 };
+  const L = ABORD.map(([k, r]) => ({ k, r, v: pega("trimestre", "2026", "treinada", k).eam_NE })).sort((a, b) => a.v - b.v);
+  const vmax = Math.max(...L.map(x => x.v)), bh = (h - mg.t - mg.b) / L.length;
+  document.getElementById("d-barras-tit").textContent = `Erro médio do NE por trimestre em 2026, R$/MWh (${mT.n} casos com treino; menor é melhor)`;
+  L.forEach((x, i) => {
+    const y = mg.t + i * bh, larg = (w - mg.l - mg.r) * x.v / vmax, mod = x.k === "modelo v2.2";
+    S(svg, "text", { x: mg.l - 10, y: y + bh / 2 + 4, "text-anchor": "end", style: `font-family:var(--f-body);font-size:14px;fill:var(${mod ? "--ink" : "--ink-2"});font-weight:${mod ? 600 : 400}` }, x.r);
+    const r = S(svg, "rect", { x: mg.l, y: y + bh * 0.18, width: Math.max(larg, 2), height: bh * 0.64, rx: 3, fill: mod ? "var(--accent)" : "var(--bar-pers)" });
+    S(svg, "text", { x: mg.l + larg + 8, y: y + bh / 2 + 4, style: `font-size:13px;fill:var(--ink);font-weight:${mod ? 600 : 400}` }, n(x.v, 1));
+    dicaEm(r, `<b>${x.r}</b><br>erro médio ${n(x.v, 1)} R$/MWh por trimestre em 2026`);
+  });
+})();
+const zero = pega("trimestre", "2026", "treinada", "assumir zero");
+document.getElementById("d-fatos").innerHTML = [
+  ["Faixa", `O realizado ficou dentro da faixa do modelo em <strong>${pct(mT.cobertura)}</strong> dos trimestres, com uma faixa média de R$ ${n(mT.largura_NE, 1)}. ` +
+    `A climatologia estatística cobriu menos (${pct(cl.cobertura)}) mesmo com uma faixa ${n(cl.largura_NE / mT.largura_NE, 1)} vezes mais larga (R$ ${n(cl.largura_NE, 1)}). ` +
+    `Cobertura sozinha engana (uma faixa do piso ao teto cobre tudo); pesando acerto e largura juntos (CRPS, menor é melhor), o modelo fica em ${n(mT.crps_NE, 1)} contra ${n(cl.crps_NE, 1)}.`],
+  ["Regime", `O mesmo trimestre muda muito de um ano para outro (tabela abaixo): o T1 foi de 0 em 2023–24 (SE no piso) a ${dn(D.trimestres.find(t => t.ano === 2025 && t.tri === 1).NE)} em 2025 ` +
+    `e ${dn(D.trimestres.find(t => t.ano === 2026 && t.tri === 1).NE)} em 2026. Nos trimestres de 2026 avaliados, o tamanho médio do descolamento foi R$ ${n(zero.eam_NE, 1)} ` +
+    `(é o erro de quem prevê zero); o erro do modelo equivale a ${n(mT.eam_NE / zero.eam_NE * 100)}% desse tamanho.`],
+  ["Prever zero", `Errou menos que as alternativas históricas (R$ ${n(zero.eam_NE, 1)}) porque elas exageraram: aplicaram a intensidade de 2025, ano de trava muito funda, ao SE alto de 2026. Não é um bom método (nunca prevê descolamento), é só a régua mínima.`],
+].map(([t, x]) => `<li><span class="tag">${t}</span><span>${x}</span></li>`).join("");
+// mesmo trimestre, anos diferentes (regime)
+(function () {
+  const T = D.trimestres, anos = [...new Set(T.map(t => t.ano))].sort();
+  document.getElementById("d-reg-cab").innerHTML = `<tr><th>Trimestre</th>${anos.map(a => `<th class="n">${a}</th>`).join("")}</tr>`;
+  document.getElementById("d-reg").innerHTML = [1, 2, 3, 4].map(q => `<tr><td>T${q}</td>` + anos.map(a => {
+    const t = T.find(x => x.ano === a && x.tri === q);
+    return t ? `<td class="n"><b>${dn(t.NE)}</b><span class="fx">SE ${n(t.SE)}</span></td>` : `<td class="n" style="color:var(--ink-3)">—</td>`;
+  }).join("") + `</tr>`).join("");
+})();
+document.getElementById("d-comp").innerHTML = ABORD.map(([k, r]) => {
+  const t = pega("trimestre", "2026", "treinada", k), se = pega("semestre", "2026", "treinada", k), t25 = pega("trimestre", "2025", "treinada", k);
+  return `<tr class="${k === "modelo v2.2" ? "modelo" : ""}"><td>${r}</td><td class="n">${n(t.eam_NE, 1)}</td><td class="n">${n(se.eam_NE, 1)}</td>` +
+    `<td class="n">${n(t.eam_N, 1)}</td><td class="n">${t.cobertura != null ? pct(t.cobertura) : "sem faixa"}</td>` +
+    `<td class="n">${t.largura_NE != null ? n(t.largura_NE, 1) : "—"}</td><td class="n">${n(t25.eam_NE, 1)}</td></tr>`;
+}).join("");
+const n25 = pega("trimestre", "2025", "treinada", "modelo v2.2").n, nTodos26 = pega("trimestre", "2026", "todos", "modelo v2.2").n;
+document.getElementById("d-comp-leg").textContent = `Erro médio em R$/MWh (média de |previsto − realizado|). Só casos em que o modelo tinha condição de prever (histórico do ` +
+  `semestre na data do deck): ${mT.n} trimestres e ${mS.n} semestres de 2026; ${nTodos26 - mT.n} trimestres de 2026 previstos por decks sem esse histórico ficam fora. ` +
+  `* 2025: ${n25} trimestres, só do 2º semestre (não havia histórico de 1º semestre na época). Todas as abordagens usam o mesmo SE realizado e só a informação disponível na data de cada deck.`;
+document.getElementById("d-decks").textContent = D.decks.map(rot).join(", ");
+document.getElementById("d-comp-todos").innerHTML = ["trimestre", "semestre"].flatMap(per => C[per].filter(r => r.recorte === "treinada").map(r =>
+  `<tr class="${r.abordagem === "modelo v2.2" ? "destaque" : ""}"><td>${per === "trimestre" ? "Trimestre" : "Semestre"}</td><td>${r.alvo}${r.alvo === "2025" ? " (2º sem)" : ""}</td>` +
+  `<td>${nomeAb(r.abordagem)}</td><td class="n">${r.n}</td><td class="n">${n(r.eam_NE, 1)}</td><td class="n">${dn(r.vies_NE)}</td>` +
+  `<td class="n">${n(r.eam_N, 1)}</td><td class="n">${r.cobertura != null ? pct(r.cobertura) : "—"}</td><td class="n">${r.largura_NE != null ? n(r.largura_NE, 1) : "—"}</td>` +
+  `<td class="n">${r.crps_NE != null ? n(r.crps_NE, 1) : "—"}</td></tr>`)).join("");
+document.getElementById("t-acerto").innerHTML = D.periodos.map(p =>
+  `<tr><td>T${p.periodo.slice(-1)}/${p.periodo.slice(2, 4)}</td><td>${rot(p.deck)}</td><td class="n">${dn(p.real)}</td>` +
+  (p.treinada ? `<td class="n">${dn(p.prev)}</td><td class="n">${dn(p.min)} a ${dn(p.max)}</td><td class="n">${dn(p.erro)}</td>`
+              : `<td class="n" colspan="3" style="color:var(--ink-3)">sem treino</td>`) + `</tr>`).join("");
+
+// tabela caso a caso (trimestre / semestre), com filtros
+const rotPer = p => p.includes("-T") ? `T${p.slice(-1)}/${p.slice(2, 4)}` : `${p.slice(-1)}º sem/${p.slice(2, 4)}`;
+let PER_CASOS = "semestre";
+function opcoes(sel, vals, rotulo) {
+  const atual = sel.value;
+  sel.innerHTML = `<option value="">todos</option>` + vals.map(v => `<option value="${v}">${rotulo(v)}</option>`).join("");
+  if (vals.includes(atual)) sel.value = atual;
+}
+function tabCasos() {
+  const base = D.casos[PER_CASOS];
+  opcoes(document.getElementById("d-f-per"), [...new Set(base.map(c => c.periodo))].sort(), rotPer);
+  opcoes(document.getElementById("d-f-deck"), [...new Set(base.map(c => c.deck))].sort(), rot);
+  // ao abrir a página: 1º semestre de 2026 pré-selecionado
+  if (!tabCasos.iniciado) { tabCasos.iniciado = true; if (base.some(c => c.periodo === "2026-S1")) document.getElementById("d-f-per").value = "2026-S1"; }
+  const fp = document.getElementById("d-f-per").value, fd = document.getElementById("d-f-deck").value, fora = document.getElementById("d-f-dentro").checked;
+  const L = base.filter(c => (!fp || c.periodo === fp) && (!fd || c.deck === fd) &&
+    (!fora || c.NE_real < c.NE_mod_min - 1 || c.NE_real > c.NE_mod_max + 1)).sort((a, b) => (a.periodo + a.deck).localeCompare(b.periodo + b.deck));
+  const fx = (c, s, a) => c[`${s}_${a}_min`] != null ? `<span class="fx">${dn(c[`${s}_${a}_min`])} a ${dn(c[`${s}_${a}_max`])}</span>` : "";
+  document.getElementById("d-f-n").textContent = `${L.length} de ${base.length} casos`;
+  document.getElementById("d-casos").innerHTML = L.map(c =>
+    `<tr><td>${rot(c.deck)}</td><td style="white-space:nowrap">${rotPer(c.periodo)}</td><td class="n">${n(c.SE, 1)}</td>` +
+    ["NE", "N"].map(s => `<td class="n"><b>${dn(c[s + "_real"])}</b></td><td class="n"><b>${dn(c[s + "_mod"])}</b>${fx(c, s, "mod")}</td>` +
+      `<td class="n">${dn(c[s + "_clim"])}${fx(c, s, "clim")}</td><td class="n">${dn(c[s + "_repetir"])}</td>`).join("") + `</tr>`).join("") ||
+    `<tr><td colspan="11" style="text-align:center;color:var(--ink-3)">Nenhum caso com esses filtros.</td></tr>`;
+}
+document.getElementById("d-abas").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#d-abas button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); PER_CASOS = b.dataset.v;
+  document.getElementById("d-f-per").value = ""; tabCasos(); });
+["d-f-per", "d-f-deck", "d-f-dentro"].forEach(id => document.getElementById(id).addEventListener("change", tabCasos));
+tabCasos();
+
+// previsto × realizado por trimestre de 2026 (pequenos múltiplos, mesma escala, escala completa)
+(function () {
+  const box = document.getElementById("d-mult"), casos = D.casos.trimestre.filter(c => c.periodo.startsWith("2026"));
+  const per = [...new Set(casos.map(c => c.periodo))].sort();
+  per.forEach(p => {
+    const cs = casos.filter(c => c.periodo === p).sort((a, b) => a.deck.localeCompare(b.deck));
+    // escala própria em cada painel (sempre com o zero), para aproveitar o espaço
+    const vals = cs.flatMap(c => [c.NE_real, c.NE_mod, c.NE_mod_min, c.NE_mod_max, c.NE_clim, c.NE_clim_min, c.NE_clim_max, c.NE_repetir].filter(v => v != null)); vals.push(0);
+    const e = eixo(Math.min(...vals), 0, 5);
+    const d = document.createElement("div"); d.className = "painel";
+    d.innerHTML = `<h4>${rotPer(p)}<span>realizado ${dn(cs[0].NE_real)}</span></h4>`;
+    const w = 320, h = 260, mg = { l: 38, r: 8, t: 10, b: 22 };
+    const svg = S(d, "svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": `Previsto e realizado, ${rotPer(p)}` });
+    const larg = (w - mg.l - mg.r) / cs.length, X = i => mg.l + (i + 0.5) * larg, Y = v => mg.t + (h - mg.t - mg.b) * (1 - (v - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(t), y2: Y(t), stroke: "var(--rule)" }); S(svg, "text", { x: mg.l - 4, y: Y(t) + 3, "text-anchor": "end" }, n(t)); });
+    S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(0), y2: Y(0), stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+    S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(cs[0].NE_real), y2: Y(cs[0].NE_real), stroke: "var(--ink)", "stroke-width": 1.8 });
+    cs.forEach((c, i) => {
+      const x = X(i), dx = Math.min(10, larg / 4);
+      // modelo (centro), climatologia estatística (esquerda), repetir (direita)
+      S(svg, "line", { x1: x, x2: x, y1: Y(c.NE_mod_min), y2: Y(c.NE_mod_max), stroke: "var(--accent)", "stroke-width": 3, opacity: 0.35 });
+      S(svg, "circle", { cx: x, cy: Y(c.NE_mod), r: 4.5, fill: "var(--accent)" });
+      if (c.NE_clim_min != null) S(svg, "line", { x1: x - dx, x2: x - dx, y1: Y(c.NE_clim_min), y2: Y(c.NE_clim_max), stroke: "var(--c-clim)", "stroke-width": 3, opacity: 0.35 });
+      S(svg, "rect", { x: x - dx - 4, y: Y(c.NE_clim) - 4, width: 8, height: 8, fill: "var(--c-clim)" });
+      const yr = Y(c.NE_repetir);
+      S(svg, "polygon", { points: `${x + dx},${yr - 5} ${x + dx + 5},${yr + 4} ${x + dx - 5},${yr + 4}`, fill: "var(--c-rep)" });
+      // muitos decks no painel: rótulo em decks alternados (o deck exato fica no tooltip)
+      if (cs.length <= 6 || i % 2 === 0) S(svg, "text", { x, y: h - 6, "text-anchor": "middle" }, rot(c.deck));
+      const alvo = S(svg, "rect", { x: x - larg / 2, y: mg.t, width: larg, height: h - mg.t - mg.b, fill: "transparent" });
+      dicaEm(alvo, `<b>Deck ${rot(c.deck)}</b> · ${rotPer(p)}<br>realizado ${dn(c.NE_real)}<br>modelo ${dn(c.NE_mod)} (faixa ${dn(c.NE_mod_min)} a ${dn(c.NE_mod_max)})` +
+        `<br>climatologia estatística ${dn(c.NE_clim)}${c.NE_clim_min != null ? ` (faixa ${dn(c.NE_clim_min)} a ${dn(c.NE_clim_max)})` : ""}<br>repetir o ano anterior ${dn(c.NE_repetir)} · assumir zero 0,0`);
+    });
+    box.appendChild(d);
+  });
+})();
+
+// histórico de rodadas
+const H = MET.historico;
+document.getElementById("h-ref").textContent = H.length ? n(H[0].se_ref) : "200";
+const ANOS_H = ["2027", "2028", "2029"], COR = ["var(--accent)", "var(--ink-2)", "var(--bar-saz)"];
+document.getElementById("h-leg").innerHTML = ANOS_H.map((a, i) => `<span><i class="l" style="border-color:${COR[i]}"></i>NE ${a}</span>`).join("") +
+  `<span><i style="background:var(--surface);border:1.5px solid var(--ink-3);border-radius:50%"></i>Reconstruída</span>` +
+  `<span><i style="background:var(--ink);border-radius:50%"></i>Publicada</span>`;
+(function () {
+  const svg = document.getElementById("h-graf"), w = 1040, h = 260, mg = { l: 44, r: 14, t: 12, b: 28 };
+  if (!H.length) return;
+  const vals = H.flatMap(r => ANOS_H.map(a => r.anos[a] && r.anos[a].NE).filter(v => v != null)); vals.push(0);
+  const e = eixo(Math.min(...vals), Math.max(...vals), 5);
+  const X = i => mg.l + (H.length === 1 ? 0.5 : i / (H.length - 1)) * (w - mg.l - mg.r), Y = v => mg.t + (h - mg.t - mg.b) * (1 - (v - e.a) / (e.b - e.a));
+  e.t.forEach(t => { S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(t), y2: Y(t), stroke: "var(--rule)" }); S(svg, "text", { x: mg.l - 6, y: Y(t) + 3, "text-anchor": "end" }, n(t)); });
+  ANOS_H.forEach((a, k) => {
+    const pts = H.map((r, i) => r.anos[a] ? [X(i), Y(r.anos[a].NE), r] : null).filter(Boolean);
+    S(svg, "polyline", { points: pts.map(p => `${p[0]},${p[1]}`).join(" "), fill: "none", stroke: COR[k], "stroke-width": 2 });
+    pts.forEach(([x, y, r]) => {
+      const c = S(svg, "circle", { cx: x, cy: y, r: 3.5, fill: r.reconstruida ? "var(--surface)" : "var(--ink)", stroke: COR[k], "stroke-width": 1.5 });
+      dicaEm(c, `<b>Deck ${rot(r.deck)}</b> · ${r.versao}${r.reconstruida ? " (reconstruída)" : ""}<br>NE ${a}: ${dn(r.anos[a].NE)} · N ${a}: ${dn(r.anos[a].N)}` +
+        `<br>trava ${pct(r.anos[a].trava)} das horas · renovável NE ${n(r.anos[a].renov_NE, 1)} GW`);
+    });
+  });
+  H.forEach((r, i) => { if (/-(01|07)$/.test(r.deck)) S(svg, "text", { x: X(i), y: h - 8, "text-anchor": "middle" }, rot(r.deck)); });
+  let vAnt = null;
+  H.forEach((r, i) => { if (vAnt && r.versao !== vAnt) { S(svg, "line", { x1: X(i), x2: X(i), y1: mg.t, y2: h - mg.b, stroke: "var(--ink-3)", "stroke-dasharray": "3 3" });
+    S(svg, "text", { x: X(i) + 4, y: mg.t + 10 }, r.versao); } vAnt = r.versao; });
+})();
+const linhaHist = r => {
+  const v = (a, s) => r.anos[a] ? dn(r.anos[a][s]) : "—", g = (a, s) => r.anos[a] ? n(r.anos[a][s], 1) : "—";
+  return `<tr class="${r.reconstruida ? "recon" : "publicada"}"><td>${rot(r.deck)}</td><td>${r.versao}</td><td class="n">${v("2027", "NE")}</td><td class="n">${v("2028", "NE")}</td>` +
+    `<td class="n">${v("2029", "NE")}</td><td class="n">${v("2027", "N")}</td><td class="n">${v("2028", "N")}</td><td class="n">${g("2027", "renov_NE")}</td><td class="n">${g("2027", "lim_NE")}</td></tr>`;
+};
+const HR = [...H].reverse();
+document.getElementById("t-hist").innerHTML = HR.slice(0, 3).map(linhaHist).join("");
+document.getElementById("t-hist-ant").innerHTML = HR.slice(3).map(linhaHist).join("");
+document.getElementById("h-mais-txt").textContent = `Rodadas anteriores (${HR.length - 3})`;
+document.getElementById("h-mais").hidden = HR.length <= 3;
+})();
+</script>
+</body>
+</html>

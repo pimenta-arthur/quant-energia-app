@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Descolamento: Fundamentos</title>
+<!-- Padrão visual Quant Energia · v1 · 2026-10 · fundamentos: a física por trás do descolamento do NE e do N.
+     Não depende da versão do modelo. Dados: fundamentos_dados.js, gerado por pricing_descolamento_analytics.web. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  /* só desta página */
+  :root { --c-ne: #c4561f; --c-n: #1d8a5c; --c-s: #2b6cb0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-ne: #ee8a5a; --c-n: #5cc996; --c-s: #7fb0e6; } }
+  :root[data-theme="dark"] { --c-ne: #ee8a5a; --c-n: #5cc996; --c-s: #7fb0e6; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .lead { max-width: 72ch; }
+  .capitulo { display: grid; gap: 12px; }
+  .capitulo h2 { display: flex; gap: 12px; align-items: baseline; }
+  .capitulo h2 .n { font-family: var(--f-data); font-size: 1rem; color: var(--accent); }
+  .conclusao { font-size: 1rem; color: var(--ink); max-width: 80ch; border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; }
+  .conclusao strong { font-weight: 600; }
+  .bloco svg { width: 100%; height: auto; }
+  .dica { max-width: 360px; white-space: normal; }
+  table.travas td.n { min-width: 70px; }
+  .mapa-leg { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--ink-3); }
+  .mapa-leg .grad { width: 160px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, var(--vazio), var(--accent)); }
+  .chave { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 0.85rem; color: var(--ink-2); cursor: pointer; user-select: none; }
+  .chave input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .chave .trilho { position: relative; width: 32px; height: 18px; border-radius: 9px; background: var(--rule); transition: background .15s; }
+  .chave .trilho::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .15s; }
+  .chave input:checked + .trilho { background: var(--accent); }
+  .chave input:checked + .trilho::after { transform: translateX(14px); }
+  .chave input:focus-visible + .trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .mapas { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .mapa { display: grid; gap: 2px; min-width: 0; }
+  .mapa .ttl { font-size: 0.95rem; }
+  .duas-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  .duas-g .bloco h3 { font-size: 0.95rem; }
+  .fluxo .passo a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./">Descolamento NE e N</a>
+    <a href="metodologia.html">Metodologia</a>
+    <a href="fundamentos.html" aria-current="page">Fundamentos</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo">Fundamentos · a física do problema</span>
+    <h1 id="titulo">Por que o NE e o N descolam do SE</h1>
+    <p class="lead">Antes do modelo, os dados. Quando o preço do Nordeste e do Norte se separa do Sudeste, em que horas, qual linha de transmissão
+      trava e o que explica cada caso. Cada capítulo abaixo sustenta uma escolha do modelo de precificação.</p>
+    <div class="meta" id="meta"></div>
+  </section>
+
+  <!-- 1 -->
+  <section class="capitulo" aria-labelledby="c1">
+    <h2 id="c1"><span class="n">1</span>É episódico e depende do nível do SE</h2>
+    <div class="bloco">
+      <div class="ttl">PLD médio do SE e descolamento de cada submercado, R$/MWh por mês</div>
+      <svg id="g-se" viewBox="0 0 1040 150" role="img" aria-label="PLD do SE por mês"></svg>
+      <svg id="g-desc" viewBox="0 0 1040 476" role="img" aria-label="Descolamento do Sul, do NE e do N por mês"></svg>
+      <p class="leg">Em cima, o PLD médio mensal do SE e o piso (tracejado). Embaixo, o descolamento de cada submercado (PLD do submercado − PLD do SE), cada faixa com
+        a sua escala e o mesmo eixo de tempo. Linhas verticais: início de cada trimestre (T1 a T4) e, contínua, de cada ano. O Sul descola para cima; o NE e o N, para baixo. Fonte: CCEE.</p>
+    </div>
+    <p class="conclusao">Entre 2022 e meados de 2024 o SE ficou no piso e não houve descolamento: <strong>o NE só pode ficar abaixo do SE quando o SE está acima do piso</strong>.
+      Por isso o modelo recebe a curva do SE da mesa e calcula o descolamento sobre a distância entre o SE e o piso.</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="capitulo" aria-labelledby="c2">
+    <h2 id="c2"><span class="n">2</span>Tem estação e tem hora</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-mapa">Em que mês e hora cada submercado descola</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1 1 100%">
+          <div class="abas" id="abas-m-med" role="group" aria-label="Medida"><button type="button" data-v="pct" aria-pressed="true">% das horas</button><button type="button" data-v="rs">R$/MWh médio</button></div>
+          <div class="abas" id="abas-m-ini" role="group" aria-label="Período"><button type="button" data-v="2021">2021 em diante</button><button type="button" data-v="2024">2024 em diante</button><button type="button" data-v="2025" aria-pressed="true">2025 em diante</button></div>
+          <label class="chave"><input type="checkbox" id="m-val" role="switch"><span class="trilho"></span>Números</label>
+        </div>
+      </div>
+      <div class="mapas" id="g-mapas"></div>
+      <div class="mapa-leg"><span id="mapa-min">0</span><span class="grad"></span><span id="mapa-max"></span><span id="mapa-un"></span></div>
+      <p class="leg">Cada célula é um mês do calendário e uma hora do dia. "% das horas": fração das horas com o submercado descolado (mais de R$ 1/MWh abaixo do SE).
+        "R$/MWh médio": descolamento médio naquela hora, juntando frequência e intensidade (o Sul descola para cima). Mesma escala de cor nos três; com "Números" ligado,
+        valores a cada 3 horas (sem os zeros), o valor de cada célula no tooltip. Fonte: CCEE (PLD horário).</p>
+    </div>
+    <p class="conclusao">No período úmido (fev a mai) o NE e o N descolam quase o dia todo, mais forte à noite e de madrugada; no 2º semestre, só o NE, e nas
+      horas de vento (madrugada e noite). Ao meio-dia quase nunca: o SE fica barato com a solar. <strong>Por isso o modelo é horário e separa os dois
+      semestres.</strong></p>
+  </section>
+
+  <!-- 3 -->
+  <section class="capitulo" aria-labelledby="c3">
+    <h2 id="c3"><span class="n">3</span>Dois gargalos, um em cada semestre</h2>
+    <div class="bloco">
+      <div class="ttl">Quando o NE está descolado, que restrição de intercâmbio está no limite (% das horas descoladas)</div>
+      <div class="rolagem"><table class="travas">
+        <thead><tr><th>Ano e semestre</th><th class="n">Horas descoladas</th><th class="n">Tronco N/NE→SE</th><th class="n">Exportação do NE</th>
+          <th class="n">Recebimento do N</th><th class="n">Outras restrições</th></tr></thead>
+        <tbody id="t-travas"></tbody>
+      </table></div>
+      <p class="leg">Restrições do DESSEM (<code>PDO_RESTOPER</code>) com multiplicador acima de R$ 1/MWh. Uma hora pode ter mais de uma restrição no limite.
+        Anos e semestres sem descolamento não aparecem (2023 e 1º semestre de 2024, com o SE no piso).</p>
+    </div>
+    <p class="conclusao">No <strong>1º semestre</strong> sobra energia no Norte e no Nordeste juntos e trava o <strong>tronco N/NE→SE</strong>: os dois descolam juntos
+      (100% das horas em 2025 e 2026). No <strong>2º semestre</strong> é o Nordeste sozinho que bate no <strong>limite de exportação</strong>. Dois mecanismos, por isso
+      dois regimes no modelo.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="capitulo" aria-labelledby="c4">
+    <h2 id="c4"><span class="n">4</span>O que explica: sobra no 1º semestre, margem de exportação no 2º</h2>
+    <div class="duas-g">
+      <div class="bloco">
+        <h3>Poder de cada variável para separar as horas descoladas do NE</h3>
+        <svg id="g-auc" viewBox="0 0 520 300" role="img" aria-label="AUC por variável"></svg>
+        <p class="leg">AUC: 0,5 = não separa nada; 1 = separa perfeitamente. Horas desde 2024. Barras escuras = 1º semestre; claras = 2º semestre.</p>
+      </div>
+      <div class="bloco">
+        <h3>Chance de o NE estar descolado, por faixa da variável</h3>
+        <svg id="g-resp" viewBox="0 0 520 300" role="img" aria-label="Curvas de resposta"></svg>
+        <p class="leg">Cada ponto é um décimo das horas, ordenadas pela variável. 1º semestre: sobra N+NE (renovável + hidráulica + térmica − carga, GW). 2º semestre:
+          margem até o limite de exportação (renovável − carga − limite do NE, GW; perto de zero = no limite).</p>
+      </div>
+    </div>
+    <p class="conclusao">Uma variável quase sozinha separa as horas descoladas em cada semestre: a <strong>sobra do N+NE</strong> no 1º (AUC 0,93) e a <strong>margem até o
+      limite de exportação do NE</strong> no 2º (0,90). Abaixo de um patamar a chance é praticamente zero; acima, sobe rápido. <strong>São exatamente as duas variáveis
+      que o modelo usa para estimar a chance de travar.</strong></p>
+  </section>
+
+  <!-- 5 -->
+  <section class="capitulo" aria-labelledby="c5">
+    <h2 id="c5"><span class="n">5</span>Quanto descola quando trava: raso ou fundo</h2>
+    <div class="bloco">
+      <div class="ttl">Intensidade (k) × sobra do N+NE, meses do 1º semestre com o NE travado</div>
+      <div class="legenda-mini" id="leg-k"></div>
+      <svg id="g-k" viewBox="0 0 1040 300" role="img" aria-label="k por sobra"></svg>
+      <p class="leg">k = fração da distância entre o SE e o piso que o NE perde nas horas travadas (1 = NE no piso). Sobra sem térmica (renovável + hidráulica − carga do
+        N e do NE). Meses com pelo menos 20 horas travadas, desde 2021.</p>
+    </div>
+    <p class="conclusao">Com pouca sobra (5 a 6 GW, início de 2026) a trava é rasa e o NE cai uma fração pequena; com sobra grande (12 GW, 2025) o NE vai ao piso. <strong>A
+      intensidade muda de um ano para o outro</strong>: é a parte mais difícil de prever e a principal fonte de erro do modelo no 1º semestre.</p>
+  </section>
+
+  <!-- ponte -->
+  <section aria-labelledby="c6">
+    <h2 id="c6">Do diagnóstico ao modelo</h2>
+    <div class="fluxo">
+      <div class="passo"><span class="n">Capítulo 1</span><h3>SE da mesa</h3><p>O descolamento é calculado sobre a distância entre o SE informado e o piso.</p></div>
+      <div class="passo"><span class="n">Capítulos 2 e 3</span><h3>Horário, dois regimes</h3><p>Cada hora é simulada; 1º e 2º semestres têm ajustes separados.</p></div>
+      <div class="passo"><span class="n">Capítulo 4</span><h3>Chance de travar</h3><p>Regressão sobre a sobra N+NE e a margem de exportação do NE.</p></div>
+      <div class="passo"><span class="n">Capítulo 5</span><h3>Intensidade e cenários</h3><p>k por ano climático e faixa pelos anos históricos. <a href="metodologia.html">Ver a metodologia</a>.</p></div>
+    </div>
+  </section>
+
+  <div class="aviso">
+    <span>Dados realizados: PLD horário da CCEE e resultados diários do DESSEM (balanço por submercado e restrições de intercâmbio), desde 2021. Esta página descreve o
+      que aconteceu; o modelo e suas contas estão na <a href="metodologia.html">Metodologia</a>.</span>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script>
+"use strict";
+// Dados: serving/pricing_descolamento/fundamentos.json (qe_pricing_descolamento.fundamentos)
+(async function () {
+let FUND;
+try {
+  const r = await fetch("/dados/pricing_descolamento/fundamentos.json", { cache: "no-cache" });
+  if (!r.ok) throw new Error(`fundamentos: ${r.status}`);
+  FUND = await r.json();
+} catch (e) {
+  document.querySelector("main").insertAdjacentHTML("afterbegin", `<p class="leg">Dados indisponíveis (${e.message}). Rode: uv run qe pricing_descolamento publicar</p>`);
+  return;
+}
+const dn = (v, c = 1) => (v == null || !isFinite(v) ? "—" : (v < -0.5 * 10 ** -c ? "−" : "") + n(Math.abs(v), c));
+const COR = { NE: "var(--c-ne)", N: "var(--c-n)", S: "var(--c-s)" };
+const NOME = { NE: "NE", N: "N", S: "Sul" };
+document.getElementById("meta").innerHTML = `<span>Dados realizados de jan/21 a ${rot(FUND.serie.at(-1).mes)}</span><span>Fontes: CCEE (PLD, DESSEM)</span>`;
+function abas(id, cb) {
+  document.getElementById(id).addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return;
+    document.querySelectorAll(`#${id} button`).forEach(x => x.setAttribute("aria-pressed", String(x === b))); cb(b.dataset.v); });
+}
+
+// 1) série: SE e os três descolamentos, alinhados no tempo
+(function () {
+  const S_ = FUND.serie, w = 1040, mg = { l: 48, r: 12 }, larg = (w - mg.l - mg.r) / S_.length, X = i => mg.l + (i + 0.5) * larg, bw = larg * 0.7;
+  // SE
+  let svg = document.getElementById("g-se"), h = 150, t = 8, b = 8;
+  let e = eixo(0, Math.max(...S_.map(r => r.SE)), 3), Y = v => t + (h - t - b) * (1 - (v - e.a) / (e.b - e.a));
+  e.t.forEach(v => { S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); S(svg, "text", { x: mg.l - 6, y: Y(v) + 3, "text-anchor": "end" }, n(v)); });
+  S(svg, "polyline", { points: S_.map((r, i) => `${X(i)},${Y(r.piso)}`).join(" "), fill: "none", stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+  S(svg, "polyline", { points: S_.map((r, i) => `${X(i)},${Y(r.SE)}`).join(" "), fill: "none", stroke: "var(--ink)", "stroke-width": 2 });
+  S(svg, "text", { x: mg.l + 4, y: t + 10, style: "font-family:var(--f-body);font-size:12px;fill:var(--ink-2);font-weight:600" }, "SE");
+  S(svg, "text", { x: w - mg.r, y: Y(S_.at(-1).piso) - 4, "text-anchor": "end" }, "piso");
+  // três faixas: Sul, NE, N
+  svg = document.getElementById("g-desc"); h = 476;
+  const faixas = [["S", "Sul − SE"], ["NE", "NE − SE"], ["N", "N − SE"]], fh = (h - 44) / 3;
+  faixas.forEach(([s_, rotulo], k) => {
+    const y0 = k * fh, vals = S_.map(r => r[s_]), ee = eixo(Math.min(0, ...vals), Math.max(0, ...vals), 3);
+    const Yk = v => y0 + 26 + (fh - 34) * (1 - (v - ee.a) / (ee.b - ee.a));  // 26px de título no topo da faixa
+    ee.t.forEach(v => { S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Yk(v), y2: Yk(v), stroke: "var(--rule)" }); S(svg, "text", { x: mg.l - 6, y: Yk(v) + 3, "text-anchor": "end" }, n(v)); });
+    S_.forEach((r, i) => { const v = r[s_], a = Yk(0), c = Yk(v);
+      S(svg, "rect", { x: X(i) - bw / 2, y: Math.min(a, c), width: bw, height: Math.max(Math.abs(c - a), 0.5), fill: COR[s_] }); });
+    S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Yk(0), y2: Yk(0), stroke: "var(--ink-3)" });
+    S(svg, "text", { x: mg.l, y: y0 + 14, style: `font-family:var(--f-body);font-size:12px;font-weight:600;fill:${COR[s_]}` }, rotulo);
+  });
+  // separadores: trimestre (fino) e ano (mais forte); rótulos T1–T4 e o ano embaixo
+  [[document.getElementById("g-se"), 0, 150], [svg, 0, h - 40]].forEach(([g, y1, y2]) => S_.forEach((r, i) => {
+    const m = +r.mes.slice(5, 7); if (i === 0 || (m - 1) % 3) return;
+    S(g, "line", { x1: mg.l + i * larg, x2: mg.l + i * larg, y1, y2, stroke: "var(--rule)", "stroke-dasharray": m === 1 ? null : "2 3", "stroke-opacity": m === 1 ? 1 : 0.7 });
+  }));
+  const tri = {};
+  S_.forEach((r, i) => { const k = `${r.mes.slice(0, 4)}T${Math.ceil(+r.mes.slice(5, 7) / 3)}`; (tri[k] ??= []).push(i); });
+  Object.entries(tri).forEach(([k, ii]) => S(svg, "text", { x: (X(ii[0]) + X(ii.at(-1))) / 2, y: h - 26, "text-anchor": "middle", style: "font-size:9px;fill:var(--ink-3)" }, k.slice(4)));
+  S_.forEach((r, i) => { if (/-01$/.test(r.mes)) S(svg, "text", { x: mg.l + i * larg + 1, y: h - 6, "text-anchor": "start" }, r.mes.slice(0, 4)); });
+  [[document.getElementById("g-se"), 150], [svg, 476]].forEach(([g, hh]) => S_.forEach((r, i) => {
+    const a = S(g, "rect", { x: X(i) - larg / 2, y: 0, width: larg, height: hh, fill: "transparent" });
+    dicaEm(a, `<b>${rot(r.mes)}</b> · SE ${n(r.SE, 1)} (piso ${n(r.piso, 2)})<br>Sul ${dn(r.S)} · NE ${dn(r.NE)} · N ${dn(r.N)}`);
+  }));
+})();
+
+// 2) mapa mês × hora: Sul, NE e N um em cada linha, mesma escala
+let MMED = "pct", MINI = "2025", MVAL = false;
+const MESES_N = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+function mapa() {
+  const box = document.getElementById("g-mapas"); box.replaceChildren();
+  const SUBM = ["S", "NE", "N"], dados = SUBM.map(s_ => FUND.mapa[`${s_}_${MINI}`][MMED]);
+  const lim = Math.max(...dados.flatMap(M => M.flat().filter(v => v != null).map(v => Math.abs(v))));
+  document.getElementById("tt-mapa").textContent = `Em que mês e hora cada submercado descola (${MINI} em diante)`;
+  document.getElementById("mapa-max").textContent = MMED === "pct" ? pct(lim) : `${n(lim)} R$/MWh`;
+  document.getElementById("mapa-un").textContent = MMED === "pct" ? "das horas descoladas" : "em módulo";
+  document.querySelector(".mapa-leg .grad").style.background = "linear-gradient(90deg, var(--vazio), var(--ink-3))";
+  SUBM.forEach((s_, k) => {
+    const M = dados[k], d = document.createElement("div"); d.className = "mapa";
+    d.innerHTML = `<div class="ttl" style="color:${COR[s_]}">${NOME[s_]}</div>`;
+    const w = 1040, h = 262, mg = { l: 34, r: 4, t: 4, b: 18 }, cw = (w - mg.l - mg.r) / 24, ch = (h - mg.t - mg.b) / 12;
+    const svg = S(d, "svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": `Mapa mês por hora, ${NOME[s_]}` });
+    M.forEach((linha, i) => {
+      S(svg, "text", { x: mg.l - 4, y: mg.t + (i + 0.5) * ch + 3, "text-anchor": "end", style: "font-size:11px" }, MESES_N[i]);
+      linha.forEach((v, hh) => {
+        const f = v == null ? 0 : Math.max(0, Math.min(1, Math.abs(v) / lim));
+        const r = S(svg, "rect", { x: mg.l + hh * cw + 0.5, y: mg.t + i * ch + 0.5, width: cw - 1, height: ch - 1, rx: 1,
+          fill: `color-mix(in srgb, ${COR[s_]} ${Math.round(f * 100)}%, var(--vazio))` });
+        dicaEm(r, `<b>${NOME[s_]} · ${MESES_N[i]}, ${hh}h</b> (${MINI} em diante)<br>${MMED === "pct" ? `${pct(v)} das horas descolado` : `descolamento médio ${dn(v)} R$/MWh`}`);
+        // números só a cada 3 horas e sem os zeros
+        if (MVAL && hh % 3 === 0 && v != null) {
+          const txt = MMED === "pct" ? Math.round(v * 100) : Math.round(v);
+          if (txt !== 0) S(svg, "text", { x: mg.l + (hh + 0.5) * cw, y: mg.t + (i + 0.5) * ch + 4, "text-anchor": "middle",
+            style: `font-size:11px;fill:${f > 0.55 ? "var(--surface)" : "var(--ink)"}` }, String(txt).replace("-", "−"));
+        }
+      });
+    });
+    for (let hh = 0; hh < 24; hh += 3) S(svg, "text", { x: mg.l + (hh + 0.5) * cw, y: h - 4, "text-anchor": "middle", style: "font-size:11px" }, `${hh}h`);
+    box.appendChild(d);
+  });
+}
+abas("abas-m-med", v => { MMED = v; mapa(); });
+abas("abas-m-ini", v => { MINI = v; mapa(); });
+document.getElementById("m-val").addEventListener("change", ev => { MVAL = ev.target.checked; mapa(); });
+mapa();
+
+// 3) travas
+(function () {
+  const PRINC = ["REC_SE_NNE", "EXP_NE", "REC_N"];
+  const fundo = v => `background: color-mix(in srgb, var(--accent) ${Math.round(Math.min(v, 100) * 0.55)}%, transparent)`;
+  document.getElementById("t-travas").innerHTML = FUND.travas.map(r => {
+    const outras = Math.max(0, ...Object.entries(r).filter(([k]) => !PRINC.includes(k) && !["periodo", "horas descoladas", "nenhuma"].includes(k)).map(([, v]) => v));
+    const [a, s] = r.periodo.split("-");
+    return `<tr><td>${s === "1S" ? "1º" : "2º"} sem/${a.slice(2)}</td><td class="n">${n(r["horas descoladas"])}</td>` +
+      PRINC.map(k => `<td class="n" style="${fundo(r[k])}">${n(r[k])}%</td>`).join("") + `<td class="n">${n(outras)}%</td></tr>`;
+  }).join("");
+})();
+
+// 4) AUC e curvas de resposta
+(function () {
+  const svg = document.getElementById("g-auc"), w = 520, h = 300, mg = { l: 230, r: 40, t: 8, b: 22 };
+  const L = [...FUND.auc.NE].sort((a, b) => Math.max(Math.abs(b["1S"]), Math.abs(b["2S"])) - Math.max(Math.abs(a["1S"]), Math.abs(a["2S"])));
+  const bh = (h - mg.t - mg.b) / L.length, X = v => mg.l + (w - mg.l - mg.r) * (v - 0.5) / 0.5;
+  [0.5, 0.75, 1].forEach(v => { S(svg, "line", { x1: X(v), x2: X(v), y1: mg.t, y2: h - mg.b, stroke: "var(--rule)" }); S(svg, "text", { x: X(v), y: h - 6, "text-anchor": "middle" }, n(v, 2)); });
+  L.forEach((r, i) => {
+    const y = mg.t + i * bh;
+    S(svg, "text", { x: mg.l - 8, y: y + bh / 2 + 4, "text-anchor": "end", style: "font-family:var(--f-body);font-size:12px;fill:var(--ink-2)" }, r.var);
+    [["1S", 0, "var(--ink-2)"], ["2S", 1, "var(--bar-pers)"]].forEach(([s, k, cor]) => {
+      const v = Math.abs(r[s]), dest = (s === "1S" && r.var === "Sobra N+NE") || (s === "2S" && r.var.startsWith("Margem"));
+      const b = S(svg, "rect", { x: X(0.5), y: y + bh * (0.12 + k * 0.4), width: Math.max(X(v) - X(0.5), 1), height: bh * 0.34, rx: 2, fill: dest ? "var(--accent)" : cor });
+      dicaEm(b, `<b>${r.var}</b> · ${s === "1S" ? "1º" : "2º"} semestre<br>AUC ${n(v, 2)}${r[s] < 0 ? " (relação inversa)" : ""}`);
+    });
+  });
+})();
+(function () {
+  const svg = document.getElementById("g-resp"), w = 520, h = 300, mg = { l: 40, r: 10, t: 10, b: 30 };
+  const R = FUND.resposta, gap = 44, pw = (w - mg.l - mg.r - gap) / 2;
+  ["1S", "2S"].forEach((reg, k) => {
+    const P = R[reg].pontos, x0 = mg.l + k * (pw + gap), xs = P.map(p => p.x), lo = Math.min(...xs), hi = Math.max(...xs);
+    const X = v => x0 + pw * (v - lo) / (hi - lo || 1), Y = v => mg.t + (h - mg.t - mg.b) * (1 - v);
+    [0, 0.5, 1].forEach(v => { S(svg, "line", { x1: x0, x2: x0 + pw, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); if (!k) S(svg, "text", { x: x0 - 6, y: Y(v) + 3, "text-anchor": "end" }, pct(v)); });
+    S(svg, "polyline", { points: P.map(p => `${X(p.x)},${Y(p.p)}`).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2 });
+    P.forEach(p => { const c = S(svg, "circle", { cx: X(p.x), cy: Y(p.p), r: 4, fill: "var(--accent)" });
+      dicaEm(c, `<b>${R[reg].var}</b><br>${n(p.lo, 1)} a ${n(p.hi, 1)} GW · ${pct(p.p)} das horas com o NE descolado`); });
+    S(svg, "text", { x: x0 + pw / 2, y: h - 8, "text-anchor": "middle", style: "font-family:var(--f-body);font-size:12px;fill:var(--ink-2)" },
+      `${reg === "1S" ? "1º sem: sobra N+NE" : "2º sem: margem de exportação"} (GW)`);
+    [lo, hi].forEach(v => S(svg, "text", { x: X(v), y: h - 20, "text-anchor": "middle" }, n(v, 0)));
+  });
+})();
+
+// 5) k × sobra
+(function () {
+  const K = FUND.k, svg = document.getElementById("g-k"), w = 1040, h = 300, mg = { l: 48, r: 16, t: 12, b: 30 };
+  const anos = [...new Set(K.map(p => p.mes.slice(0, 4)))].sort();
+  const CA = { 2021: "var(--ink-3)", 2022: "var(--bar-saz)", 2025: "var(--c-ne)", 2026: "var(--accent)" };
+  document.getElementById("leg-k").innerHTML = anos.map(a => `<span><i style="background:${CA[a] || "var(--ink-2)"};border-radius:50%"></i>${a}</span>`).join("");
+  const xs = K.map(p => p.sobra), ex = eixo(Math.min(...xs), Math.max(...xs), 6);
+  const X = v => mg.l + (w - mg.l - mg.r) * (v - ex.a) / (ex.b - ex.a), Y = v => mg.t + (h - mg.t - mg.b) * (1 - v);
+  [0, 0.25, 0.5, 0.75, 1].forEach(v => { S(svg, "line", { x1: mg.l, x2: w - mg.r, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); S(svg, "text", { x: mg.l - 6, y: Y(v) + 3, "text-anchor": "end" }, n(v, 2)); });
+  ex.t.forEach(v => S(svg, "text", { x: X(v), y: h - 12, "text-anchor": "middle" }, `${n(v)} GW`));
+  K.forEach(p => {
+    const c = S(svg, "circle", { cx: X(p.sobra), cy: Y(p.k), r: 4 + Math.min(p.horas / 120, 5), fill: CA[p.mes.slice(0, 4)] || "var(--ink-2)", opacity: 0.85, stroke: "var(--surface)", "stroke-width": 1.5 });
+    dicaEm(c, `<b>${rot(p.mes)}</b><br>k ${n(p.k, 2)} · sobra N+NE ${n(p.sobra, 1)} GW<br>${n(p.horas)} horas travadas · folga média ${n(p.folga)} R$/MWh`);
+  });
+  S(svg, "text", { x: (w + mg.l) / 2, y: h - 0, "text-anchor": "middle" }, "");
+})();
+})();
+</script>
+</body>
+</html>

@@ -19,7 +19,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from qe_core.armazenamento import Armazenamento
+from qe_core.armazenamento import Armazenamento, ler_parquet
 from qe_pricing_descolamento import chaves, tratamento
 from qe_pricing_descolamento import modelo as M
 
@@ -542,6 +542,13 @@ def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False
         reg.append(linha)
         gravar_registro(arm, reg)
     pagina = dados(arm, d, rodada, b, mod)
+    if arm.existe(chaves.PROC_BACKTEST):  # metodologia: desempenho do backtest da página
+        from qe_pricing_descolamento.desempenho import desempenho
+
+        pagina["desempenho"] = desempenho(b, ler_parquet(arm, chaves.PROC_BACKTEST))
+    from qe_pricing_descolamento.fundamentos import dados_fundamentos
+
+    pagina["fundamentos"] = dados_fundamentos(b)  # página de fundamentos: o realizado, sem o modelo
     for nome, valor in pagina.items():
         arm.gravar_bytes(
             json.dumps(valor, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),

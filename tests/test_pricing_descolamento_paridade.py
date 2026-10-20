@@ -224,3 +224,23 @@ def test_R10_resumo_das_rodadas(rodada, deck):
     x = P.resumo_rodada(b, d, M.treinar(b, d), linha["rodada"])
     x["reconstruida"] = linha["reconstruida"]
     assert json.loads(json.dumps(x)) == linha
+
+
+# --- blocos 5 e 6: páginas de metodologia (desempenho) e fundamentos ----------------------------------------
+
+
+def test_R8_metodologia_desempenho(arm, rodada):
+    from qe_pricing_descolamento.desempenho import desempenho
+
+    _M, b, _d, _mod, _ = rodada
+    r = json.loads((Path(PASTA) / "R8_metodologia.json").read_text(encoding="utf-8"))
+    a = json.loads(json.dumps(desempenho(b, ler_parquet(arm, chaves.PROC_BACKTEST))))
+    assert a == r["desempenho"]
+
+
+def test_R8_fundamentos(rodada):
+    from qe_pricing_descolamento.fundamentos import dados_fundamentos
+
+    _M, b, _d, _mod, _ = rodada
+    r = json.loads((Path(PASTA) / "R8_fundamentos.json").read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(dados_fundamentos(b))) == r

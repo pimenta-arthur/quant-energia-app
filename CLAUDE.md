@@ -2,7 +2,7 @@
 
 Aplicação com funcionalidades independentes, cada uma com a sua página e o seu pipeline:
 **Forecast Bandeiras** (código `forecast_bandeiras`), **Risk Lab DESSEM** (PLD horário; código `risk_lab_dessem`) e
-**Pricing Descolamento** (descolamento do NE e do N em relação ao SE; código `pricing_descolamento`, em promoção). Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
+**Pricing Descolamento** (descolamento do NE e do N em relação ao SE; código `pricing_descolamento`). Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
 (`web/<código>/`) e chaves (`processed/<código>/`, `serving/<código>/`) usam o código; `raw/` é por fonte.
 Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Responder sempre em português do Brasil.
 
@@ -105,13 +105,14 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   com teste de paridade Python × JS).
 
 ## Pricing Descolamento (descolamento NE e N): etapas e testes
-- Promoção de `../pricing-descolamento-analytics` (tag `promocao-quant-v1`, pacote `docs/promocao_descolamento.md`
-  de lá), bloco a bloco na ordem da seção 6, commit por bloco. Escopo: só o modelo v2.2 e as três páginas
+- Promovido de `../pricing-descolamento-analytics` em 2026-10-19 (tag `promocao-quant-v1`, pacote
+  `docs/promocao_descolamento.md` de lá), bloco a bloco; R1 a R10 conferidos sem diferença. Escopo: só o modelo v2.2 e as três páginas
   (Descolamento NE e N, Metodologia, Fundamentos); **não trazer** a v1, as versões testadas (inclusive o 7d-1S),
   DECOMP, LPP nem o site do GitHub Pages, nem como contexto.
 - Fontes, todas comuns (`qe_core.fontes`): deck do NEWAVE (conjunto `sistema_agrint`, última publicação),
   DESSEM (`PDO_SIST` e `PDO_RESTOPER`, guardado inteiro em `.gz`), PLD **publicado** e limites.
-- Etapas: `qe pricing_descolamento ingerir | tratar [--refazer] | status | congelar`. T3 e T4 (DESSEM) particionados
+- Etapas: `qe pricing_descolamento ingerir | tratar [--refazer] | backtest | publicar | status | congelar`.
+  Páginas: Descolamento NE e N, Metodologia (desempenho do backtest e alternativas) e Fundamentos (o realizado). T3 e T4 (DESSEM) particionados
   por mês, refeitos quando os dias do mês mudam; T1, T2 e T5 inteiros.
 - Modelo em `qe_pricing_descolamento.modelo.MODELO` (hoje `v2.2`: P(trava) logística por regime, k pareado com o
   ano climático, D015, D022); definições de "descolado" e "travada" da base horária também vêm dele. Mudar = versão
