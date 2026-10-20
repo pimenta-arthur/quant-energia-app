@@ -311,7 +311,7 @@
     const cel = (c, cls = "") => {
       if (!c) return `<td class="${cls}"></td>`;
       const v = c["d_" + SUB], m = c.marca[SUB];
-      const marca = m ? ` <span class="marca" title="${m === "▲" ? "mais descolado que a média" : "menos descolado que a média"}">${m}</span>` : "";
+      const marca = m ? ` <span class="marca-cel" title="${m === "▲" ? "mais descolado que a média" : "menos descolado que a média"}">${m}</span>` : "";
       CEL.push(c);
       return `<td class="${cls}"><div class="cel" data-i="${CEL.length - 1}"><b>${pld ? n(c.SE + v, 1) : dn(v)}</b>${marca}<span class="fx">SE ${n(c.SE)}</span></div></td>`;
     };

@@ -1,4 +1,4 @@
-/* Padrão visual Quant Energia · v1 · 2026-10 · base.css
+/* Padrão visual Quant Energia · v1.2 · 2026-10 · base.css
    Fundação de todas as páginas: cores (claro/escuro), fontes IBM Plex, texto, cartões, tabelas, navegação
    e componentes da página de metodologia. Regras de uso em GUIA.md. Páginas de painel somam painel.css. */
 :root {
@@ -38,9 +38,10 @@ main { max-width: 1080px; margin-inline: auto; display: grid; gap: 56px; }
 .texto { max-width: 70ch; }
 section { display: grid; gap: 18px; min-width: 0; }
 h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
-h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 600; line-height: 1.05; }
-h2 { font-size: 1.55rem; font-weight: 600; }
-h3 { font-size: 1.1rem; font-weight: 600; }
+/* escala de títulos única (v1.2): painéis e metodologias usam os mesmos tamanhos */
+h1 { font-size: 1.5rem; font-weight: 600; line-height: 1.05; }
+h2 { font-size: 1.5rem; font-weight: 600; }
+h3 { font-size: 1.02rem; font-weight: 600; }
 p { margin: 0; }
 .rotulo { font-family: var(--f-data); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
 .lead { font-size: 1.2rem; color: var(--ink-2); max-width: 62ch; }

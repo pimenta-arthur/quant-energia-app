@@ -11,7 +11,6 @@
 :root[data-theme="dark"] { --t-sab: #e3a06c; --t-dom: #5ccac3; --a2021: #48525b; --a2022: #6b7680; --a2023: #e3a06c; --a2024: #5ccac3; --a2025: #f08a7e; --a2026: #6fb0d8; --a2027: #e8ecef; }
 body { margin: 0; }
 [hidden] { display: none !important; }
-main { gap: 40px; }
 section { gap: 12px; }
 .hero { display: grid; gap: 14px; }
 .hero h1, h2 { font-size: 1.5rem; }
