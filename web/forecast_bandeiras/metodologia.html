@@ -20,6 +20,7 @@
   <nav class="nav" aria-label="Páginas">
     <a class="marca" href="/">Quant Energia</a>
     <a href="./">Projeções</a>
+    <a href="relato.html">Relato do DECOMP</a>
     <a href="metodologia.html" aria-current="page">Metodologia</a>
   </nav>
 
@@ -33,6 +34,7 @@
       <a href="#passos">Passo a passo</a>
       <a href="#probabilidade">Probabilidade e cenários</a>
       <a href="#backtest">Como foi testado</a>
+      <a href="#relato">Cálculo pelo relato</a>
       <a href="#decisoes">Decisões</a>
       <a href="#limites">Limitações</a>
       <a href="#glossario">Glossário</a>
@@ -188,6 +190,19 @@
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section id="relato" aria-labelledby="h-relato">
+    <h2 id="h-relato">Cálculo a partir do relato do DECOMP</h2>
+    <p class="texto">Quando o relato do DECOMP já existe (por exemplo, nas execuções do mês seguinte), a bandeira pode ser calculada direto, sem o NEWAVE. A página <a href="relato.html">Relato do DECOMP</a> faz a conta no próprio navegador: os arquivos não são enviados a nenhum servidor.</p>
+    <ul class="lista texto">
+      <li><span class="tag">PLD gatilho</span><span>Do relato do DECOMP da CCEE: custo marginal por semana, patamar e submercado, limitado ao PLD mínimo e máximo, média do mês pelas horas de cada patamar e ponderação dos quatro submercados pela carga. Nunca o CMO do relato do ONS.</span></li>
+      <li><span class="tag">GH_band e GSF</span><span>Do relato do ONS, como no boletim. Sem ele, o relato da CCEE serve de aproximação e difere do GH do ONS em até cerca de 1% (0,01 de GSF); a página avisa qual fonte usou.</span></li>
+      <li><span class="tag">Premissas</span><span>GF_band e PLD mínimo e máximo, por padrão os do último boletim publicado; podem ser editados. O GF_band varia pouco ao longo do ano.</span></li>
+      <li><span class="tag">Conferência</span><span>A página mostra a memória de cálculo de cada execução (horas, GH ONS, ANDE, PCH, fatores, custo marginal limitado por submercado, pesos e X), com as contas escritas com os números do relato, e permite baixar tudo em CSV.</span></li>
+      <li><span class="tag">Execuções</span><span>Com mais de uma execução, a probabilidade de cada cor é a fração das execuções (peso igual). Para cada uma, a página mostra o PLD e o GSF que levariam à bandeira vizinha.</span></li>
+    </ul>
+    <p class="nota texto">Conferência: a conta reproduziu o PLD gatilho dos boletins em todos os 45 meses de janeiro de 2023 a outubro de 2026 com deck da CCEE disponível, e o GSF e a cor nos quatro meses testados com o relato completo (out/26, mai/26, abr/25 e mar/25). Em set/24 e mar/25 o boletim usou a reedição do deck: é preciso carregar a publicação que a CCEE usou. GFOM não é calculado.</p>
   </section>
 
   <section id="limites" aria-labelledby="h-lim">

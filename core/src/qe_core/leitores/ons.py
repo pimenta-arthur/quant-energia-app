@@ -12,12 +12,13 @@ import numpy as np
 import pandas as pd
 
 from qe_core.leitores.ccee import _num_br
+from qe_core.leitores.dessem import texto
 
 SUBSISTEMAS = {"SECO": "SE", "SUL": "S", "NE": "NE", "N": "N"}
 
 
 def _linhas(caminho: Path) -> list[str]:
-    return Path(caminho).read_text(encoding="latin-1").splitlines()
+    return texto(caminho).splitlines()  # texto ou .gz
 
 
 def ler_ena(caminho: Path) -> pd.DataFrame:

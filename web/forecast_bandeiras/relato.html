@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bandeira pelo Relato do DECOMP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  :root { --esc: #4b1d3f; }
+  .campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+  label.campo { display: grid; gap: 4px; font-size: 0.82rem; color: var(--ink-2); min-width: 0; }
+  label.campo small { color: var(--ink-3); font-size: 0.74rem; }
+  input[type="text"], input[type="number"], select { font: 0.95rem var(--f-data); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0; }
+  input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .seletor-mes { grid-column: 1 / -1; display: grid; gap: 8px; }
+  .seletor-mes small { color: var(--ink-3); font-size: 0.74rem; line-height: 1; }
+  .linha-ano { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  .rot-ano { font-size: 0.82rem; color: var(--ink-2); }
+  .dd { position: relative; }
+  .dd-btn { display: inline-flex; align-items: center; gap: 8px; font: 500 0.85rem var(--f-body); color: var(--surface); background: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 5px 12px 5px 14px; cursor: pointer; }
+  .dd-btn .seta { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+  .dd-btn[aria-expanded="true"] .seta { transform: translateY(1px) rotate(-135deg); }
+  .dd-btn:focus-visible, .dd-lista li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dd-lista { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; margin: 0; padding: 6px; list-style: none; display: grid; gap: 4px; min-width: 100%; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.14); }
+  .dd-lista li { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 14px; cursor: pointer; text-align: center; }
+  .dd-lista li:hover { color: var(--ink); border-color: var(--ink-3); }
+  .dd-lista li[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .seletor-mes #mes-rotulo { font-family: var(--f-data); font-weight: 500; color: var(--ink); }
+  .grade-mes { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; }
+  .grade-mes button { text-transform: capitalize; position: relative; font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 0; cursor: pointer; }
+  .grade-mes button:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+  .grade-mes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .grade-mes button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .grade-mes button.estimado:not([aria-pressed="true"]) { border-style: dashed; }
+  .grade-mes button.publicado::after { content: ""; position: absolute; top: 4px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+  .grade-mes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 640px) { .grade-mes { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .exec { background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+  .exec-topo { display: flex; gap: 10px; align-items: center; }
+  .exec-topo .idx { font: 600 0.75rem var(--f-data); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 1.5px solid #1b2226; color: #1b2226; flex: none; }
+  .exec-topo input { flex: 1; }
+  .exec .arqs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .arq { display: grid; gap: 4px; font-size: 0.82rem; color: var(--ink-2); min-width: 0; }
+  .arq .nome { font-family: var(--f-data); font-size: 0.78rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arq .nome.ok { color: var(--accent); }
+  .arq input[type="file"] { font: 0.8rem var(--f-body); color: var(--ink-2); max-width: 100%; }
+  .botao { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 14px; cursor: pointer; justify-self: start; }
+  .botao:hover { color: var(--ink); border-color: var(--ink-3); }
+  .botao.primario { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .botao:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .botao.leve { border: 0; background: transparent; color: var(--ink-3); padding: 4px 8px; }
+  .probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .prob { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
+  .prob .v { font-family: var(--f-display); font-weight: 600; font-size: 2.2rem; line-height: 1; }
+  .prob .barra { height: 8px; border-radius: 4px; background: var(--vazio); overflow: hidden; }
+  .prob .barra i { display: block; height: 100%; }
+  .prob.maior { border-color: var(--ink-3); }
+  .selo-cor { font-weight: 500; color: var(--on-flag); padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .selo-cor.am { color: var(--on-am); }
+  td.idx { width: 1%; }
+  td .idx-m { font: 600 0.7rem var(--f-data); width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; background: #fff; border: 1.5px solid #1b2226; color: #1b2226; }
+  td.erro { color: var(--v2); }
+  .fonte { font-family: var(--f-data); font-size: 0.72rem; color: var(--ink-3); display: block; }
+  .fonte.aprox { color: var(--v1); }
+  .rolagem table { min-width: 760px; }
+  .sec-conf { display: grid; gap: 10px; min-width: 0; }
+  .sec-conf > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; cursor: pointer; list-style: none; color: var(--ink); }
+  .sec-conf > summary::-webkit-details-marker { display: none; }
+  .sec-conf > summary::before { content: ""; width: 7px; height: 7px; align-self: center; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(-45deg); transition: transform .15s; }
+  .sec-conf[open] > summary::before { transform: rotate(45deg); }
+  .sec-conf .tit { font: 600 1.5rem var(--f-display); letter-spacing: -0.005em; }
+  .sec-conf .dica-sum { font-size: 0.8rem; color: var(--ink-3); }
+  .sec-conf > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+  .conf-passo { display: grid; gap: 10px; min-width: 0; }
+  .conf-passo h3 { font-size: 1.02rem; }
+  .conf table { font-size: 0.82rem; }
+  .conf th, .conf td { padding: 5px 9px; }
+  .conf td.n.med, .conf th.med { border-left: 2px solid var(--rule); font-weight: 600; }
+  .conf .tit-tab { font-size: 0.8rem; color: var(--ink-2); margin: 4px 0 -4px; }
+  .conf .eq { line-height: 1.7; }
+  .conf .lim { color: var(--v1); font-weight: 600; white-space: nowrap; }
+  .conf td, .conf th { white-space: nowrap; }
+  .conf tr.cor-atual td { font-weight: 600; background: var(--accent-soft); }
+  .conf .rolagem { border: 1px solid var(--rule); border-radius: 6px; }
+  .conf .rolagem table { min-width: 0; }
+  .muda { display: grid; gap: 3px; font-size: 0.82rem; color: var(--ink-2); }
+  .alerta { display: block; font-size: 0.78rem; line-height: 1.35; color: var(--v1); margin-top: 3px; max-width: 34ch; white-space: normal; }
+  .vazio-msg { color: var(--ink-3); font-size: 0.9rem; padding: 6px 0; }
+  .oficial { font-size: 0.85rem; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./">Projeções</a>
+    <a href="relato.html" aria-current="page">Relato do DECOMP</a>
+    <a href="metodologia.html">Metodologia</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo">Cálculo direto, sem o NEWAVE</span>
+    <h1 id="titulo">Bandeira pelo Relato do DECOMP</h1>
+    <div class="meta" id="meta">
+      <span>Premissas:</span><span>PLD gatilho: relato da CCEE</span><span>GH_band e GSF: relato do ONS (ou, sem ele, da CCEE)</span>
+      <span>Os arquivos ficam no seu navegador</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-entrada">
+    <h2 id="s-entrada">Entrada</h2>
+    <div class="bloco">
+      <div class="campos">
+        <div class="campo seletor-mes" role="group" aria-labelledby="rot-mes">
+          <div class="linha-ano">
+            <span class="rot-ano" id="rot-ano">Ano</span>
+            <div class="dd" id="dd-ano">
+              <button type="button" class="dd-btn" id="ano-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="rot-ano ano-btn"><span id="ano-valor"></span><i class="seta" aria-hidden="true"></i></button>
+              <ul class="dd-lista" id="ano-lista" role="listbox" aria-labelledby="rot-ano" tabindex="-1" hidden></ul>
+            </div>
+            <span id="rot-mes">Mês da bandeira: <b id="mes-rotulo"></b></span>
+          </div>
+          <div class="grade-mes" id="grade-mes" role="group" aria-label="Mês"></div>
+          <input type="hidden" id="mes">
+          <small id="mes-nota"></small>
+        </div>
+        <label class="campo">GF_band (MWmed)
+          <input type="number" id="gf" step="any" inputmode="decimal">
+          <small id="gf-nota"></small>
+        </label>
+        <label class="campo">PLD mínimo (R$/MWh)
+          <input type="number" id="pmin" step="any" inputmode="decimal">
+          <small id="pmin-nota"></small>
+        </label>
+        <label class="campo">PLD máximo (R$/MWh)
+          <input type="number" id="pmax" step="any" inputmode="decimal">
+          <small id="pmax-nota"></small>
+        </label>
+      </div>
+      <div class="ttl">Execuções</div>
+      <div id="execs" style="display:grid;gap:10px"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button type="button" class="botao" id="add">+ Adicionar execução</button>
+        <button type="button" class="botao leve" id="restaurar">Restaurar premissas do boletim</button>
+      </div>
+      <p class="leg">Cada execução é um relato da CCEE (deck do PLD) e, quando houver, o relato do ONS do mesmo mês. Aceita <code>relato.rv0</code>
+        puro ou comprimido (<code>.gz</code>). Mais de uma execução dá a probabilidade de cada cor.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-res">
+    <h2 id="s-res">Resultado</h2>
+    <div class="probs" id="probs"></div>
+    <div class="bloco">
+      <div class="rolagem">
+        <table>
+          <thead><tr><th></th><th>Execução</th><th class="n">GH_band</th><th class="n">GSF</th><th class="n">PLD gatilho</th><th class="n">X</th><th>Bandeira</th><th>Muda de cor se…</th></tr></thead>
+          <tbody id="tab"></tbody>
+        </table>
+      </div>
+      <p class="leg">GH_band em MWmed; PLD gatilho em R$/MWh; X = PLD × (1 − GSF), em R$/MWh. Passe o mouse sobre o PLD para ver o preço de cada submercado.
+        A coluna da direita mostra o PLD (com o GSF da execução) e o GSF (com o PLD da execução) que levam à bandeira vizinha.</p>
+      <div class="oficial" id="oficial"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-abaco">
+    <h2 id="s-abaco">Posição no ábaco regulatório</h2>
+    <div class="bloco">
+      <svg id="abaco" viewBox="0 0 1040 340" role="img" aria-label="Ábaco GSF por PLD com as execuções"></svg>
+      <p class="leg">Cada marcador numerado é uma execução. A cor de fundo é a bandeira para aquele par GSF e PLD gatilho (limites do Anexo I da REH 3.306/2024).</p>
+    </div>
+  </section>
+
+  <details class="sec-conf" id="sec-conf" hidden>
+    <summary><span class="tit" id="s-conf">Conferência das contas</span><span class="dica-sum">abra para refazer as contas à mão</span></summary>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="abas" id="abas-conf" role="group" aria-label="Execução"></div>
+        <button type="button" class="botao" id="baixar">Baixar memória de cálculo (CSV)</button>
+      </div>
+      <p class="leg">Cada número do resultado, na ordem da conta, com os valores lidos do relato. Dá para refazer à mão ou numa planilha; o CSV traz as mesmas tabelas.</p>
+      <div class="conf" id="conf" style="display:grid;gap:22px"></div>
+    </div>
+  </details>
+
+  <div class="aviso" id="avisos">
+    <span>Sem GFOM (despacho térmico fora da ordem de mérito): se o CMSE determinar, a cor final pode subir. Método completo em <a href="metodologia.html">Metodologia</a>.</span>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script src="/dados/forecast_bandeiras/relato_dados.js" charset="utf-8"></script>
+<script src="relato_conta.js"></script>
+<script>
+(function () {
+  const R = window.RELATO_DADOS, C = window.ContaRelato;
+  if (!R || !C) { document.getElementById("avisos").innerHTML = "<span>Não foi possível carregar os dados da página (relato_dados.js).</span>"; return; }
+  const ORD = ["Verde", "Amarela", "Vermelha 1", "Vermelha 2"];
+  const COR = { "Verde": "var(--vd)", "Amarela": "var(--am)", "Vermelha 1": "var(--v1)", "Vermelha 2": "var(--v2)" };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const seloCor = c => `<b class="selo-cor${c === "Amarela" ? " am" : ""}" style="background:${COR[c]}">${c}</b>`;
+
+  // ---------- estado ----------
+  let proxId = 1, confSel = null;
+  const execs = [], entradas = {};
+  const novaExec = () => ({ id: proxId++, nome: "", ccee: null, ons: null, pld_manual: "" });
+
+  // ---------- meses e premissas ----------
+  const meses = Object.keys(R.horas).sort().reverse();
+  const ultimoBoletim = Object.keys(R.boletim).sort().pop();
+  const proximo = (() => { const [a, m] = ultimoBoletim.split("-").map(Number); const t = a * 12 + m; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; })();
+  const anos = [...new Set(meses.map(m => m.slice(0, 4)))].sort();
+  // ano corrente pré-selecionado (o mais próximo dos disponíveis, se o corrente não existir nos dados)
+  const anoCorrente = String(new Date().getFullYear());
+  let anoSel = anos.includes(anoCorrente) ? anoCorrente : anos.reduce((a, b) => Math.abs(b - anoCorrente) < Math.abs(a - anoCorrente) ? b : a);
+  // seletor: dropdown de ano + grade dos 12 meses (meses sem calendário de patamares ficam desabilitados)
+  function desenharSeletor() {
+    const mes = $("mes").value;
+    $("ano-valor").textContent = anoSel;
+    $("ano-lista").innerHTML = anos.slice().reverse().map(a => `<li role="option" tabindex="-1" data-ano="${a}" aria-selected="${a === anoSel}">${a}</li>`).join("");
+    $("grade-mes").innerHTML = MES.map((nome, i) => {
+      const m = `${anoSel}-${String(i + 1).padStart(2, "0")}`, tem = !!R.horas[m];
+      const cls = [R.boletim[m] ? "publicado" : "", R.horas_estimadas.includes(m) ? "estimado" : ""].join(" ").trim();
+      return `<button type="button" data-mes="${m}" class="${cls}" aria-pressed="${m === mes}"${tem ? "" : " disabled"} title="${MESL[i]} de ${anoSel}${R.boletim[m] ? " · boletim publicado" : ""}">${nome}</button>`;
+    }).join("");
+    $("mes-rotulo").textContent = mes ? rotLongo(mes) : "—";
+  }
+  function escolherMes(m, recalcular = true) {
+    $("mes").value = m; anoSel = m.slice(0, 4); desenharSeletor();
+    if (recalcular) { premissasDoBoletim(); notaMes(); calcular(); }
+  }
+  // trocar o ano mantém o mês (ou, se ele não existir no ano, o primeiro disponível)
+  function escolherAno(ano) {
+    const mm = ($("mes").value || "").slice(5, 7) || "01";
+    escolherMes(R.horas[`${ano}-${mm}`] ? `${ano}-${mm}` : meses.slice().reverse().find(m => m.startsWith(ano)));
+  }
+  // dropdown próprio: abre/fecha, setas, Esc e clique fora
+  const lista = $("ano-lista"), btn = $("ano-btn");
+  function abrirAnos(abrir, focar = true) {
+    lista.hidden = !abrir; btn.setAttribute("aria-expanded", String(abrir));
+    if (abrir && focar) (lista.querySelector('[aria-selected="true"]') || lista.firstElementChild).focus();
+  }
+  btn.addEventListener("click", () => abrirAnos(lista.hidden));
+  btn.addEventListener("keydown", ev => { if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); abrirAnos(true); } });
+  lista.addEventListener("click", ev => { const li = ev.target.closest("li"); if (!li) return; abrirAnos(false); btn.focus(); if (li.dataset.ano !== anoSel) escolherAno(li.dataset.ano); });
+  lista.addEventListener("keydown", ev => {
+    const li = ev.target.closest("li"); if (!li) return;
+    const mover = d => { ev.preventDefault(); const itens = [...lista.children], i = itens.indexOf(li); (itens[i + d] || li).focus(); };
+    if (ev.key === "ArrowDown") mover(1); else if (ev.key === "ArrowUp") mover(-1);
+    else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); li.click(); }
+    else if (ev.key === "Escape" || ev.key === "Tab") { abrirAnos(false); btn.focus(); }
+  });
+  document.addEventListener("click", ev => { if (!lista.hidden && !$("dd-ano").contains(ev.target)) abrirAnos(false); });
+  $("grade-mes").addEventListener("click", ev => { const b = ev.target.closest("button:not(:disabled)"); if (b) escolherMes(b.dataset.mes); });
+  $("mes").value = meses.find(m => m === proximo && m.startsWith(anoSel)) || meses.find(m => m.startsWith(anoSel) && m.slice(5) === proximo.slice(5)) || meses.slice().reverse().find(m => m.startsWith(anoSel));
+  desenharSeletor();
+
+  function premissasDoBoletim() {
+    const mes = $("mes").value, p = C.valoresPublicados(R.boletim, mes);
+    if (!p) { $("gf-nota").textContent = $("pmin-nota").textContent = $("pmax-nota").textContent = "sem boletim: informe"; return; }
+    $("gf").value = p.gf_band; $("pmin").value = p.pld_min; $("pmax").value = p.pld_max;
+    const nota = `boletim de ${rot(p.origem)}`;
+    $("gf-nota").textContent = $("pmin-nota").textContent = $("pmax-nota").textContent = nota;
+    $("pmax-nota").textContent = nota + (p.origem.slice(0, 4) !== mes.slice(0, 4) ? " · limites do ano anterior, confira" : "");
+  }
+  function notaMes() {
+    const mes = $("mes").value, est = R.horas_estimadas.includes(mes), of = R.boletim[mes];
+    $("mes-nota").textContent = (est ? "patamares do ano ainda não publicados: usa os do ano anterior" : "") +
+      (est && of ? " · " : "") + (of ? `boletim publicado: ${of.cor}` : (!est ? "boletim ainda não publicado" : "")) +
+      " · ponto = boletim já publicado";
+  }
+
+  // ---------- leitura de arquivos (texto ou .gz) ----------
+  async function lerTexto(arquivo) {
+    let buf = await arquivo.arrayBuffer();
+    const u = new Uint8Array(buf);
+    if (u[0] === 0x1f && u[1] === 0x8b) {
+      if (typeof DecompressionStream === "undefined") throw new Error("este navegador não abre .gz: descompacte o arquivo antes");
+      buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+    }
+    return new TextDecoder("latin1").decode(buf);
+  }
+  const tam = b => (b >= 1e6 ? n(b / 1e6, 1) + " MB" : n(b / 1e3) + " KB");
+
+  // ---------- execuções ----------
+  function desenharExecs() {
+    const box = $("execs"); box.replaceChildren();
+    execs.forEach((e, i) => {
+      const d = document.createElement("div"); d.className = "exec";
+      const arq = (chave, titulo, dica) => `<div class="arq"><span>${titulo}</span><input type="file" accept=".rv0,.gz,.txt,.dat" data-k="${chave}" data-id="${e.id}" aria-label="${titulo} da execução ${i + 1}">` +
+        `<span class="nome${e[chave] ? " ok" : ""}" id="nome-${chave}-${e.id}">${e[chave] ? esc(e[chave].nome) + " · " + tam(e[chave].tam) : dica}</span></div>`;
+      d.innerHTML = `<div class="exec-topo"><span class="idx">${i + 1}</span><input type="text" placeholder="Nome (ex.: Cenário seco)" value="${esc(e.nome)}" data-k="nome" data-id="${e.id}" aria-label="Nome da execução ${i + 1}">` +
+        (execs.length > 1 ? `<button type="button" class="botao leve" data-rm="${e.id}">remover</button>` : "") + `</div>` +
+        `<div class="arqs">${arq("ccee", "Relato da CCEE (PLD gatilho)", "nenhum arquivo")}${arq("ons", "Relato do ONS (GH_band, opcional)", "sem ele, o GH vem do relato da CCEE")}` +
+        `<label class="campo">PLD gatilho manual (R$/MWh)<input type="number" step="any" data-k="pld_manual" data-id="${e.id}" value="${esc(e.pld_manual)}" placeholder="só se não houver relato da CCEE"></label></div>`;
+      box.appendChild(d);
+    });
+  }
+  $("execs").addEventListener("change", async ev => {
+    const el = ev.target, e = execs.find(x => x.id === +el.dataset.id), rm = el.dataset.k;
+    if (!e) return;
+    if (el.type === "file") {
+      const f = el.files[0], alvo = $(`nome-${rm}-${e.id}`);
+      if (!f) { e[rm] = null; }
+      else {
+        alvo.textContent = "lendo…";
+        try { e[rm] = { nome: f.name, tam: f.size, texto: await lerTexto(f) }; alvo.textContent = `${f.name} · ${tam(f.size)}`; alvo.classList.add("ok"); }
+        catch (err) { e[rm] = null; alvo.textContent = err.message; alvo.classList.remove("ok"); }
+      }
+    } else if (rm) e[rm] = el.value;
+    calcular();
+  });
+  $("execs").addEventListener("input", ev => { const el = ev.target, e = execs.find(x => x.id === +el.dataset.id); if (e && el.dataset.k === "nome") e.nome = el.value; });
+  $("execs").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-rm]"); if (!b) return;
+    execs.splice(execs.findIndex(x => x.id === +b.dataset.rm), 1); desenharExecs(); calcular();
+  });
+  $("add").addEventListener("click", () => { execs.push(novaExec()); desenharExecs(); });
+  $("restaurar").addEventListener("click", () => { premissasDoBoletim(); calcular(); });
+  ["gf", "pmin", "pmax"].forEach(id => $(id).addEventListener("change", calcular));
+
+  // ---------- cálculo ----------
+  function calcular() {
+    const mes = $("mes").value, base = { periodo: mes, horas: R.horas[mes], fatores: R.fatores, limites_x: R.limites_x,
+      gf_band: parseFloat($("gf").value), pld_min: parseFloat($("pmin").value), pld_max: parseFloat($("pmax").value) };
+    const res = execs.map((e, i) => {
+      const nome = e.nome.trim() || `Execução ${i + 1}`, manual = e.pld_manual.trim() === "" ? null : parseFloat(e.pld_manual);
+      if (!e.ccee && !e.ons) return { i, nome, vazio: true };
+      try {
+        if ([base.gf_band, base.pld_min, base.pld_max].some(v => !isFinite(v))) throw new Error("informe GF_band e PLD mín/máx");
+        // alerta, sem bloquear: estudos customizados partem de um deck existente e o rótulo do mês pode ficar igual
+        const alertas = [];
+        for (const [rot, a] of [["da CCEE", e.ccee], ["do ONS", e.ons]]) {
+          const mr = a && C.mesDoRelato(a.texto);
+          if (mr && mr !== +mes.slice(5, 7)) alertas.push(`o relato ${rot} indica ${MESL[mr - 1]} (rótulo da semana 1), e o mês selecionado é ${MESL[+mes.slice(5, 7) - 1]}`);
+        }
+        const ent = { ...base, ccee: e.ccee && e.ccee.texto, ons: e.ons && e.ons.texto, pld_gatilho_manual: manual };
+        entradas[e.id] = ent;
+        return { i, id: e.id, nome, alertas, r: C.calcular(ent) };
+      } catch (err) { return { i, nome, erro: err.message }; }
+    });
+    mostrar(res, mes);
+  }
+
+  // ---------- resultado ----------
+  function mostrar(res, mes) {
+    const ok = res.filter(x => x.r);
+    // probabilidades
+    const prob = ok.length ? C.probabilidadeCores(ok.map(x => x.r.cor), ORD) : null;
+    const maior = prob ? Math.max(...ORD.map(c => prob[c])) : 0;
+    $("probs").innerHTML = ORD.map(c => `<div class="prob${prob && prob[c] === maior && maior > 0 ? " maior" : ""}"><div class="rotulo">${c}</div>` +
+      `<div class="v">${prob ? pct(prob[c]) : "—"}</div><div class="barra"><i style="width:${prob ? prob[c] * 100 : 0}%;background:${COR[c]}"></i></div></div>`).join("");
+    // tabela
+    $("tab").innerHTML = res.length && res.some(x => !x.vazio) ? res.map(x => {
+      const idx = `<td class="idx"><span class="idx-m">${x.i + 1}</span></td>`;
+      if (x.vazio) return `<tr>${idx}<td>${esc(x.nome)}</td><td colspan="6" style="color:var(--ink-3)">carregue o relato da CCEE (e, se houver, o do ONS)</td></tr>`;
+      if (x.erro) return `<tr>${idx}<td>${esc(x.nome)}</td><td colspan="6" class="erro">${esc(x.erro)}</td></tr>`;
+      const r = x.r, aprox = r.fontes.gh !== "ONS";
+      const sub = Object.keys(r.pld_submercado).length ? Object.entries(r.pld_submercado).map(([s, v]) => `${s}: R$ ${n(v, 2)}`).join("<br>") : "PLD informado à mão";
+      const i = ORD.indexOf(r.cor), acima = ORD[i + 1], abaixo = ORD[i - 1];
+      const muda = [];
+      if (acima && r.gsf < 1) muda.push(`${seloCor(acima)} se PLD &gt; R$ ${n(r.pld_cor_acima, 1)} ou GSF &lt; ${n(r.gsf_cor_acima, 2)}`);
+      if (abaixo) {
+        const gsfAb = 1 - r.x_limite_inferior / r.pld_gatilho, pldAb = r.x_limite_inferior / (1 - r.gsf);
+        muda.push(`${seloCor(abaixo)} se PLD ≤ R$ ${n(pldAb, 1)} ou GSF ≥ ${n(Math.min(gsfAb, 1), 2)}`);
+      }
+      return `<tr>${idx}<td>${esc(x.nome)}<span class="fonte${aprox ? " aprox" : ""}">GH: ${esc(r.fontes.gh)} · PLD: ${esc(r.fontes.pld)}</span>${x.alertas.map(a => `<span class="alerta">⚠ ${esc(a)}</span>`).join("")}</td>` +
+        `<td class="n">${n(r.gh_band)}</td><td class="n">${n(r.gsf, 2)}</td><td class="n" data-dica="${esc(sub)}">${n(r.pld_gatilho, 2)}</td>` +
+        `<td class="n">${n(r.x, 1)}</td><td>${seloCor(r.cor)}</td><td><div class="muda">${muda.map(m => `<span>${m}</span>`).join("")}</div></td></tr>`;
+    }).join("") : `<tr><td colspan="8" class="vazio-msg">Carregue ao menos um relato para calcular.</td></tr>`;
+    document.querySelectorAll("#tab td[data-dica]").forEach(td => dicaEm(td, td.dataset.dica));
+    // conferência com o boletim publicado
+    const of = R.boletim[mes];
+    $("oficial").innerHTML = of ? `Boletim publicado de ${rot(mes)}: GSF ${n(of.gsf, 2)} · PLD gatilho R$ ${n(of.pld_gatilho, 2)} · ${seloCor(of.cor)}` : "";
+    // avisos
+    const av = [];
+    if (res.some(x => x.r && x.r.fontes.gh !== "ONS")) av.push("Sem o relato do ONS, o GH_band vem do relato da CCEE e pode diferir em até ~1% (cerca de 0,01 de GSF). Perto de um limite de cor, use o relato do ONS.");
+    res.forEach(x => x.r && x.r.avisos.forEach(a => av.push(`${x.nome}: ${a}`)));
+    res.forEach(x => x.alertas && x.alertas.forEach(a => av.push(`⚠ ${x.nome}: ${a}. Confira se é o relato certo; em estudo customizado a partir de um deck existente o rótulo pode continuar igual.`)));
+    if (R.horas_estimadas.includes(mes)) av.push("Os patamares de carga deste ano ainda não foram publicados: as horas por patamar são as do mesmo mês do ano anterior (muda pouco o PLD).");
+    av.push("Sem GFOM (despacho térmico fora da ordem de mérito): se o CMSE determinar, a cor final pode subir. Método completo em <a href=\"metodologia.html\">Metodologia</a>.");
+    $("avisos").innerHTML = av.map(a => `<span>${a}</span>`).join("");
+    abaco(ok);
+    conferencia(ok);
+  }
+
+  // ---------- ábaco ----------
+  function abaco(ok) {
+    const svg = $("abaco"); svg.replaceChildren();
+    const w = 1040, h = 340, m = { l: 52, r: 14, t: 12, b: 34 }, pmax = parseFloat($("pmax").value) || 758;
+    const g0 = 0.55, g1 = 1.12, p0 = 0, p1 = Math.min(pmax, 520);
+    const x = g => m.l + (g - g0) / (g1 - g0) * (w - m.l - m.r), y = p => m.t + (1 - (p - p0) / (p1 - p0)) * (h - m.t - m.b);
+    const L = [0, R.limites_x.Verde, R.limites_x.Amarela, R.limites_x["Vermelha 1"], 1e9];
+    const curva = lim => { const pts = []; for (let g = g0; g <= g1 + 1e-9; g += 0.005) pts.push([g, g >= 1 ? p1 : Math.min(p1, lim / (1 - g))]); return pts; };
+    for (let k = 3; k >= 0; k--) {
+      const cima = k === 3 ? [[g0, p1], [g1, p1]] : curva(L[k + 1]), baixo = k === 0 ? [[g0, p0], [g1, p0]] : curva(L[k]);
+      S(svg, "polygon", { points: [...cima, ...baixo.slice().reverse()].map(([g, pl]) => `${x(g)},${y(Math.max(p0, pl))}`).join(" "), fill: COR[ORD[k]], opacity: 0.28 });
+    }
+    marcas(p0, p1, 100).forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: "var(--rule)", opacity: 0.6 }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, "R$ " + n(t)); });
+    marcas(0.6, 1.1, 0.05).forEach(t => S(svg, "text", { x: x(t), y: h - 12, "text-anchor": "middle" }, n(t, 2)));
+    S(svg, "text", { x: w - m.r, y: h, "text-anchor": "end" }, "GSF →");
+    [["Verde", 0.97, 360], ["Amarela", 0.84, 300], ["Vermelha 1", 0.72, 300], ["Vermelha 2", 0.62, 470]].forEach(([c, g, pl]) =>
+      S(svg, "text", { x: x(g), y: y(Math.min(pl, p1 - 20)), class: "forte", "text-anchor": "middle" }, c));
+    ok.forEach(e => {
+      const r = e.r, cx = x(Math.max(g0, Math.min(g1, r.gsf))), cy = y(Math.min(p1, r.pld_gatilho));
+      const g = S(svg, "g", { class: "cen-marca-svg" });
+      S(g, "circle", { cx, cy, r: 9 }); S(g, "text", { x: cx, y: cy + 3.5, "text-anchor": "middle" }, String(e.i + 1));
+      dicaEm(g, `<b>${esc(e.nome)}</b> · ${r.cor}<br>GSF ${n(r.gsf, 2)} · PLD R$ ${n(r.pld_gatilho, 2)}<br>X = ${n(r.x, 1)}`);
+    });
+  }
+
+
+  // ---------- conferência das contas ----------
+  const tabPS = (t, horas, c = 1, rotCol = w => `Sem ${w + 1}`, media = true) => {
+    const PAT = ["Pesado", "Médio", "Leve"];
+    return `<div class="rolagem"><table><thead><tr><th></th>${t[0].map((_, w) => `<th class="n">${rotCol(w)}</th>`).join("")}${media ? '<th class="n med">Média do mês</th>' : ""}</tr></thead><tbody>` +
+      t.map((l, p) => `<tr><td>${PAT[p]}</td>${l.map(v => `<td class="n">${n(v, c)}</td>`).join("")}${media ? `<td class="n med">${n(l.reduce((a, v, w) => a + v * horas[p][w], 0) / horas[p].reduce((a, v) => a + v, 0), c)}</td>` : ""}</tr>`).join("") +
+      "</tbody></table></div>";
+  };
+  let okAtual = [];
+  function conferencia(ok) {
+    okAtual = ok; $("sec-conf").hidden = !ok.length;
+    if (!ok.length || !$("sec-conf").open) return;  // recolhida: só desenha quando o usuário abrir
+    if (!ok.some(x => x.id === confSel)) confSel = ok[0].id;
+    $("abas-conf").innerHTML = ok.map(x => `<button type="button" data-id="${x.id}" aria-pressed="${x.id === confSel}">${x.i + 1}. ${esc(x.nome)}</button>`).join("");
+    const x = ok.find(o => o.id === confSel), m = C.memoria(entradas[x.id]), g = m.gh, f = g.fatores, h = m.horas.tab, B = m.bandeira;
+    let html = `<div class="conf-passo"><h3>1. Horas do mês por patamar e semana</h3>${tabPS(h, h, 0, w => `Sem ${w + 1}`, false)}` +
+      `<p class="leg">Só as horas dentro do mês (semana operativa de sábado a sexta). Total do mês: ${n(m.horas.total)} h. É o peso de toda média abaixo.</p></div>`;
+    // GH_band
+    html += `<div class="conf-passo"><h3>2. GH_band e GSF <span class="fonte${g.fonte === "ONS" ? "" : " aprox"}" style="display:inline;margin-left:8px">fonte: relato ${esc(g.fonte)}</span></h3>` +
+      `<div class="tit-tab">Hidráulica = Σ Ghid dos 4 subsistemas + Itaipu 60 Hz (MWmed)</div>${tabPS(g.tab_gh_ons, h, 1)}` +
+      `<div class="tit-tab">ANDE (MWmed)</div>${tabPS(g.tab_ande, h, 1)}<div class="tit-tab">PCH, soma dos subsistemas (MWmed)</div>${tabPS(g.tab_pch, h, 1)}` +
+      `<div class="tit-tab">Fatores da CCEE vigentes (desde ${esc(f.vigente_desde)})</div>` +
+      `<div class="rolagem"><table><tbody><tr><td>Perda bruta na conexão</td><td class="n">${n(f.perda_bruta_conexao, 5)}</td><td>Perda da conexão ao centro de gravidade</td><td class="n">${n(f.perda_conexao_cg, 5)}</td></tr>` +
+      `<tr><td>Participação das PCH no MRE</td><td class="n">${n(f.part_pch_mre, 5)}</td><td>Perda das PCH até o centro de gravidade</td><td class="n">${n(f.perda_pch_cg, 5)}</td></tr></tbody></table></div>` +
+      `<div class="eq">GH_cg = (GH ONS − ANDE) × (1 − perda bruta) × (1 − perda CG)<br>&nbsp;&nbsp;&nbsp;&nbsp;= (${n(g.gh_ons, 1)} − ${n(g.ande, 1)}) × ${n(1 - f.perda_bruta_conexao, 5)} × ${n(1 - f.perda_conexao_cg, 5)} = <b>${n(g.gh_cg, 1)}</b><br>` +
+      `PCH_cg = PCH × participação no MRE × (1 − perda PCH)<br>&nbsp;&nbsp;&nbsp;&nbsp;= ${n(g.pch, 1)} × ${n(f.part_pch_mre, 5)} × ${n(1 - f.perda_pch_cg, 5)} = <b>${n(g.pch_cg, 1)}</b><br>` +
+      `GH_band = GH_cg + PCH_cg = <b>${n(g.gh_band, 1)}</b> MWmed<br>` +
+      `GSF = GH_band ÷ GF_band = ${n(g.gh_band, 1)} ÷ ${n(g.gf_band, 0)} = ${n(g.gsf_bruto, 4)} → <b>${n(g.gsf, 2)}</b> (arredondado a 2 casas)</div></div>`;
+    // PLD gatilho
+    const P = m.pld;
+    if (!P.submercados) html += `<div class="conf-passo"><h3>3. PLD gatilho</h3><div class="eq">PLD gatilho informado à mão: <b>R$ ${n(P.pld_gatilho, 2)}</b>/MWh</div></div>`;
+    else {
+      const subs = Object.entries(P.submercados);
+      html += `<div class="conf-passo"><h3>3. PLD gatilho (relato da CCEE)</h3><p class="leg">Custo marginal (R$/MWh) por patamar e semana de cada submercado, limitado ao PLD mínimo (${n(P.pld_min, 2)}) e máximo (${n(P.pld_max, 2)}). Onde o limite agiu, aparece <span class="lim">original → limitado</span>. A média usa as horas do passo 1.</p>` +
+        `<div class="rolagem"><table><thead><tr><th>Submercado</th><th>Patamar</th>${subs[0][1].cmo[0].map((_, w) => `<th class="n">Sem ${w + 1}</th>`).join("")}<th class="n med">Média do mês</th></tr></thead><tbody>` +
+        subs.map(([sub, d]) => d.cmo.map((l, p) => `<tr><td>${p === 0 ? "<b>" + sub + "</b>" : ""}</td><td>${["Pesado", "Médio", "Leve"][p]}</td>` +
+          l.map((v, w) => { const lv = d.limitado[p][w]; return Math.abs(lv - v) > 1e-9 ? `<td class="n lim" title="CMO ${n(v, 2)}, limitado a ${n(lv, 2)}">${n(v, 2)}→${n(lv, 2)}</td>` : `<td class="n">${n(v, 2)}</td>`; }).join("") +
+          `<td class="n med">${n(d.limitado[p].reduce((a, v, w) => a + v * h[p][w], 0) / h[p].reduce((a, v) => a + v, 0), 2)}</td></tr>`).join("")).join("") +
+        `</tbody></table></div><div class="tit-tab">Ponderação pela carga bruta média do mês de cada submercado (MWmed, relato ${esc(P.fonte_carga)})</div>` +
+        `<div class="rolagem"><table><thead><tr><th>Submercado</th><th class="n">PLD médio</th><th class="n">Carga média</th><th class="n">Peso</th><th class="n">PLD × peso</th></tr></thead><tbody>` +
+        subs.map(([sub, d]) => `<tr><td>${sub}</td><td class="n">${n(d.medio, 2)}</td><td class="n">${n(d.carga, 0)}</td><td class="n">${n(d.peso * 100, 2)}%</td><td class="n">${n(d.contribuicao, 2)}</td></tr>`).join("") +
+        `<tr class="destaque"><td>PLD gatilho</td><td></td><td class="n">${n(P.carga_total, 0)}</td><td class="n">100%</td><td class="n">${n(P.pld_gatilho, 2)}</td></tr></tbody></table></div></div>`;
+    }
+    // bandeira
+    const nomes = ["Verde", "Amarela", "Vermelha 1", "Vermelha 2"], L = [0, ...Object.values(B.limites)];
+    html += `<div class="conf-passo"><h3>4. Bandeira</h3><div class="eq">X = PLD gatilho × (1 − GSF) = ${n(B.pld_gatilho, 2)} × (1 − ${n(B.gsf, 2)}) = <b>${n(B.x, 2)}</b> R$/MWh</div>` +
+      `<div class="rolagem"><table><thead><tr><th>Bandeira</th><th class="n">X acima de</th><th class="n">X até</th></tr></thead><tbody>` +
+      nomes.map((c, i) => `<tr class="${c === B.cor ? "cor-atual" : ""}"><td>${seloCor(c)}</td><td class="n">${n(L[i], 2)}</td><td class="n">${i < 3 ? n(L[i + 1], 2) : "—"}</td></tr>`).join("") +
+      `</tbody></table></div><p class="leg">Limites do Anexo I da REH 3.306/2024. Com GSF igual ou acima de 1, X é zero e a bandeira é verde.</p></div>`;
+    $("conf").innerHTML = html;
+  }
+  $("sec-conf").addEventListener("toggle", () => { if ($("sec-conf").open) conferencia(okAtual); });
+  $("abas-conf").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { confSel = +b.dataset.id; calcular(); } });
+  $("baixar").addEventListener("click", () => {
+    const x = execs.find(e => e.id === confSel), ent = entradas[confSel]; if (!ent) return;
+    const csv = C.memoriaCsv(C.memoria(ent)), nome = (x.nome.trim() || "execucao").replace(/[^\w-]+/g, "_");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `memoria_${ent.periodo}_${nome}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  // ---------- início ----------
+  execs.push(novaExec()); desenharExecs(); premissasDoBoletim(); notaMes(); calcular();
+})();
+</script>
+</body>
+</html>

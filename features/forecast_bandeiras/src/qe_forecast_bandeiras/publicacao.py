@@ -16,7 +16,16 @@ from datetime import datetime
 import pandas as pd
 
 from qe_core.armazenamento import Armazenamento, gravar_json, ler_json, ler_parquet
-from qe_forecast_bandeiras import backtest, chaves, ecmwf, insumos, modelo, regra, series
+from qe_forecast_bandeiras import (
+    backtest,
+    chaves,
+    ecmwf,
+    insumos,
+    modelo,
+    regra,
+    relato_dados,
+    series,
+)
 from qe_forecast_bandeiras.backtest import AB, br
 from qe_forecast_bandeiras.insumos import Insumos
 
@@ -368,6 +377,7 @@ def gravar_dados(arm: Armazenamento, dados: dict) -> None:
         ("window.DADOS = " + json.dumps(dados, ensure_ascii=False) + ";\n").encode("utf-8"),
         chaves.SERVING_DADOS,
     )
+    relato_dados.gravar(arm)  # a página do relato usa o boletim e os calendários vigentes
 
 
 def publicar(

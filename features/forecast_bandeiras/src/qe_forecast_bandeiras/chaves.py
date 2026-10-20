@@ -74,6 +74,8 @@ PROC_BACKTEST = f"{PROC}/backtest"  # referencia.parquet, oraculo.parquet, rodad
 
 SERVING = "serving/forecast_bandeiras"
 SERVING_DADOS = f"{SERVING}/produto_dados.js"
+# Dados embutidos na página de cálculo pelo relato (fatores, horas por patamar, boletim).
+SERVING_RELATO_DADOS = f"{SERVING}/relato_dados.js"
 # Registro das rodadas publicadas, como foram publicadas (não apagar nem recalcular).
 SERVING_REGISTRO = f"{SERVING}/historico_projecoes.json"
 
