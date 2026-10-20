@@ -4,6 +4,8 @@ Padrão usado nas bandeiras tarifárias (pesquisa em `forecast-bandeiras-analyti
 `features/forecast_bandeiras/`) e a seguir nas próximas (ex.: PLD horário, pesquisa em `risk-lab-dessem-analytics`).
 
 ## 0. Antes de começar (na pesquisa)
+- Como criar e conduzir o repositório de pesquisa (estrutura, CLAUDE.md, metodologia, testes, páginas e pacote
+  de promoção): `docs/nova_pesquisa.md`.
 - Método validado com backtest sem vazamento, decisões registradas no `docs/metodologia.md` da pesquisa.
 - Os repositórios de pesquisa são independentes do app (não importam o `qe_core`). Ao promover, os leitores
   e cálculos da pesquisa são **reimplementados** aqui: leitores comuns a mais de uma funcionalidade no `qe_core`
