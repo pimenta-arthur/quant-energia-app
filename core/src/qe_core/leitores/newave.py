@@ -2,7 +2,9 @@
 
 - nwlistop (ghtotsin, eafbm00x, cmarg00x): 2.000 séries × 5 anos por ano civil.
 - c_adic.dat (ANDE + consumo interno de Itaipu) e sistema.dat (carga e PCH por submercado),
-  em largura fixa.
+  em largura fixa;
+- sistema.dat (mercado e todas as usinas não simuladas) e agrint.dat (limites dos agrupamentos de
+  intercâmbio) do deck de entrada, em formato longo.
 """
 
 import re
@@ -108,3 +110,89 @@ def ler_entradas_deck(c_adic: Path, sistema: Path) -> dict:
         "carga": pd.DataFrame({nomes[s]: v for s, v in carga.items() if s in nomes}),
         "pch": pd.DataFrame({nomes[s]: v for s, v in pch.items() if s in nomes}),
     }
+
+
+# --- deck de entrada: SISTEMA.DAT (mercado e usinas não simuladas) e AGRINT.DAT ------------------------
+
+SUBMERCADO_DE = {1: "SE", 2: "S", 3: "NE", 4: "N", 11: "FC"}
+
+
+def _valores_ano(linha: str) -> tuple[int, dict[int, float]] | None:
+    """'2027    11034.  11010. …' → (2027, {1: 11034., 2: 11010., …}); colunas fixas de 8 caracteres."""
+    m = re.match(r"\s*(\d{4}|POS)\s", linha)
+    if not m or m.group(1) == "POS":
+        return None
+    vals = {}
+    for k in range(12):
+        campo = linha[7 + 8 * k : 7 + 8 * (k + 1)].strip()
+        if campo:
+            try:
+                vals[k + 1] = float(campo)
+            except ValueError:
+                pass
+    return int(m.group(1)), vals
+
+
+def ler_sistema(caminho: Path) -> dict[str, pd.DataFrame]:
+    """SISTEMA.DAT em formato longo: `mercado` (sub, ano, mes, mw: carga total) e `nao_simuladas` (sub, tipo,
+    ano, mes, mw: PCH, PCT, EOL, UFV e as parcelas de MMGD)."""
+    linhas = Path(caminho).read_text(encoding="latin-1").splitlines()
+    i_merc = next(i for i, ln in enumerate(linhas) if "MERCADO DE ENERGIA TOTAL" in ln)
+    i_ger = next(i for i, ln in enumerate(linhas) if "GERACAO DE USINAS NAO SIMULADAS" in ln)
+    merc, sub = [], None
+    for ln in linhas[i_merc + 3 : i_ger]:
+        p = ln.split()
+        if len(p) == 1 and p[0].isdigit():
+            sub = int(p[0])
+            if sub == 999:
+                break
+            continue
+        r = _valores_ano(ln)
+        if r and sub:
+            merc += [(SUBMERCADO_DE.get(sub, sub), r[0], m, v) for m, v in r[1].items()]
+    ger, chave = [], None
+    for ln in linhas[i_ger + 3 :]:
+        m = re.match(r"\s+(\d+)\s+(\d+)\s+(\S.*?)\s*$", ln)
+        if m and not re.match(r"\s*\d{4}\s", ln):
+            if m.group(1) == "999":
+                break
+            chave = (int(m.group(1)), m.group(3).strip())
+            continue
+        r = _valores_ano(ln)
+        if r and chave:
+            ger += [
+                (SUBMERCADO_DE.get(chave[0], chave[0]), chave[1], r[0], mm, v)
+                for mm, v in r[1].items()
+            ]
+    return {
+        "mercado": pd.DataFrame(merc, columns=["sub", "ano", "mes", "mw"]),
+        "nao_simuladas": pd.DataFrame(ger, columns=["sub", "tipo", "ano", "mes", "mw"]),
+    }
+
+
+def ler_agrint(caminho: Path) -> pd.DataFrame:
+    """AGRINT.DAT: limites por agrupamento de intercâmbio, uma linha por (grupo, nome, ano, mes) com os
+    limites dos três patamares (`lim_p1`…`lim_p3`). Intervalo sem fim vale por 120 meses; a última definição de
+    cada (grupo, ano, mês) prevalece."""
+    lin, em_limites = [], False
+    for ln in Path(caminho).read_text(encoding="latin-1").splitlines():
+        if "LIMITES POR GRUPO" in ln:
+            em_limites = True
+            continue
+        if not em_limites:
+            continue
+        m = re.match(
+            r"\s+(\d+)\s+(\d+)\s+(\d{4})\s+(\d+)?\s*(\d{4})?\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+(.*)$",
+            ln,
+        )
+        if not m:
+            continue
+        g, mi, ai, mf, af = int(m[1]), int(m[2]), int(m[3]), m[4], m[5]
+        ini = pd.Period(f"{ai}-{mi:02d}", "M")
+        fim = pd.Period(f"{af}-{int(mf):02d}", "M") if mf and af else ini + 120
+        lim = (float(m[6]), float(m[7]), float(m[8]))
+        lin += [
+            (g, m[9].strip(), p.year, p.month, *lim) for p in pd.period_range(ini, fim, freq="M")
+        ]
+    df = pd.DataFrame(lin, columns=["grupo", "nome", "ano", "mes", "lim_p1", "lim_p2", "lim_p3"])
+    return df.drop_duplicates(["grupo", "ano", "mes"], keep="last")

@@ -6,7 +6,8 @@ como ficam guardados em raw/); o conteúdo lido é o mesmo.
 - `conferir_tm` (entdados.dat): os 48 primeiros registros TM são as meias-horas do dia do caso;
 - `ler_pdo_sist` (PDO_SIST.DAT): balanço por meia-hora e submercado (CMO, demanda, renovável…);
 - `ler_renovaveis` (renovaveis.dat): previsão de geração por meia-hora, submercado e tipo de fonte;
-- `ler_oper_usih` (PDO_OPER_USIH.DAT): operação de cada usina hidrelétrica por meia-hora.
+- `ler_oper_usih` (PDO_OPER_USIH.DAT): operação de cada usina hidrelétrica por meia-hora;
+- `ler_re_inte` (PDO_RESTOPER.DAT): restrições de intercâmbio por meia-hora (valor, limites, multiplicador).
 """
 
 import calendar
@@ -212,3 +213,48 @@ def ler_oper_usih(caminho: Path) -> pd.DataFrame:
     for c in ["periodo", "usih", "qtur", "qver", "ghid", "ghmax", "ghmin", "vagua"]:
         d[c] = pd.to_numeric(d[c], errors="coerce")
     return d
+
+
+def ler_re_inte(caminho: Path, data: dt.date) -> pd.DataFrame:
+    """Restrições de intercâmbio (registros INTE de RE) do PDO_RESTOPER.DAT, períodos 1–48 do dia do caso.
+
+    Uma linha por (período, restrição): `num` (número da RE, que muda entre decks), `composicao` (elementos com
+    sinal, em ordem: "+NE-FC +NE-SE -FC-NE -SE-NE"; é o que identifica a restrição), `valor`, `linf`, `lsup` e
+    `mult` (multiplicador). Três formatos, pelo número de campos da linha: 18 (DESSEM 19.x, 2021–23: Linf;
+    Valor; Lsup; Multipl), 19 (2024–25: ValorElemento antes) e 20 (2026+: Aplic e ValorElemento antes).
+    """
+    t = texto(caminho)
+    caso = re.search(r"Data do Caso:\s*(\d\d/\d\d/\d{4})", t)
+    if caso is None or dt.datetime.strptime(caso.group(1), "%d/%m/%Y").date() != data:
+        raise ValueError(f"{data}: 'Data do Caso' do PDO_RESTOPER.DAT não confere")
+    registros = []
+    for ln in t.splitlines():
+        if "; INTE ;" not in ln or ";   RE ;" not in ln:
+            continue
+        p = [c.strip() for c in ln.split(";")]
+        if len(p) < 18 or not p[2].isdigit() or int(p[2]) > 48:
+            continue
+        k = {18: 10, 19: 11, 20: 12}.get(len(p))
+        if k is None:
+            continue
+        registros.append((int(p[2]), int(p[9]), p[5], float(p[10]), *p[k + 1 : k + 5]))
+    colunas = ["periodo", "num", "composicao", "valor", "linf", "lsup", "mult"]
+    if not registros:
+        return pd.DataFrame(columns=["data", *colunas])
+    d = pd.DataFrame(
+        registros, columns=["periodo", "num", "elem", "fator", "linf", "valor", "lsup", "mult"]
+    )
+    for c in ("linf", "valor", "lsup", "mult"):
+        d[c] = pd.to_numeric(d[c].replace("-", None), errors="coerce")
+    d["termo"] = np.where(d["fator"] > 0, "+", "-") + d["elem"].str.replace("INTE-", "")
+    g = d.groupby(["periodo", "num"])
+    out = g.agg(
+        valor=("valor", "first"),
+        linf=("linf", "first"),
+        lsup=("lsup", "first"),
+        mult=("mult", "first"),
+    )
+    out["composicao"] = g["termo"].apply(lambda t: " ".join(sorted(t)))
+    out = out.reset_index()[colunas]
+    out.insert(0, "data", data)
+    return out

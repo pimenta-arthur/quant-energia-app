@@ -1,0 +1,16 @@
+[project]
+name = "qe-pricing-descolamento"
+version = "0.1.0"
+description = "Funcionalidade Pricing Descolamento: descolamento do PLD do NE e do N em relação ao SE, dada a curva do SE da mesa"
+requires-python = ">=3.14"
+dependencies = [
+    "qe-core",
+    "typer>=0.27.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+qe-core = { workspace = true }

@@ -12,6 +12,7 @@ members = [
     "qe-api",
     "qe-core",
     "qe-forecast-bandeiras",
+    "qe-pricing-descolamento",
     "qe-risk-lab-dessem",
     "quant-energia-app",
 ]
@@ -850,6 +851,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "qe-pricing-descolamento"
+version = "0.1.0"
+source = { editable = "features/pricing_descolamento" }
+dependencies = [
+    { name = "qe-core" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "qe-core", editable = "core" },
+    { name = "typer", specifier = ">=0.27.3" },
+]
+
+[[package]]
 name = "qe-risk-lab-dessem"
 version = "0.1.0"
 source = { editable = "features/risk_lab_dessem" }
@@ -872,6 +888,7 @@ dependencies = [
     { name = "qe-api" },
     { name = "qe-core" },
     { name = "qe-forecast-bandeiras" },
+    { name = "qe-pricing-descolamento" },
     { name = "qe-risk-lab-dessem" },
     { name = "typer" },
 ]
@@ -887,6 +904,7 @@ requires-dist = [
     { name = "qe-api", editable = "api" },
     { name = "qe-core", editable = "core" },
     { name = "qe-forecast-bandeiras", editable = "features/forecast_bandeiras" },
+    { name = "qe-pricing-descolamento", editable = "features/pricing_descolamento" },
     { name = "qe-risk-lab-dessem", editable = "features/risk_lab_dessem" },
     { name = "typer", specifier = ">=0.27.3" },
 ]

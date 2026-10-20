@@ -8,6 +8,25 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-19] Pricing Descolamento: bloco 1 (tabelas-base) e ingestão comum das fontes
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (pacote `docs/promocao_descolamento.md`, seções 2 a
+4 e 10). Conferido contra `reports/promocao/2026-10/`, com os mesmos dados brutos (hashes do manifesto): R1 a R5
+iguais (leitores nos três formatos do PDO_RESTOPER e nos decks de jan/2024 e out/2026; PLD; 70 decks; base horária de
+49.704 horas).
+
+### Adicionado
+- Funcionalidade `pricing_descolamento` (`qe pricing_descolamento ingerir | tratar | status | congelar`): T1 PLD
+  publicado horário e mensal, T2 projeções dos decks do NEWAVE, T3 balanço horário e T4 restrições de intercâmbio do
+  DESSEM (particionados por mês), T5 base horária.
+- Leitores no `qe_core`: `dessem.ler_re_inte` (PDO_RESTOPER), `newave.ler_sistema` e `newave.ler_agrint`.
+- Recarga do histórico: SISTEMA.DAT e AGRINT.DAT dos 70 decks (jan/2021–out/2026) e PDO_RESTOPER.DAT de 2.081 dias.
+
+### Alterado
+- Ingestão comum das fontes usadas por mais de uma funcionalidade (`qe_core.fontes`: NEWAVE, DESSEM, PLD e limites),
+  porque a caixa de entrada apaga o original depois de gravar. O deck do NEWAVE ganha o conjunto `sistema_agrint`,
+  ao lado do das bandeiras (que não muda); o dia do DESSEM ganha o PDO_RESTOPER.DAT, guardado inteiro em .gz.
+
 ## [2026-10-19] Risk Lab DESSEM: simulador, leva promocao-quant-v3 (modelo v2)
 
 Origem: `risk-lab-dessem-analytics`, tag `promocao-quant-v3` (seção 11, "v2 → v3"). Conferido contra

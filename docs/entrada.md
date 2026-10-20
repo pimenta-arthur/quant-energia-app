@@ -86,6 +86,18 @@ uv run qe risk_lab_dessem status       # último deck, último PLD publicado, di
   aceita). Nos dias com deck e ainda sem publicação, o tratamento calcula o PLD do deck pela regra
   oficial e o substitui quando o csv chegar.
 
+## Descolamento NE e N
+
+```bash
+uv run qe pricing_descolamento ingerir   # entrada → raw/ (fontes comuns: NEWAVE, DESSEM, PLD, limites)
+uv run qe pricing_descolamento tratar    # raw/ → tabelas-base (T1 a T5)
+```
+
+Usa só fontes comuns, nas mesmas pastas das outras funcionalidades: o zip mensal do deck de entrada do NEWAVE
+(`NWAAAAMM.zip`, conjunto `sistema_agrint`) em `ccee_newave/`, o DESSEM em `ccee_dessem/` (o `PDO_RESTOPER.DAT`
+entra junto com o dia), o PLD em `ccee_pld/` e os limites em `ccee_limites_pld/`. Recarga do histórico: links
+simbólicos dos zips na pasta da fonte (a ingestão apaga o link, não o original).
+
 ## Na AWS
 `data/entrada/` vira `s3://<bucket>/entrada/<fonte>/`, e um upload dispara a ingestão; coletores
 automáticos (quando houver) gravam nas mesmas pastas.

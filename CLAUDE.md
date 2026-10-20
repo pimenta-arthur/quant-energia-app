@@ -1,8 +1,8 @@
 # quant-energia-app
 
 Aplicação com funcionalidades independentes, cada uma com a sua página e o seu pipeline:
-**Forecast Bandeiras** (código `forecast_bandeiras`), **Risk Lab DESSEM** (PLD horário; código `risk_lab_dessem`) e,
-planejado, o descolamento entre submercados. Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
+**Forecast Bandeiras** (código `forecast_bandeiras`), **Risk Lab DESSEM** (PLD horário; código `risk_lab_dessem`) e
+**Pricing Descolamento** (descolamento do NE e do N em relação ao SE; código `pricing_descolamento`, em promoção). Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
 (`web/<código>/`) e chaves (`processed/<código>/`, `serving/<código>/`) usam o código; `raw/` é por fonte.
 Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Responder sempre em português do Brasil.
 
@@ -21,7 +21,8 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   dele): ao promover, o método é reimplementado aqui e conferido contra os resultados de referência de lá.
 
 ## Ambiente
-- uv workspace (raiz + `core`, `features/forecast_bandeiras`, `features/risk_lab_dessem`, `api`). Sempre
+- uv workspace (raiz + `core`, `features/forecast_bandeiras`, `features/risk_lab_dessem`,
+  `features/pricing_descolamento`, `api`). Sempre
   `uv add --package <membro> <pacote>` e `uv run ...`. **Nunca pip.** Python 3.14 do Homebrew.
 - Lint/format: `uv run ruff check .` e `uv run ruff format .`; testes: `uv run pytest`.
 
@@ -102,6 +103,18 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   SIN = soma dos quatro submercados hora a hora, só nas variáveis em MW e só nas horas com os quatro (T4).
 - Contas que não dependem do usuário ficam no Python; o JS da página só desenha (exceção: a conta do simulador,
   com teste de paridade Python × JS).
+
+## Pricing Descolamento (descolamento NE e N): etapas e testes
+- Promoção de `../pricing-descolamento-analytics` (tag `promocao-quant-v1`, pacote `docs/promocao_descolamento.md`
+  de lá), bloco a bloco na ordem da seção 6, commit por bloco. Escopo: só o modelo v2.2 e as três páginas
+  (Descolamento NE e N, Metodologia, Fundamentos); **não trazer** a v1, as versões testadas (inclusive o 7d-1S),
+  DECOMP, LPP nem o site do GitHub Pages, nem como contexto.
+- Fontes, todas comuns (`qe_core.fontes`): deck do NEWAVE (conjunto `sistema_agrint`, última publicação),
+  DESSEM (`PDO_SIST` e `PDO_RESTOPER`, guardado inteiro em `.gz`), PLD **publicado** e limites.
+- Etapas: `qe pricing_descolamento ingerir | tratar [--refazer] | status | congelar`. T3 e T4 (DESSEM) particionados
+  por mês, refeitos quando os dias do mês mudam; T1, T2 e T5 inteiros.
+- Testes: `tests/referencias/pricing_descolamento/` (períodos fechados até set/2026), regerados com `congelar`.
+  Paridade com a pesquisa é opt-in (`QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta do pacote>`).
 
 ## Regras herdadas do analytics (bandeiras)
 - PLD gatilho vem do deck do DECOMP da CCEE, nunca do CMO do ONS.
