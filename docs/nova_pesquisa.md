@@ -32,19 +32,24 @@ Escrever, em uma página, e levar ao Arthur antes de qualquer código:
 
 ```bash
 cd ~/projects
-uv init --package --python /opt/homebrew/opt/python@3.14/bin/python3.14 <tema>-analytics
+uv init --package --python 3.14 <tema>-analytics
 cd <tema>-analytics
 uv add numpy pandas pyarrow matplotlib plotly seaborn statsmodels scikit-learn
 uv add --dev pytest ruff ipykernel jupyter
 uv run python -m ipykernel install --user --name <tema>-analytics --display-name "Python (<tema>-analytics)"
 mkdir -p data/raw data/processed notebooks reports/figures docs tests web
 cp -R ../quant-energia-app/web/padrao web/padrao      # cópia do padrão visual, não link
+# PowerShell (Windows): Copy-Item -Recurse ..\quant-energia-app\web\padrao web\padrao
 git init && git add -A && git commit -m "Estrutura inicial"
 gh repo create pimenta-arthur/<tema>-analytics --private --source . --push
 ```
 
-- **Python do Homebrew (3.14), nunca o gerenciado pelo uv. Nunca pip.** Pacote novo: `uv add` (`--dev` para
-  ferramentas). Se a `.venv` quebrar após atualizar o Homebrew: apagar a `.venv` e `uv sync`.
+- **Python 3.14, fixado em `.python-version` e em `requires-python`. Nunca pip.** Pacote novo: `uv add` (`--dev` para
+  ferramentas). Se a `.venv` quebrar após atualizar o Python: apagar a `.venv` e `uv sync`.
+- **A origem do Python é da máquina, não do projeto.** Sem o 3.14 instalado: `uv python install 3.14` (Windows, Linux ou
+  Mac sem Homebrew). No Mac do Arthur, `~/.config/uv/uv.toml` (`python-preference = "only-system"`) faz o `uv` usar o
+  Python do Homebrew; esse arquivo é configuração da máquina e não entra no repositório. Os comandos `uv` são iguais
+  em qualquer sistema; só os de shell (`cp`, `mkdir -p`, `\`) mudam no Windows.
 - Dependências extras só quando a fonte pedir (`openpyxl` para xlsx, `pdfplumber` para PDF).
 - `.gitignore`: `.venv/`, caches, `data/` (decidir caso a caso o que versionar e registrar a decisão) e
   `reports/promocao/`.
@@ -101,7 +106,7 @@ registrar ali toda decisão (ID, data, motivo, status).
 - `uv run pytest` (inclui vazamento) e `uv run ruff check .`.
 
 ## Ambiente
-- `uv add` / `uv run`; nunca pip, nunca outro venv. Python 3.14 do Homebrew. Kernel: `Python (<tema>-analytics)`.
+- `uv add` / `uv run`; nunca pip, nunca outro venv. Python 3.14 (`.python-version`). Kernel: `Python (<tema>-analytics)`.
 - Sem dependência de outros repositórios.
 
 ## Estrutura e convenções

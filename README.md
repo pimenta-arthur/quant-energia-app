@@ -15,7 +15,7 @@ Nova funcionalidade a partir de uma pesquisa: `docs/nova_funcionalidade.md`.
 ## Rodar local
 
 ```bash
-uv sync                                   # instala tudo (Python 3.14 do Homebrew)
+uv sync                                   # instala tudo (Python 3.14, de .python-version)
 cp .env.example .env                      # opcional: QE_DADOS, QE_ARMAZENAMENTO
 
 # bandeiras: sempre que algum insumo mudar (deck novo ou republicado, PMO, boletim, emissão do ECMWF…)

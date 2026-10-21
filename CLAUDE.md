@@ -23,7 +23,7 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 ## Ambiente
 - uv workspace (raiz + `core`, `features/forecast_bandeiras`, `features/risk_lab_dessem`,
   `features/pricing_descolamento`, `api`). Sempre
-  `uv add --package <membro> <pacote>` e `uv run ...`. **Nunca pip.** Python 3.14 do Homebrew.
+  `uv add --package <membro> <pacote>` e `uv run ...`. **Nunca pip.** Python 3.14 (`.python-version`); a origem do Python é configuração da máquina, não do projeto (sem o 3.14: `uv python install 3.14`).
 - Lint/format: `uv run ruff check .` e `uv run ruff format .`; testes: `uv run pytest`.
 
 ## Arquitetura
