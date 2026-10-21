@@ -8,6 +8,20 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-21] Pricing Descolamento: leva promocao-quant-v2 (só texto da metodologia)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v2` (seção 11, "v1 → v2"). **Só texto: sem mudança de
+método, de código nem de referências** (R1 a R10 não mudam). A página difere da v2 da pesquisa só nas adaptações do
+app (título, navegação e leitura dos dados do `serving`). Não portado: o pré-registro do item 24 (D037) em
+`docs/metodologia.md` da pesquisa, que não foi executado.
+
+### Alterado
+- Metodologia: novo passo 5, "O balanço físico: de onde vêm as duas medidas" (equações das features 1 e 2, origem de
+  cada termo no treino e na projeção, e a questão em aberto sobre a hidráulica do NE). Os antigos passos 5 a 8 viram 6
+  a 9, e o exemplo do T1/27 passa ao passo 8.
+- O passo 3 aponta para o passo 5 em vez de repetir as definições; o passo 6 (cenários) ganha a referência.
+- Glossário: "Feature 1 (sobra N+NE)" e "Feature 2 (margem de exportação)"; ajuste de "Folga até o limite".
+
 ## [2026-10-19] Pricing Descolamento: metodologia e fundamentos (blocos 5 e 6)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v1` (seção 5, blocos 5 e 6; D025, D031–D035).

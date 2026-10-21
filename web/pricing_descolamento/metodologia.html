@@ -123,9 +123,7 @@
       <details class="tecnico"><summary>Detalhe técnico</summary><div>
         <div class="eq">P(trava<sub>h</sub>) = logística( β<sub>0</sub> + β<sub>1</sub>·sobra N+NE<sub>h</sub> + β<sub>2</sub>·margem de exportação NE<sub>h</sub> )</div>
         <ul class="lista">
-          <li><span class="tag">Sobra N+NE</span><span>renovável do NE + hidráulica do NE + (renovável + hidráulica − carga do N) − carga do NE, sem térmica
-            (a térmica é resultado do despacho, não insumo).</span></li>
-          <li><span class="tag">Margem</span><span>(renovável − carga do NE) − limite de exportação do NE.</span></li>
+          <li><span class="tag">Medidas</span><span>feature 1 (sobra N+NE) e feature 2 (margem de exportação do NE); como se calculam e de onde vem cada termo: passo 5.</span></li>
           <li><span class="tag">Ajuste</span><span>regressão logística por semestre e por submercado, variáveis padronizadas, horas desde jan/2024 até D−2.
             Alvo: hora com descolamento maior que R$ 1/MWh.</span></li>
         </ul>
@@ -148,9 +146,39 @@
     </div></div>
 
     <div class="passo-det"><span class="n">5</span><div>
+      <h3>O balanço físico: de onde vêm as duas medidas</h3>
+      <p class="texto">As duas medidas do passo 3 saem do mesmo balanço: o que o NE e o N geram menos o que consomem. A <strong>feature 1 (sobra N+NE)</strong>
+        mede quanto os dois submercados juntos precisam escoar pelo tronco N/NE→SE. A <strong>feature 2 (margem de exportação)</strong> mede quão perto o NE está do
+        limite de exportação: quando positiva, a sobra renovável do NE passa do que o limite deixa sair. Térmica fica fora das duas (é despacho, não insumo).</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <div class="eq">sobra do NE = renovável NE − carga NE<br>sobra do N = renovável N + hidráulica N − carga N</div>
+        <div class="eq">feature 1 (sobra N+NE) = sobra do NE + hidráulica NE + sobra do N<br>feature 2 (margem de exportação NE) = sobra do NE − limite de exportação do NE</div>
+        <p class="texto">Cada termo vem de um lugar no treino (horas realizadas) e de outro na projeção (cada ano climático). Em MW, hora a hora.</p>
+        <div class="rolagem"><table>
+          <thead><tr><th>Termo</th><th>No treino (realizado)</th><th>Na projeção (cenário)</th><th>Entra em</th></tr></thead>
+          <tbody>
+            <tr><td>Renovável do NE</td><td>DESSEM, balanço do NE</td><td>perfil horário do ano climático × nível do deck (sem correção de viés)</td><td>1 e 2</td></tr>
+            <tr><td>Carga do NE</td><td>DESSEM, balanço do NE</td><td>perfil do ano climático × carga do deck × viés da carga</td><td>1 e 2</td></tr>
+            <tr><td>Hidráulica do NE</td><td>DESSEM, balanço do NE</td><td>perfil médio por hora do ano mais recente no mesmo mês (igual em todos os cenários)</td><td>1</td></tr>
+            <tr><td>Renovável do N</td><td>DESSEM, balanço do N</td><td>a do próprio ano climático</td><td>1</td></tr>
+            <tr><td>Hidráulica do N</td><td>DESSEM, balanço do N</td><td>a do próprio ano climático</td><td>1</td></tr>
+            <tr><td>Carga do N</td><td>DESSEM, balanço do N</td><td>perfil do ano climático × carga do deck × viés da carga</td><td>1</td></tr>
+            <tr><td>Limite de exportação do NE</td><td>limite superior da restrição de exportação do NE no DESSEM</td><td><code>AGRINT.DAT</code> do deck, para o mês</td><td>2</td></tr>
+            <tr><td>Térmica</td><td>DESSEM (fora do cálculo)</td><td>fora do cálculo</td><td>nenhuma</td></tr>
+          </tbody>
+        </table></div>
+        <div class="nota"><span class="status">Questão em aberto</span><br>
+          A hidráulica do NE entra na feature 1, mas não na feature 2, e essa definição não foi testada isoladamente. Numa leitura exploratória (2024 em diante, dentro da amostra,
+          uma variável por vez), a hidráulica do NE varia cerca de 2 GW de hora em hora e, somada à margem, a AUC do NE no 2º semestre sobe de 0,90 para 0,93. Como no histórico ela
+          reage à renovável e nos cenários é um perfil fixo, o ganho pode não se repetir na projeção. Teste pré-registrado (D037, item 24 da fila), ainda não executado;
+          nesta versão a definição não muda.</div>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">6</span><div>
       <h3>Cenários climáticos</h3>
       <p class="texto">Cada ano histórico disponível (desde 2021) é um cenário: a forma horária de vento, sol, carga e a hidrologia do Norte daquele
-        ano, com a renovável e a carga do NE e do N levadas ao nível projetado pelo deck para o mês-alvo. Todos os anos têm o mesmo peso.</p>
+        ano, com a renovável e a carga do NE e do N levadas ao nível projetado pelo deck para o mês-alvo. Todos os anos têm o mesmo peso. O balanço que usa esses insumos está no passo 5.</p>
       <details class="tecnico"><summary>Detalhe técnico</summary><div>
         <ul class="lista">
           <li><span class="tag">Renovável NE</span><span>perfil horário do ano × nível do deck para o mês (sem correção de viés).</span></li>
@@ -161,7 +189,7 @@
       </div></details>
     </div></div>
 
-    <div class="passo-det"><span class="n">6</span><div>
+    <div class="passo-det"><span class="n">7</span><div>
       <h3>Do SE mensal ao SE de cada hora</h3>
       <p class="texto">O SE da mesa é mensal; o descolamento depende do SE em cada hora, porque o NE trava mais em umas horas que em outras. O modelo
         distribui o SE do mês pelas horas com o perfil médio do SE (preço da hora ÷ preço do mês) daquele mês do calendário. Em nenhuma hora o
@@ -173,7 +201,7 @@
       </div></details>
     </div></div>
 
-    <div class="passo-det"><span class="n">7</span><div>
+    <div class="passo-det"><span class="n">8</span><div>
       <h3>Do mês ao produto: preço justo e faixa</h3>
       <p class="texto">O preço justo de um produto (trimestre, semestre, ano) é a média dos meses ponderada pelas horas, com cada mês já sendo a média dos
         anos climáticos. A faixa é o cenário mais e o menos descolado, com cada ano climático agregado no produto inteiro.</p>
@@ -185,7 +213,7 @@
             faixa de produtos que incluem meses sem ele; por isso o justo pode diferir um pouco da média simples dos anos completos.</span></li>
         </ul>
         <p class="texto"><strong>Exemplo:</strong> T1/2027, SE de R$ 200/MWh, deck out/26. Cada célula é o descolamento do NE (R$/MWh) do mês naquele ano
-          climático (passos 3 a 6).</p>
+          climático (passos 3 a 7).</p>
         <div class="rolagem"><table class="memorial">
           <thead><tr><th>Ano climático</th><th class="n">jan/27<br>744 h</th><th class="n">fev/27<br>672 h</th><th class="n">mar/27<br>744 h</th><th class="n">T1/27</th></tr></thead>
           <tbody>
@@ -204,7 +232,7 @@
       </div></details>
     </div></div>
 
-    <div class="passo-det"><span class="n">8</span><div>
+    <div class="passo-det"><span class="n">9</span><div>
       <h3>A curva do SE na página</h3>
       <p class="texto">O trader informa o SE no nível em que tiver preço: ano, semestre, trimestre ou mês. Vale o mais específico; os períodos não informados
         são derivados para fechar a média do nível acima, ponderada por horas. Dentro de cada período sem preço próprio, a curva é plana
@@ -431,7 +459,9 @@
       <dt>Trava</dt><dd>Hora em que a energia do NE/N não consegue chegar ao SE (tronco N/NE→SE ou limite de exportação do NE no limite) e o preço separa.</dd>
       <dt>k</dt><dd>Intensidade: fração da distância entre o SE e o piso que o NE/N perde quando trava (0 a 1).</dd>
       <dt>Sobra</dt><dd>Energia renovável e hidráulica acima da carga da região. Sobra NE = renovável − carga do NE.</dd>
-      <dt>Folga até o limite</dt><dd>Limite de exportação do NE − sobra do NE. Quanto menor, mais o NE trava.</dd>
+      <dt>Feature 1 (sobra N+NE)</dt><dd>Sobra do NE + hidráulica do NE + sobra do N, sem térmica: quanto os dois submercados precisam escoar pelo tronco. Passo 5.</dd>
+      <dt>Feature 2 (margem de exportação)</dt><dd>Sobra do NE − limite de exportação do NE. Positiva: a sobra renovável do NE passa do limite. Passo 5.</dd>
+      <dt>Folga até o limite</dt><dd>Limite de exportação do NE − sobra do NE (a margem de exportação com o sinal trocado). Quanto menor, mais o NE trava.</dd>
       <dt>Ano climático</dt><dd>Um ano histórico usado como cenário de vento, sol, carga e hidrologia.</dd>
       <dt>Preço justo</dt><dd>Média dos cenários climáticos, ponderada por horas nos produtos.</dd>
       <dt>Faixa</dt><dd>Cenário mais e menos descolado; mede a variabilidade climática.</dd>
