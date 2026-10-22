@@ -159,6 +159,8 @@ def test_R7_cenarios_insumos_e_faixas(rodada):
         _perto(cen[c], r7[c], 1e-9)
     for c in ["c_NE", "c_N", "perfil_h"]:
         _perto(np.vstack(cen[c]), np.vstack(r7[c]), 1e-9)
+    for c in ["hidraulica_NE", "ano_hidr_ne"]:  # nível da hidráulica do NE usado (D039)
+        _perto(cen[c], r7[c], 1e-9)
     ri = _r("R7_insumos")
     ins = pd.DataFrame([M.insumos_mes(b, d, pd.Period(m, "M"), mod) for m in ri["mes"]])
     _perto(ins[ri.columns[1:]], ri[ri.columns[1:]], 1e-3)
@@ -244,3 +246,15 @@ def test_R8_fundamentos(rodada):
     _M, b, _d, _mod, _ = rodada
     r = json.loads((Path(PASTA) / "R8_fundamentos.json").read_text(encoding="utf-8"))
     assert json.loads(json.dumps(dados_fundamentos(b))) == r
+
+
+# --- acompanhamento do nível da hidráulica do NE (R11, D039) ---------------------------------------------------
+
+
+def test_R11_acompanhamento_hidr_ne(rodada):
+    from qe_pricing_descolamento import publicacao as P
+
+    _M, b, _d, _mod, _ = rodada
+    r11 = json.loads((Path(PASTA) / "R11_hidr_ne.json").read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(P.acompanhamento_hidr_ne(b))) == r11
+    assert r11["resumo"]["n"] == 21 and not r11["resumo"]["acima_gatilho"]

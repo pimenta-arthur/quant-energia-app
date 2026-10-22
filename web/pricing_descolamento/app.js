@@ -249,7 +249,7 @@
     });
   }
   let PFUND = "ano";
-  const COLS_FUND = [["renov_NE", 1], ["carga_NE", 1], ["carga_N", 1], ["hidr_N", 1], ["sobra", 1], ["lim_NE", 1], ["folga", 1], ["trava", "%"], ["k", 2]];
+  const COLS_FUND = [["renov_NE", 1], ["carga_NE", 1], ["carga_N", 1], ["hidr_N", 1], ["hidr_NE", 1], ["sobra", 1], ["lim_NE", 1], ["folga", 1], ["trava", "%"], ["k", 2]];
   function tabelaFund() {
     const fmt = (v, c) => v == null ? "—" : c === "%" ? pct(v) : c === 2 ? n(v, 2) : (v < -0.05 ? "−" : "") + n(Math.abs(v), 1);
     document.getElementById("tab-fund").innerHTML = D.fund_periodos[PFUND].map(g => {

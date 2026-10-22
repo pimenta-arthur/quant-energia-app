@@ -379,8 +379,22 @@
       <li><span class="tag">Insumos do deck</span><span>O modelo herda o erro das projeções do deck. Em 2026 os decks projetaram mais renovável no NE do que a efetiva
         (a expansão virou corte de geração).</span></li>
       <li><span class="tag">Treino curto</span><span>O descolamento do 1º semestre só entra no treino a partir de 2025; decks anteriores previam zero nesse semestre.</span></li>
+      <li><span class="tag">Hidráulica do NE</span><span>Em todos os cenários vale o perfil do ano mais recente daquele mês, não uma variável do ano climático. Testar outras fontes não
+        ajudou (itens 24 e 25), mas o nível muda de ano para ano; ele é acompanhado abaixo.</span></li>
       <li><span class="tag">Amostra</span><span>Poucos trimestres realizados com descolamento. Diferenças menores que cerca de R$ 1/MWh entre versões não são conclusivas.</span></li>
     </ul>
+    <h3 id="t-hne">Acompanhamento do nível da hidráulica do NE</h3>
+    <p class="texto">O modelo repete, em todos os cenários, a hidráulica do NE do mesmo mês no ano mais recente com dados. A tabela compara o nível que ele usou com o que aconteceu,
+      mês a mês, usando como deck o do mês anterior. Gatilho para repetir os testes de hidráulica (itens 24 e 25): erro médio absoluto do nível acima de <b id="hne-gat"></b>% por <b id="hne-jan"></b> meses seguidos
+      (fixado antes de ver a série).</p>
+    <ul class="lista" id="hne-fatos"></ul>
+    <details class="mais"><summary>Mês a mês: nível usado × realizado</summary>
+      <div class="rolagem"><table>
+        <thead><tr><th>Mês-alvo</th><th>Deck</th><th>Ano do perfil</th><th class="n">Usado (GW)</th><th class="n">Realizado (GW)</th><th class="n">Erro</th></tr></thead>
+        <tbody id="hne-tab"></tbody>
+      </table></div>
+      <p class="leg">Reconstrução com a versão vigente, não o registro do que foi publicado em cada rodada. Só meses com pelo menos 60% das horas do DESSEM. Erro = usado − realizado, em % do realizado.</p>
+    </details>
     <div class="nota">Como usar: a faixa representa a variabilidade climática (os anos históricos), não um intervalo de confiança completo; ela não inclui o risco de
       regime do k nem o erro dos insumos do deck. No 1º semestre, considere o risco de o ano travar mais raso ou mais fundo do que a média histórica.</div>
   </section>
@@ -478,11 +492,11 @@
 <script src="../padrao/graficos.js"></script>
 <script>
 "use strict";
-// Dados: serving/pricing_descolamento/{meta, desempenho, historico_rodadas}.json (qe_pricing_descolamento.publicacao)
+// Dados: serving/pricing_descolamento/{meta, desempenho, historico_rodadas, hidr_ne}.json (qe_pricing_descolamento.publicacao)
 (async function () {
 const MET = {};
 try {
-  for (const [k, arq] of [["meta", "meta"], ["desempenho", "desempenho"], ["historico", "historico_rodadas"]]) {
+  for (const [k, arq] of [["meta", "meta"], ["desempenho", "desempenho"], ["historico", "historico_rodadas"], ["hidr_ne", "hidr_ne"]]) {
     const r = await fetch(`/dados/pricing_descolamento/${arq}.json`, { cache: "no-cache" });
     if (!r.ok) throw new Error(`${arq}: ${r.status}`);
     MET[k] = await r.json();
@@ -669,6 +683,20 @@ document.getElementById("t-hist").innerHTML = HR.slice(0, 3).map(linhaHist).join
 document.getElementById("t-hist-ant").innerHTML = HR.slice(3).map(linhaHist).join("");
 document.getElementById("h-mais-txt").textContent = `Rodadas anteriores (${HR.length - 3})`;
 document.getElementById("h-mais").hidden = HR.length <= 3;
+// acompanhamento do nível da hidráulica do NE (D039)
+(function () {
+  const A = MET.hidr_ne; if (!A) return;
+  const R = A.resumo, L = A.linhas;
+  document.getElementById("hne-gat").textContent = n(A.gatilho_pct);
+  document.getElementById("hne-jan").textContent = n(A.janela);
+  document.getElementById("hne-fatos").innerHTML = [
+    ["Desde " + rot(L[0].mes), `Erro médio absoluto do nível: <strong>${n(R.eam_pct, 1)}%</strong> em ${R.n} meses, com viés de ${sn(R.vies_pct, 1)}% (positivo = o modelo usou mais do que aconteceu).`],
+    ["Últimos " + A.janela + " meses", `Erro médio absoluto <strong>${n(R.eam_ultimos_pct, 1)}%</strong>, viés ${sn(R.vies_ultimos_pct, 1)}%; ${R.mesmo_sinal_ultimos} dos ${A.janela} no mesmo sentido. ` +
+      (R.acima_gatilho ? `<strong>Acima do gatilho:</strong> repetir os testes.` : `Abaixo do gatilho de ${n(A.gatilho_pct)}%.`)],
+  ].map(([t, x]) => `<li><span class="tag">${t}</span><span>${x}</span></li>`).join("");
+  document.getElementById("hne-tab").innerHTML = [...L].reverse().map(r =>
+    `<tr><td>${rot(r.mes)}</td><td>${rot(r.deck)}</td><td>${r.ano_usado}</td><td class="n">${n(r.usado, 2)}</td><td class="n">${n(r.real, 2)}</td><td class="n"><b>${sn(r.erro_pct, 1)}%</b></td></tr>`).join("");
+})();
 })();
 </script>
 </body>

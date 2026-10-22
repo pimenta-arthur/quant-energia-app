@@ -238,6 +238,10 @@ def cenarios(b: Base, deck: pd.Period, m: pd.Period, ins: dict) -> list[tuple[di
             "ano_hidro": int(ano),
             "renovavel_efetiva_NE": float(ren.mean()),
             "hidraulica_N": float(x["hidraulica_N"].mean()),
+            # nível da hidráulica do NE que o modelo usou (MW, média do perfil do ano mais recente, igual em todos os
+            # cenários) e o ano desse perfil: só informativo, para o acompanhamento contra o realizado (D039)
+            "hidraulica_NE": float(np.mean(hne)),
+            "ano_hidr_ne": int(recente.index.year.max()),
             "peso": 1.0,
         }
         out.append((info, f))

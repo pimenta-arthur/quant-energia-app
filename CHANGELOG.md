@@ -8,12 +8,37 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-21] Pricing Descolamento: leva promocao-quant-v3, etapa C (acompanhamento da hidráulica do NE)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v3` (seção 11, "v2 → v3", etapa C; D039, item 26 da fila).
+**O modelo não muda (v2.2):** preço justo, faixa e rodadas ficam iguais. Conferido contra `reports/promocao/2026-10/`:
+`R8_dados` (com o campo novo), `R11_hidr_ne` e as duas colunas novas do `R7_cenarios`, todos sem diferença.
+
+### Adicionado
+- Acompanhamento do nível da hidráulica do NE: o nível que o modelo usou (média do perfil do ano mais recente, igual em
+  todos os cenários) contra o realizado, por mês-alvo, com o deck do mês anterior; só meses com 60% das horas do
+  DESSEM. Gatilho para repetir os testes de hidráulica (itens 24 e 25): erro médio absoluto acima de 30% por 6 meses
+  seguidos, fixado antes de ver a série. Hoje: 21 meses, erro 18,6% (viés −4,4%); últimos 6 meses 23,8% (viés −23,8%,
+  6 de 6 no mesmo sentido); o gatilho não dispara.
+- Chave `hidr_ne.json` no `publicar`; seção "Acompanhamento do nível da hidráulica do NE" e bullet "Hidráulica do NE" em
+  Limitações na metodologia.
+- Coluna "Hidr. NE" na tabela de fundamentos do deck (sem gráfico: os 9 gráficos não mudam). Campo `hidr_NE` (GW) em
+  `fund`, `real` e `historico` dos dados da página.
+- `modelo.cenarios` informa `hidraulica_NE` (MW) e `ano_hidr_ne` (só informativo; não entra em nenhuma conta).
+- Testes: referência `hidr_ne` (meses fechados, até set/2026) e as colunas novas em `modelo_cenarios`; teste de que o
+  nível usado só depende de horas até D−2.
+
+### Verificação de que o modelo não mudou
+As colunas antigas de `modelo_cenarios` saem **idênticas bit a bit** (`check_exact`) entre o código antigo e o novo, na
+mesma máquina; as demais chaves publicadas mudam só pelo campo `hidr_NE`; o registro de rodadas ficou inalterado
+(`publicar` respondeu "mesmo deck e modelo da última"); e o teste com SE plano de R$ 200 continua passando sem alteração.
+
 ## [2026-10-21] Pricing Descolamento: leva promocao-quant-v3, etapa B (só texto da metodologia)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v3` (seção 11, "v2 → v3"; conteúdo = commit `8b6cfb7`),
 itens 24 e 25 da fila (D037 e D038). **Sem mudança de método, de código nem de referências** (modelo v2.2; preço justo,
 faixa e rodadas iguais). Aplicado como remendo sobre a página do app. A etapa C (acompanhamento do nível da hidráulica
-do NE: código, dados e a seção correspondente da metodologia) **não** foi aplicada; aguarda aprovação.
+do NE: código, dados e a seção correspondente da metodologia) entrou na entrada seguinte (etapa C).
 
 ### Alterado
 - Metodologia, passo 5: a nota sobre a hidráulica do NE passa de "Questão em aberto" para "Testado, não adotado". Somá-la

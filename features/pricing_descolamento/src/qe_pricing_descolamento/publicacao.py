@@ -107,6 +107,7 @@ def historico_mensal(b: M.Base) -> list:
                 "carga_NE": _r(y["demanda_NE"].mean() / 1e3, 2),
                 "carga_N": _r(y["demanda_N"].mean() / 1e3, 2),
                 "hidr_N": _r(y["hidraulica_N"].mean() / 1e3, 2),
+                "hidr_NE": _r(y["hidraulica_NE"].mean() / 1e3, 2),
                 "sobra_NNE": _r(y["sobra_NNE_st"].mean() / 1e3, 2),
                 "exp_NE": _r(y["valor_EXP_NE"].mean() / 1e3, 2),
                 "lim_NE": _r(y["lsup_EXP_NE"].mean() / 1e3, 2),
@@ -150,6 +151,7 @@ def meses_pagina(b: M.Base, d: pd.Period, mod: dict) -> list:
                 "carga_N": _r(y["demanda_N"].mean() / 1e3, 2),
                 "lim_NE": _r(y["lsup_EXP_NE"].mean() / 1e3, 2),
                 "hidr_N": _r(y["hidraulica_N"].mean() / 1e3, 2),
+                "hidr_NE": _r(y["hidraulica_NE"].mean() / 1e3, 2),
                 "trava": _r(y["desc_NE"].astype(bool).mean(), 3),
                 "k": _k_real(b, y),
                 "se": _r(mensal.loc[ult[-1], "SE"], 2) if tem else None,
@@ -169,6 +171,7 @@ def meses_pagina(b: M.Base, d: pd.Period, mod: dict) -> list:
                     "carga_N": _r(ins["carga_N"] / 1e3, 2),
                     "lim_NE": _r(ins["limite_exp_NE"] / 1e3, 2),
                     "hidr_N": _r(np.average(p["hidraulica_N"], weights=w) / 1e3, 2),
+                    "hidr_NE": _r(np.average(p["hidraulica_NE"], weights=w) / 1e3, 2),
                     "trava": _r(np.average(p["p_trava_NE"], weights=w), 3),
                     "k": _r(
                         np.nansum(p["k_prev_NE"] * p["p_trava_NE"] * w)
@@ -217,7 +220,7 @@ def produtos(meses: list[str], tipo: str) -> list[dict]:
 
 # --- fundamentos por produto (antes no navegador: fundAgregado) ---------------------------------------------
 
-CAMPOS_FUND = ["renov_NE", "carga_NE", "carga_N", "lim_NE", "hidr_N", "trava"]
+CAMPOS_FUND = ["renov_NE", "carga_NE", "carga_N", "lim_NE", "hidr_N", "hidr_NE", "trava"]
 
 
 def _derivar(o: dict | None) -> dict | None:
@@ -473,6 +476,65 @@ def resumo_rodada(b: M.Base, d: pd.Period, mod: dict, rodada: str) -> dict:
     }
 
 
+# Acompanhamento do nível da hidráulica do NE (D039): gatilho para repetir os testes de hidráulica (itens 24 e 25),
+# fixado antes de ver a série. Não é parâmetro do método: o modelo não usa estes valores.
+GATILHO_HIDR_NE = 30.0  # % de erro absoluto médio do nível
+JANELA_HIDR_NE = 6  # meses seguidos acima do gatilho
+
+
+def acompanhamento_hidr_ne(b: M.Base, inicio: str = "2025-01", cobertura: float = 0.6) -> dict:
+    """Nível da hidráulica do NE que o modelo usou × realizado, por mês-alvo (pesquisa: web.acompanhamento_hidr_ne).
+
+    Para cada mês-alvo m, o deck é o do mês anterior (o último antes de o mês começar); o nível usado é a média do
+    perfil horário do mesmo mês do calendário no ano mais recente com dados até D−2, igual em todos os cenários
+    (`modelo.cenarios`). Só meses com ≥ 60% das horas do DESSEM. É uma reconstrução com a versão vigente, não o
+    registro do que foi publicado em cada rodada."""
+    modelos, linhas = {}, []
+    for m in pd.period_range(inicio, b.h["mes"].max(), freq="M"):
+        y = b.h[b.h["mes"] == m]
+        if len(y) < m.days_in_month * 24 * cobertura:
+            continue
+        d = m - 1
+        if d not in modelos:
+            modelos[d] = M.treinar(b, d)
+        ins = M.insumos_mes(b, d, m, modelos[d])
+        cen = M.cenarios(b, d, m, ins) if ins else []
+        if not cen:
+            continue
+        info = cen[0][0]
+        real = float(y["hidraulica_NE"].mean())
+        linhas.append(
+            {
+                "mes": str(m),
+                "deck": str(d),
+                "ano_usado": info["ano_hidr_ne"],
+                "usado": _r(info["hidraulica_NE"] / 1e3, 2),
+                "real": _r(real / 1e3, 2),
+                "erro_pct": _r(100 * (info["hidraulica_NE"] - real) / real, 1),
+            }
+        )
+    erros = [x["erro_pct"] for x in linhas]
+    ult = erros[-JANELA_HIDR_NE:]
+    return {
+        "gatilho_pct": GATILHO_HIDR_NE,
+        "janela": JANELA_HIDR_NE,
+        "linhas": linhas,
+        "resumo": {
+            "n": len(erros),
+            "vies_pct": _r(np.mean(erros), 1) if erros else None,
+            "eam_pct": _r(np.mean(np.abs(erros)), 1) if erros else None,
+            "eam_ultimos_pct": _r(float(np.mean(np.abs(ult))), 1) if ult else None,
+            "vies_ultimos_pct": _r(np.mean(ult), 1) if ult else None,
+            "mesmo_sinal_ultimos": int(sum(np.sign(e) == np.sign(ult[-1]) for e in ult))
+            if ult
+            else 0,
+            "acima_gatilho": bool(
+                len(ult) == JANELA_HIDR_NE and all(abs(e) > GATILHO_HIDR_NE for e in ult)
+            ),
+        },
+    }
+
+
 class RodadaRepetida(Exception):
     """Deck e modelo iguais aos da última rodada: publicar de novo exige --forcar e --motivo."""
 
@@ -546,6 +608,9 @@ def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False
         from qe_pricing_descolamento.desempenho import desempenho
 
         pagina["desempenho"] = desempenho(b, ler_parquet(arm, chaves.PROC_BACKTEST))
+    pagina["hidr_ne"] = acompanhamento_hidr_ne(
+        b
+    )  # metodologia: nível da hidráulica do NE usado × realizado
     from qe_pricing_descolamento.fundamentos import dados_fundamentos
 
     pagina["fundamentos"] = dados_fundamentos(b)  # página de fundamentos: o realizado, sem o modelo

@@ -7,7 +7,8 @@ novos: leitores em três dias (um de cada formato do PDO_RESTOPER) e em dois dec
 tabelas dos decks até out/2026 e o PLD horário e a base horária nos meses desses três dias (a base inteira foi
 conferida na migração; congelada inteira, ocuparia 14 MB no git). Do modelo (bloco 2): o treino no deck de out/2026
 (dados até ago/2026) e os cenários com SE plano de R$ 200 até dez/2030, com coeficientes e faixas por período; e o
-backtest da página inteiro (decks até jul/2026, meses-alvo até set/2026). Regerar só quando a mudança for intencional:
+backtest da página inteiro (decks até jul/2026, meses-alvo até set/2026); e o acompanhamento do nível da hidráulica
+do NE (usado × realizado, D039) dos meses fechados, até set/2026. Regerar só quando a mudança for intencional:
 `uv run qe pricing_descolamento congelar` e revisar a diferença no git.
 """
 
@@ -19,7 +20,7 @@ import pandas as pd
 
 from qe_core.armazenamento import Armazenamento, ler_parquet
 from qe_core.leitores import dessem, newave
-from qe_pricing_descolamento import chaves, tratamento
+from qe_pricing_descolamento import chaves, publicacao, tratamento
 from qe_pricing_descolamento import modelo as M
 
 PASTA = "pricing_descolamento"
@@ -102,7 +103,9 @@ def modelo_ref(arm: Armazenamento) -> dict[str, pd.DataFrame]:
         ignore_index=True,
     )
     bt = ler_parquet(arm, chaves.PROC_BACKTEST).assign(mes=lambda d: d["mes"].astype(str))
+    hne = pd.DataFrame(publicacao.acompanhamento_hidr_ne(b)["linhas"])
     return {
+        "hidr_ne": hne[hne["mes"] <= str(FIM.to_period("M"))].reset_index(drop=True),
         "modelo": tabela_modelo(mod),
         "modelo_cenarios": cen,
         "modelo_faixas": faixas,
