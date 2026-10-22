@@ -34,6 +34,8 @@
   tr.recon td { color: var(--ink-2); }
   tr.publicada td:first-child::after { content: " publicada"; font-family: var(--f-data); font-size: 0.68rem; color: var(--accent); }
   .leg { font-size: 0.82rem; color: var(--ink-3); }
+  table.hist { table-layout: fixed; width: 100%; min-width: 760px; }  /* as duas tabelas do histórico alinham coluna a coluna */
+  .mc { color: var(--accent); font-size: 0.7em; margin-left: 0.4em; cursor: help; }
   .dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4;
     padding: 7px 10px; border-radius: 4px; max-width: 320px; white-space: normal; transform: translate(12px, 12px); }
   [hidden] { display: none !important; }
@@ -408,13 +410,15 @@
       <div class="legenda" id="h-leg"></div>
       <svg id="h-graf" viewBox="0 0 1040 260" role="img" aria-label="Descolamento do NE por ano ao longo dos decks"></svg>
     </div>
-    <div class="rolagem"><table>
+    <div class="rolagem"><table class="hist">
+      <colgroup><col style="width:13%"><col style="width:8%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:14%"><col style="width:15%"></colgroup>
       <thead><tr><th>Deck</th><th>Versão</th><th class="n">NE 2027</th><th class="n">NE 2028</th><th class="n">NE 2029</th><th class="n">N 2027</th>
         <th class="n">N 2028</th><th class="n">Renov. NE 2027 (GW)</th><th class="n">Lim. exp. NE 2027 (GW)</th></tr></thead>
       <tbody id="t-hist"></tbody>
     </table></div>
     <details class="mais" id="h-mais"><summary id="h-mais-txt">Rodadas anteriores</summary>
-      <div class="rolagem"><table>
+      <div class="rolagem"><table class="hist">
+        <colgroup><col style="width:13%"><col style="width:8%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:14%"><col style="width:15%"></colgroup>
         <thead><tr><th>Deck</th><th>Versão</th><th class="n">NE 2027</th><th class="n">NE 2028</th><th class="n">NE 2029</th><th class="n">N 2027</th>
           <th class="n">N 2028</th><th class="n">Renov. NE 2027 (GW)</th><th class="n">Lim. exp. NE 2027 (GW)</th></tr></thead>
         <tbody id="t-hist-ant"></tbody>
@@ -422,6 +426,7 @@
     </details>
     <p class="leg">Rodadas reconstruídas (em cinza) mostram como a versão vigente teria visto cada deck do passado; não são o que foi publicado na época. A partir da
       primeira rodada publicada, cada deck novo acrescenta uma linha. Quando a versão do modelo muda, a linha marca a mudança de método.</p>
+    <div class="nota" id="h-marco" hidden></div>
   </section>
 
   <!-- versões -->
@@ -492,11 +497,11 @@
 <script src="../padrao/graficos.js"></script>
 <script>
 "use strict";
-// Dados: serving/pricing_descolamento/{meta, desempenho, historico_rodadas, hidr_ne}.json (qe_pricing_descolamento.publicacao)
+// Dados: serving/pricing_descolamento/{meta, desempenho, historico_rodadas, hidr_ne, hist_marcos}.json (qe_pricing_descolamento.publicacao)
 (async function () {
 const MET = {};
 try {
-  for (const [k, arq] of [["meta", "meta"], ["desempenho", "desempenho"], ["historico", "historico_rodadas"], ["hidr_ne", "hidr_ne"]]) {
+  for (const [k, arq] of [["meta", "meta"], ["desempenho", "desempenho"], ["historico", "historico_rodadas"], ["hidr_ne", "hidr_ne"], ["hist_marcos", "hist_marcos"]]) {
     const r = await fetch(`/dados/pricing_descolamento/${arq}.json`, { cache: "no-cache" });
     if (!r.ok) throw new Error(`${arq}: ${r.status}`);
     MET[k] = await r.json();
@@ -669,13 +674,21 @@ document.getElementById("h-leg").innerHTML = ANOS_H.map((a, i) => `<span><i clas
     });
   });
   H.forEach((r, i) => { if (/-(01|07)$/.test(r.deck)) S(svg, "text", { x: X(i), y: h - 8, "text-anchor": "middle" }, rot(r.deck)); });
+  (MET.hist_marcos || []).forEach(m => {  // degrau: um regime passa a ser treinado (D040)
+    const i = H.findIndex(r => r.deck === m.deck); if (i < 0) return;
+    S(svg, "line", { x1: X(i), x2: X(i), y1: mg.t, y2: h - mg.b, stroke: "var(--ink-3)", "stroke-dasharray": "1 4" });
+    const tx = S(svg, "text", { x: X(i) + 4, y: mg.t + 10, style: "fill:var(--accent);cursor:help" }, "◆");  // só o losango; a explicação fica abaixo da tabela
+    dicaEm(tx, `${m.regime === "1S" ? "1º" : "2º"} semestre entra no treino (ver a nota abaixo da tabela)`);
+  });
   let vAnt = null;
   H.forEach((r, i) => { if (vAnt && r.versao !== vAnt) { S(svg, "line", { x1: X(i), x2: X(i), y1: mg.t, y2: h - mg.b, stroke: "var(--ink-3)", "stroke-dasharray": "3 3" });
     S(svg, "text", { x: X(i) + 4, y: mg.t + 10 }, r.versao); } vAnt = r.versao; });
 })();
+const MARCOS = MET.hist_marcos || [], SEM = { "1S": "1º semestre", "2S": "2º semestre" };
 const linhaHist = r => {
   const v = (a, s) => r.anos[a] ? dn(r.anos[a][s]) : "—", g = (a, s) => r.anos[a] ? n(r.anos[a][s], 1) : "—";
-  return `<tr class="${r.reconstruida ? "recon" : "publicada"}"><td>${rot(r.deck)}</td><td>${r.versao}</td><td class="n">${v("2027", "NE")}</td><td class="n">${v("2028", "NE")}</td>` +
+  const mc = MARCOS.filter(m => m.deck === r.deck).map(m => `<span class="mc" title="${SEM[m.regime]} entra no treino (ver a nota abaixo)">◆</span>`).join("");
+  return `<tr class="${r.reconstruida ? "recon" : "publicada"}"><td>${rot(r.deck)}${mc}</td><td>${r.versao}</td><td class="n">${v("2027", "NE")}</td><td class="n">${v("2028", "NE")}</td>` +
     `<td class="n">${v("2029", "NE")}</td><td class="n">${v("2027", "N")}</td><td class="n">${v("2028", "N")}</td><td class="n">${g("2027", "renov_NE")}</td><td class="n">${g("2027", "lim_NE")}</td></tr>`;
 };
 const HR = [...H].reverse();
@@ -683,6 +696,16 @@ document.getElementById("t-hist").innerHTML = HR.slice(0, 3).map(linhaHist).join
 document.getElementById("t-hist-ant").innerHTML = HR.slice(3).map(linhaHist).join("");
 document.getElementById("h-mais-txt").textContent = `Rodadas anteriores (${HR.length - 3})`;
 document.getElementById("h-mais").hidden = HR.length <= 3;
+// nota do degrau do histórico (D040)
+(function () {
+  if (!MARCOS.length) return;
+  const ne27 = d => { const r = H.find(x => x.deck === d); return r && r.anos["2027"] ? dn(r.anos["2027"].NE) : "—"; };
+  const el = document.getElementById("h-marco"); el.hidden = false;
+  el.innerHTML = MARCOS.map(m => `<strong>Degrau em ${rot(m.deck)} (◆ na tabela).</strong> O salto de ${rot(m.deck_antes)} para ${rot(m.deck)} (NE 2027: ${ne27(m.deck_antes)} → ${ne27(m.deck)}) não é erro nem mudança de deck: ` +
+    `com o deck de ${rot(m.deck_antes)} o ${SEM[m.regime]} tinha só ${n(m.horas_antes)} horas de NE descolado no treino (o mínimo é ${n(m.minimo)} por classe), a chance de travar ficava vazia e o modelo previa zero; ` +
+    `com o de ${rot(m.deck)} (dados até ${rot(m.dados_ate)}) o treino passou a ter ${n(m.horas)} horas e o ${SEM[m.regime]} passou a ser treinado.`).join("<br><br>") +
+    `<br><br>Sempre que um regime ganha dado pela primeira vez, a regra do mínimo cria um degrau assim. Não há evidência de erro que justifique mudar a regra.`;
+})();
 // acompanhamento do nível da hidráulica do NE (D039)
 (function () {
   const A = MET.hidr_ne; if (!A) return;

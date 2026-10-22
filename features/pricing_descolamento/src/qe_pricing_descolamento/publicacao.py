@@ -535,6 +535,38 @@ def acompanhamento_hidr_ne(b: M.Base, inicio: str = "2025-01", cobertura: float 
     }
 
 
+def marcos_historico(b: M.Base, historico: list) -> list:
+    """Decks do registro de rodadas em que um regime (1S ou 2S) passa a ter modelo da chance de travar do NE (D040).
+
+    Antes disso o modelo do regime fica vazio (menos de `min_horas_classe` horas de uma das classes no treino), a chance
+    é zero e o descolamento previsto do semestre é zero: o histórico mostra um degrau no deck em que o regime ganha dado
+    pela primeira vez. Só conta transição dentro do histórico (vazio no deck anterior, ajustado neste). `horas` e
+    `horas_antes` são as horas de NE descolado do regime no treino (desde `inicio_treino` até o início do mês D−1)."""
+    feats, ini = list(M.MODELO.features), pd.Timestamp(M.MODELO.inicio_treino)
+    marcos, ant = [], {}
+    for r in sorted(historico, key=lambda x: x["deck"]):
+        d = pd.Period(r["deck"], "M")
+        mod = M.treinar(b, d)
+        t = b.h[(b.h.index >= ini) & (b.h.index < (d - 1).to_timestamp())].dropna(subset=feats)
+        for regime in M.REGIMES:
+            tem = mod[("p", regime, "NE")] is not None
+            horas = int(t.loc[t["regime"] == regime, "desc_NE"].astype(bool).sum())
+            if tem and ant.get(regime, (None,))[0] is False:
+                marcos.append(
+                    {
+                        "deck": r["deck"],
+                        "regime": regime,
+                        "deck_antes": ant[regime][2],
+                        "horas_antes": ant[regime][1],
+                        "horas": horas,
+                        "minimo": M.MODELO.min_horas_classe,
+                        "dados_ate": str(d - 2),
+                    }
+                )
+            ant[regime] = (tem, horas, r["deck"])
+    return marcos
+
+
 class RodadaRepetida(Exception):
     """Deck e modelo iguais aos da última rodada: publicar de novo exige --forcar e --motivo."""
 
@@ -608,6 +640,9 @@ def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False
         from qe_pricing_descolamento.desempenho import desempenho
 
         pagina["desempenho"] = desempenho(b, ler_parquet(arm, chaves.PROC_BACKTEST))
+    pagina["hist_marcos"] = marcos_historico(
+        b, reg
+    )  # metodologia: degrau do histórico de rodadas (D040)
     pagina["hidr_ne"] = acompanhamento_hidr_ne(
         b
     )  # metodologia: nível da hidráulica do NE usado × realizado

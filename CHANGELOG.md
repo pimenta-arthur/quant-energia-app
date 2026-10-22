@@ -8,6 +8,30 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-22] Pricing Descolamento: leva promocao-quant-v4 (degrau do histórico de rodadas)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v4` (seção 11, "v3 → v4"; D040). Texto e um dado pequeno,
+numa etapa só. **Sem mudança de método, de modelo, de preço, de faixa nem de rodadas** (modelo v2.2). Conferido contra
+`reports/promocao/2026-10/`: `R12_hist_marcos` e a chave `hist_marcos` do `R8_metodologia`, sem diferença (um marco:
+2025-04, 1º semestre, 8 → 467 horas, mínimo 20, dados até 2025-02).
+
+### Adicionado
+- Dado `hist_marcos` (`serving/pricing_descolamento/hist_marcos.json`): decks do histórico de rodadas em que o modelo da
+  chance de travar do NE de um regime (1S ou 2S) deixa de ser vazio, isto é, passa a ter pelo menos 20 horas de cada
+  classe no treino. Calculado em Python sobre o registro de rodadas e o treino do app (`publicacao.marcos_historico`).
+- Metodologia, histórico de rodadas: nota explicando o degrau de abr/25 (o salto de mar/25 para abr/25, NE 2027
+  de −7,2 para −19,3, não é erro nem mudança de deck: o 1º semestre passou a ser treinado, e a regra do mínimo cria
+  um degrau sempre que um regime ganha dado pela primeira vez); ◆ no gráfico, ao lado de uma linha pontilhada no deck
+  do marco, e na linha da tabela.
+
+### Alterado
+- Metodologia: as duas tabelas do histórico (as 3 últimas e "Rodadas anteriores") passam a ter largura de coluna fixa
+  e alinham coluna a coluna.
+
+### Verificação de que nada mudou
+`publicar` respondeu "mesmo deck e modelo da última"; o registro de rodadas ficou idêntico e a única chave nova do
+`serving` é `hist_marcos.json`. Suíte do app e paridade com a pesquisa passando.
+
 ## [2026-10-21] Pricing Descolamento: leva promocao-quant-v3, etapa C (acompanhamento da hidráulica do NE)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v3` (seção 11, "v2 → v3", etapa C; D039, item 26 da fila).

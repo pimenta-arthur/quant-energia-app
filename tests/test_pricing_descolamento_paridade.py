@@ -258,3 +258,21 @@ def test_R11_acompanhamento_hidr_ne(rodada):
     r11 = json.loads((Path(PASTA) / "R11_hidr_ne.json").read_text(encoding="utf-8"))
     assert json.loads(json.dumps(P.acompanhamento_hidr_ne(b))) == r11
     assert r11["resumo"]["n"] == 21 and not r11["resumo"]["acima_gatilho"]
+
+
+# --- degrau do histórico de rodadas (R12, D040) ------------------------------------------------------------
+
+
+def test_R12_marcos_do_historico(arm, rodada):
+    from qe_pricing_descolamento import publicacao as P
+
+    _M, b, _d, _mod, _ = rodada
+    marcos = json.loads(json.dumps(P.marcos_historico(b, P.carregar_registro(arm))))
+    r12 = json.loads((Path(PASTA) / "R12_hist_marcos.json").read_text(encoding="utf-8"))
+    assert marcos == r12
+    assert (
+        marcos
+        == json.loads((Path(PASTA) / "R8_metodologia.json").read_text(encoding="utf-8"))[
+            "hist_marcos"
+        ]
+    )
