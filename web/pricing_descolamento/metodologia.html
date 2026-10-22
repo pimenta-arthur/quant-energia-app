@@ -167,11 +167,9 @@
             <tr><td>Térmica</td><td>DESSEM (fora do cálculo)</td><td>fora do cálculo</td><td>nenhuma</td></tr>
           </tbody>
         </table></div>
-        <div class="nota"><span class="status">Questão em aberto</span><br>
-          A hidráulica do NE entra na feature 1, mas não na feature 2, e essa definição não foi testada isoladamente. Numa leitura exploratória (2024 em diante, dentro da amostra,
-          uma variável por vez), a hidráulica do NE varia cerca de 2 GW de hora em hora e, somada à margem, a AUC do NE no 2º semestre sobe de 0,90 para 0,93. Como no histórico ela
-          reage à renovável e nos cenários é um perfil fixo, o ganho pode não se repetir na projeção. Teste pré-registrado (D037, item 24 da fila), ainda não executado;
-          nesta versão a definição não muda.</div>
+        <div class="nota"><span class="status">Testado, não adotado</span><br>
+          A hidráulica do NE entra na feature 1, mas não na feature 2. Somá-la à margem foi testado (D037, 21/10/2026): melhora o ajuste no histórico (a AUC do NE no 2º semestre sobe de
+          0,90 para 0,93), mas piora a previsão: o erro médio do NE nos trimestres de 2026 vai de 10,4 para 10,7 e, mesmo com a hidráulica realizada do mês, piora (11,7 só na margem; 15,7 nas duas medidas). Usar a hidráulica do NE do próprio ano climático, como a do N, também piorou (14,6). A definição fica como está.</div>
       </div></details>
     </div></div>
 
@@ -434,6 +432,8 @@
       <tbody>
         <tr><td>Insumos do NE</td><td>Limite de exportação pelo observado; cenários de expansão renovável; descontar o corte de geração</td>
           <td>O erro de 2026 veio da renovável projetada pelos decks, que não se corrige com o histórico; o limite não é a alavanca.</td></tr>
+        <tr><td>Hidráulica do NE</td><td>Somada à margem de exportação; com a média realizada do mês; do próprio ano climático, como a do N</td>
+          <td>Todas pioram a previsão (2026: 10,4 → 10,7 a 15,7). O modelo lê mais hidráulica como mais trava, e na realidade não travou mais; a do próprio ano abre a faixa 2,6 vezes. Tema encerrado.</td></tr>
         <tr><td>Hidrologia e treino</td><td>Hidrologia do N combinada entre anos; peso maior para anos recentes; treino desde 2021</td>
           <td>Neutros ou com troca entre anos: melhoram 2026 e pioram 2025, ou o contrário.</td></tr>
         <tr><td>Intensidade (k)</td><td>k por hora do dia; pela margem física; por trimestre; pela sobra do N+NE</td>

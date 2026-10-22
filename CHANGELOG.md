@@ -8,6 +8,20 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-21] Pricing Descolamento: leva promocao-quant-v3, etapa B (só texto da metodologia)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v3` (seção 11, "v2 → v3"; conteúdo = commit `8b6cfb7`),
+itens 24 e 25 da fila (D037 e D038). **Sem mudança de método, de código nem de referências** (modelo v2.2; preço justo,
+faixa e rodadas iguais). Aplicado como remendo sobre a página do app. A etapa C (acompanhamento do nível da hidráulica
+do NE: código, dados e a seção correspondente da metodologia) **não** foi aplicada; aguarda aprovação.
+
+### Alterado
+- Metodologia, passo 5: a nota sobre a hidráulica do NE passa de "Questão em aberto" para "Testado, não adotado". Somá-la
+  à margem melhora o ajuste no histórico (AUC do NE no 2º semestre de 0,90 para 0,93), mas piora a previsão (erro
+  médio do NE nos trimestres de 2026 de 10,4 para 10,7; 15,7 nas duas medidas); usar a hidráulica do próprio ano
+  climático também piorou (14,6). A definição fica como está.
+- Metodologia, tabela "O que foi testado depois da v2.2 e não entrou": linha nova "Hidráulica do NE".
+
 ## [2026-10-21] Pricing Descolamento: leva promocao-quant-v2 (só texto da metodologia)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v2` (seção 11, "v1 → v2"). **Só texto: sem mudança de
