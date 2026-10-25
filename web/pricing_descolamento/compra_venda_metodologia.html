@@ -215,7 +215,7 @@
     <p class="texto">Cada linha é um deck (a data em que a cotação foi feita) e um período. Mostra o que realmente ocorreu e a compra e a venda que cada política teria cotado naquela data. A célula fica em vermelho quando aquele lado perdeu.</p>
     <div class="filtros">
       <div class="abas-sel" id="k-tipo" role="group" aria-label="Produto">
-        <button type="button" data-v="tri" aria-pressed="true">Trimestres</button><button type="button" data-v="sem">Semestres</button>
+        <button type="button" data-v="tri" aria-pressed="false">Trimestres</button><button type="button" data-v="sem" aria-pressed="true">Semestres</button>
       </div>
       <div class="abas-sel" id="k-sub" role="group" aria-label="Submercado">
         <button type="button" data-v="NE" aria-pressed="true">NE</button><button type="button" data-v="N">N</button>
@@ -234,7 +234,7 @@
     </table></div>
     <p class="leg">R$/MWh. Compra e venda de cada política na data do deck, com o SE realizado como insumo (isola o erro do modelo do erro da curva do SE). Vermelho = esse lado perdeu.</p>
 
-    <h3>As faixas de compra e venda contra o realizado, por trimestre</h3>
+    <h3 id="k-mult-t">As faixas de compra e venda contra o realizado, por semestre</h3>
     <div class="legenda-mini">
       <span><i style="background:var(--pA)"></i>Antes (v1, λ 0,50)</span><span><i style="background:var(--bar-saz)"></i>λ = 1, sem âncora</span><span><i style="background:var(--accent)"></i>Conservador</span>
       <span><i class="l" style="border-color:var(--ink)"></i>Realizado</span>
@@ -507,7 +507,7 @@ document.getElementById("r-sub").addEventListener("click", ev => { const b = ev.
 tabelaResultado();
 
 // ---------------------------------------------------------------- caso a caso
-let K_TIPO = "tri", K_SUB = "NE";
+let K_TIPO = "sem", K_SUB = "NE";
 function opcoes(sel, vals, rotulo) {
   const atual = sel.value;
   sel.innerHTML = `<option value="">todos</option>` + vals.map(v => `<option value="${v}">${rotulo(v)}</option>`).join("");
@@ -520,7 +520,7 @@ function tabCasos() {
   const base = linhasCasos();
   opcoes(document.getElementById("k-per"), [...new Set(base.map(x => x.c.periodo))].sort(), rotPer);
   opcoes(document.getElementById("k-deck"), [...new Set(base.map(x => x.c.deck))].sort(), rot);
-  if (!tabCasos.iniciado) { tabCasos.iniciado = true; const ini = K_TIPO === "tri" ? "2026-T1" : "2026-S1"; if (base.some(x => x.c.periodo === ini)) document.getElementById("k-per").value = ini; }   // ao abrir: T1/26 pré-selecionado
+  if (!tabCasos.iniciado) { tabCasos.iniciado = true; const ini = K_TIPO === "tri" ? "2026-T1" : "2026-S1"; if (base.some(x => x.c.periodo === ini)) document.getElementById("k-per").value = ini; }   // ao abrir: semestres, com o 1º sem/26 pré-selecionado
   const fp = document.getElementById("k-per").value, fd = document.getElementById("k-deck").value, soPerda = document.getElementById("k-perda").checked;
   const perdeu = x => ["A", "B", "C"].some(k => x.r < x.q[k].compra || x.r > x.q[k].venda);
   const L = base.filter(x => (!fp || x.c.periodo === fp) && (!fd || x.c.deck === fd) && (!soPerda || perdeu(x))).sort((a, b) => (a.c.periodo + a.c.deck).localeCompare(b.c.periodo + b.c.deck));
@@ -531,6 +531,7 @@ function tabCasos() {
   paineis();
 }
 function paineis() {
+  document.getElementById("k-mult-t").textContent = `As faixas de compra e venda contra o realizado, por ${K_TIPO === "tri" ? "trimestre" : "semestre"}`;
   const box = document.getElementById("k-mult"); box.replaceChildren();
   const base = linhasCasos(), pers = [...new Set(base.map(x => x.c.periodo))].sort().filter(p => p >= "2025");
   pers.forEach(p => {
