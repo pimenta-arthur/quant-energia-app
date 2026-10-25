@@ -1,4 +1,5 @@
-"""Leitores de arquivos do PMO do ONS (DECOMP revisão 0): relato.rv0, ena.pdf e renovaveis.csv.
+"""Leitores de arquivos do ONS: PMO (DECOMP revisão 0: relato.rv0, ena.pdf e renovaveis.csv) e ENA histórica
+(planilhas 1931–2024) e diária (Dados Abertos).
 
 Funções puras sobre o caminho do arquivo. `n_sem` é o número de semanas operativas do mês
 (colunas de `ccee.horas_por_semana`); as semanas do mês seguinte são descartadas.
@@ -6,6 +7,7 @@ Funções puras sobre o caminho do arquivo. `n_sem` é o número de semanas oper
 
 import io
 import re
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -243,3 +245,80 @@ def ler_relato_ear(caminho: Path) -> pd.DataFrame:
             pct = float(linhas[i + 2].split()[0])
             saida[m.group(1)] = {"ear_mwmes": mwmes, "ear_pct": pct}
     return pd.DataFrame(saida).T
+
+
+# --- ENA histórica (planilhas 1931–2024) e diária (Dados Abertos) ----------------------------------------------
+# Pesquisa: hydro-inflow-similarity-analytics, load.ler_planilha_ena / ler_ena_diaria (promocao-quant-v1).
+
+# blocos da planilha 1931–2024 → sigla usada nos arquivos diários
+SUBSISTEMA_DA_PLANILHA = {
+    "SUDESTE ARTIFICIAL (ENA01.2)": "SE",
+    "SUL ARTIFICIAL ((ENA02.2))": "S",
+    "NORDESTE (ENA03)": "NE",
+    "NORTE (ENA04)": "N",
+}
+
+
+def _sem_acento(t: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", t) if not unicodedata.combining(c))
+
+
+def nome_bacia(rotulo: str) -> str:
+    """Rótulo da planilha ('SÃO FRANCISCO SE+NE (RIO12)') → nome dos arquivos diários ('SAO FRANCISCO')."""
+    nome = re.sub(r"\(.*\)", "", rotulo)
+    nome = re.sub(r"\b(ARTIFICIAL|SE\+NE|SE\+N)\b", "", nome)
+    nome = _sem_acento(nome).upper().replace("-ACU", "")
+    nome = " ".join(nome.split())
+    return {"SANTA MARIA DA VITORIA": "SANTA MARIA VIT"}.get(nome, nome)
+
+
+def ler_planilha_ena(caminho: Path, nivel: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Planilha "Histórico de ENAS" do ONS (1931–2024, .xls), um bloco por subsistema ou bacia.
+
+    Devolve (série, médias):
+    - série: nome, rotulo, ano, mes, mwmed, pct_media (uma linha por mês);
+    - médias: nome, mes, mwmed, rotulo (linha "med(1931 - 2024)" de cada bloco: a MLT).
+    `nivel` ("subsistema" ou "bacia") define como o rótulo vira `nome`. Na planilha de bacias o PARANA é
+    acumulado (inclui Grande, Paranaíba, Tietê e Paranapanema): o tratamento o converte em incremental.
+    """
+    bruto = pd.read_excel(caminho, header=None)
+    linhas, medias, rot = [], [], None
+    for _, linha in bruto.iloc[
+        7:
+    ].iterrows():  # linhas 0–6: título, série, período, meses e unidades
+        if pd.notna(linha[0]):
+            rot = str(linha[0]).strip()
+        if pd.isna(linha[1]) or rot is None:
+            continue
+        nome = SUBSISTEMA_DA_PLANILHA[rot] if nivel == "subsistema" else nome_bacia(rot)
+        valores = (
+            linha.iloc[2:26].to_numpy(dtype=float).reshape(12, 2)
+        )  # (MWmed, % média) de jan a dez
+        if str(linha[1]).startswith("med("):
+            medias += [(nome, m + 1, valores[m, 0], rot) for m in range(12)]
+            continue
+        linhas += [
+            (nome, rot, int(linha[1]), m + 1, valores[m, 0], valores[m, 1]) for m in range(12)
+        ]
+    serie = pd.DataFrame(linhas, columns=["nome", "rotulo", "ano", "mes", "mwmed", "pct_media"])
+    return serie, pd.DataFrame(medias, columns=["nome", "mes", "mwmed", "rotulo"])
+
+
+def ler_ena_diaria(caminhos: Path | list[Path], nivel: str) -> pd.DataFrame:
+    """ENA diária dos Dados Abertos do ONS (CSV anual, `;`), um ou vários arquivos.
+
+    Colunas: nome, data, bruta_mwmed, bruta_pct_mlt, armazenavel_mwmed, armazenavel_pct_mlt.
+    """
+    chave, sufixo = ("id_subsistema", "regiao") if nivel == "subsistema" else ("nom_bacia", "bacia")
+    caminhos = [caminhos] if isinstance(caminhos, Path) else list(caminhos)
+    bruto = pd.concat([pd.read_csv(c, sep=";") for c in caminhos], ignore_index=True)
+    return pd.DataFrame(
+        {
+            "nome": bruto[chave].str.strip(),
+            "data": pd.to_datetime(bruto["ena_data"]),
+            "bruta_mwmed": bruto[f"ena_bruta_{sufixo}_mwmed"],
+            "bruta_pct_mlt": bruto[f"ena_bruta_{sufixo}_percentualmlt"],
+            "armazenavel_mwmed": bruto[f"ena_armazenavel_{sufixo}_mwmed"],
+            "armazenavel_pct_mlt": bruto[f"ena_armazenavel_{sufixo}_percentualmlt"],
+        }
+    )

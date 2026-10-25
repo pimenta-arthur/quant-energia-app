@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Afluências e ENSO</title>
+<!-- Padrão visual Quant Energia v1.3.1 (web/padrao). Dados em dados.js, gerados por hydro_inflow_similarity_analytics.web -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  /* cores desta página: SE-sul e SE-resto na decomposição; uma cor por subsistema no desempenho */
+  :root { --c-sul: var(--accent); --c-resto: #a8592a; --c-s: #a8592a; --c-ne: #1d8a84; --c-n: #7d6a1c; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-resto: #e3a06c; --c-s: #e3a06c; --c-ne: #5ccac3; --c-n: #d4bb5f; } }
+  :root[data-theme="dark"] { --c-resto: #e3a06c; --c-s: #e3a06c; --c-ne: #5ccac3; --c-n: #d4bb5f; }
+  .estado { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 3px; background: var(--vazio); color: var(--ink-2); }
+  .estado.ativo { background: var(--accent-soft); color: var(--accent); }
+  svg text.ano { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; font-weight: 500; }
+  .estado::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .dir { font-family: var(--f-data); font-size: 0.85rem; white-space: nowrap; }
+  .dir.cima { color: var(--accent); } .dir.baixo { color: var(--c-resto); } .dir.sem { color: var(--ink-3); }
+  .linha-estado { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 0.92rem; color: var(--ink-2); }
+  .grade4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 760px) { .grade4 { grid-template-columns: 1fr; } }
+  .resumo { font-family: var(--f-data); font-size: 0.78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .resumo b { color: var(--ink); font-weight: 500; }
+  .resumo .sim { color: var(--sim); }
+  :root { --sim: #1d8a84; --g1: var(--accent); --g2: #a8592a; --g3: #1d8a84; --g4: #7d6a1c; --g5: #6b4fa0; --g-demais: var(--bar-saz); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sim: #5ccac3; --g2: #e3a06c; --g3: #5ccac3; --g4: #d4bb5f; --g5: #a993d6; } }
+  :root[data-theme="dark"] { --sim: #5ccac3; --g2: #e3a06c; --g3: #5ccac3; --g4: #d4bb5f; --g5: #a993d6; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: grid; gap: 2px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); min-width: 7.5rem; }
+  .chip b { font-family: var(--f-display); font-size: 1.15rem; font-weight: 600; color: var(--sim); }
+  .chip span { font-family: var(--f-data); font-size: 0.72rem; color: var(--ink-3); }
+  .confia td.n.bom { color: var(--accent); font-weight: 500; } .confia td.n.ruim { color: var(--c-resto); }
+  details.abrir summary { font-size: 0.92rem; padding-block: 4px; }
+  details.secao > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; color: var(--ink); }
+  details.secao > summary::-webkit-details-marker { display: none; }
+  details.secao > summary::before { content: "▸"; color: var(--accent); font-size: 1rem; transition: transform .15s; }
+  details.secao[open] > summary::before { transform: rotate(90deg); }
+  details.secao[open] > summary { margin-bottom: 10px; }
+  details.secao > summary h2 { display: inline; }
+  .resumo-anos { font-family: var(--f-data); font-size: 0.95rem; font-weight: 400; color: var(--sim); margin-left: 12px; }
+  .tab-mes th:first-child, .tab-mes td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  .tab-mes td.rot { white-space: nowrap; color: var(--ink-2); }
+  .tab-mes tr.grupo-ini td { border-top: 2px solid var(--rule); }
+  .abas button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .abas button { white-space: nowrap; }
+  /* os botões nunca esticam na vertical, em qualquer largura (o contêiner flexível os esticava) */
+  .barra-abas { align-items: center; }
+  .abas { align-items: center; align-self: center; }
+  .abas button { align-self: center; height: auto; line-height: 1.3; }
+  .tab-vies { font-size: 0.86rem; }
+  .tab-vies th, .tab-vies td { padding: 7px 8px; white-space: nowrap; }
+  .linha-controles { display: grid; gap: 8px; justify-items: end; margin-left: auto; }
+  #tt-traj { flex-basis: 100%; }  /* o título ocupa sempre a 1ª fileira: os botões não mudam de lugar com o tamanho dele */
+  .linha-legenda { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+  .chave { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-2); cursor: pointer; user-select: none; position: relative; }
+  .chave input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .chave .trilho { position: relative; width: 32px; height: 18px; border-radius: 9px; background: var(--rule); transition: background .15s; flex: none; }
+  .chave .trilho::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .15s; }
+  .chave input:checked + .trilho { background: var(--accent); }
+  .chave input:checked + .trilho::after { transform: translateX(14px); }
+  .chave input:focus-visible + .trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .chave .trilho, .chave .trilho::after { transition: none; } }
+  .metades { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .metades { grid-template-columns: 1fr; } }
+
+  .tab-mes { font-size: 0.86rem; }
+  .tab-mes th, .tab-mes td { padding: 7px 9px; }
+  .tab-mes td.n { line-height: 1.25; white-space: nowrap; }
+  .tab-mes td.n .mw { display: block; font-size: 0.72rem; color: var(--ink-3); }
+  .tab-mes td.n.sim { color: var(--sim); } .tab-mes td.n .fx { color: var(--ink-3); font-size: 0.82rem; }
+  .tab-mes th.grupo { text-align: center; border-bottom: 0; color: var(--ink-2); }
+  .tab-mes td.sep, .tab-mes th.sep { border-left: 1px solid var(--rule); }
+  details.abrir[open] summary { margin-bottom: 10px; }
+  td.fraco { color: var(--ink-3); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./index.html" aria-current="page">Afluências e ENSO</a>
+    <a href="./clima.html">Indicadores climáticos</a>
+    <a href="./fundamentos.html">Fundamentos</a>
+    <a href="./metodologia.html">Metodologia</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo" id="horizonte">Horizonte</span>
+    <h1 id="titulo">Projeção de ENA por subsistema</h1>
+    <div class="meta" id="premissas"></div>
+  </section>
+
+  <section aria-labelledby="s-ena">
+    <h2 id="s-ena">ENA por subsistema</h2>
+    <p class="sub" id="leitura-se"></p>
+    <div class="legenda-mini">
+      <span><i class="l" style="border-color:var(--ink)"></i>Realizado</span>
+      <span><i style="background:transparent;border:1.5px solid var(--ink);border-radius:50%;width:10px;height:10px"></i>Mês em curso (parcial)</span>
+      <span><i class="l" style="border-color:var(--accent)"></i>Modelo-v1 com o mês em curso (média)</span>
+      <span><i style="background:var(--faixa-proj)"></i>Faixa p10–p90</span>
+      <span><i class="t" style="border-color:var(--sim)"></i>Anos similares (recomposição)</span>
+      <span><i class="t" style="border-color:var(--ink-3)"></i>100% da MLT</span>
+    </div>
+    <div class="grade4">
+      <div class="bloco">
+        <div class="barra-abas">
+          <div class="ttl" id="tt-se">Sudeste, % da MLT</div>
+          <div class="abas" id="abas-se" role="group" aria-label="Recorte do Sudeste">
+            <button type="button" data-v="SE" aria-pressed="true">Agregado</button>
+            <button type="button" data-v="SE-sul">SE-sul</button>
+            <button type="button" data-v="SE-resto">SE-resto</button>
+          </div>
+        </div>
+        <div class="resumo" id="res-SE"></div>
+        <svg id="g-SE" viewBox="0 0 520 250" role="img" aria-label="ENA do Sudeste realizada e projetada"></svg>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Sul, % da MLT</div>
+        <div class="resumo" id="res-S"></div>
+        <svg id="g-S" viewBox="0 0 520 250" role="img" aria-label="ENA do Sul realizada e projetada"></svg>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Nordeste, % da MLT</div>
+        <div class="resumo" id="res-NE"></div>
+        <svg id="g-NE" viewBox="0 0 520 250" role="img" aria-label="ENA do Nordeste realizada e projetada"></svg>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Norte, % da MLT</div>
+        <div class="resumo" id="res-N"></div>
+        <svg id="g-N" viewBox="0 0 520 250" role="img" aria-label="ENA do Norte realizada e projetada"></svg>
+      </div>
+    </div>
+    <details class="abrir" id="abrir-tabela">
+      <summary>Abrir a tabela mês a mês</summary>
+      <div class="bloco">
+        <div class="barra-abas">
+          <div class="ttl" id="tt-tab">Visão geral: modelo-v1 e anos similares, % da MLT</div>
+          <div class="abas" id="abas-tab" role="group" aria-label="Recorte da tabela">
+            <button type="button" data-v="geral" aria-pressed="true">Visão geral</button>
+            <button type="button" data-v="SE-sul">SE-sul</button>
+            <button type="button" data-v="SE-resto">SE-resto</button>
+            <button type="button" data-v="SE">SE</button>
+            <button type="button" data-v="S">Sul</button>
+            <button type="button" data-v="NE">Nordeste</button>
+            <button type="button" data-v="N">Norte</button>
+          </div>
+        </div>
+        <div class="rolagem"><table class="tab-mes"><thead id="cab-mes"></thead><tbody id="corpo-mes"></tbody></table></div>
+        <p class="leg" id="leg-tab"></p>
+      </div>
+    </details>
+    <p class="leg">A projeção parte do mês em curso: o mês parcial é estimado pelos dias já observados (corrigidos pelo padrão do mesmo mês nos anos anteriores) e o modelo-v1 segue dali; com 20 dias, isso reduz o erro do mês em ~60% e o do mês seguinte em 4% a 11% em relação à rodada do fim do mês anterior. A rodada mensal fica registrada e aparece no tooltip. Escala própria em cada painel; a linha tracejada de 100% da MLT é a referência comum. SE-sul: Paranapanema, Tietê e Paraná incremental (43% da MLT do SE); SE-resto: Grande, Paranaíba e demais. A faixa larga do Sul reflete a habilidade baixa da persistência nesse subsistema. Fonte: ONS; projeção do modelo-v1.</p>
+  </section>
+
+  <section aria-labelledby="s-sim">
+    <details class="secao" id="abrir-sim">
+      <summary><h2 id="s-sim">Anos similares ao regime atual<span class="resumo-anos" id="resumo-anos"></span></h2></summary>
+    <div class="duas">
+      <div class="bloco">
+        <div class="ttl">Os 5 anos mais parecidos com o ENSO de hoje</div>
+        <div class="chips" id="chips-sim"></div>
+        <p class="sub" id="criterio-sim"></p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Onde a recomposição merece mais peso</div>
+        <div class="rolagem"><table class="confia"><thead><tr><th></th><th class="n">Em El Niño forte</th><th class="n">Em todos os anos</th></tr></thead><tbody id="tab-confia"></tbody></table></div>
+        <p class="leg">Ganho da recomposição sobre o modelo-v1 (CRPSS, 1 a 6 meses, previsões de 1961 a 2025 feitas só com o que existia em cada data). Azul: ganha com folga estatística; laranja: perde.</p>
+      </div>
+    </div>
+    </details>
+  </section>
+
+  <section aria-labelledby="s-traj">
+    <h2 id="s-traj">2026 ao lado dos anos similares</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-traj">ENA mensal de julho a junho de dois anos depois, % da MLT</div>
+        <div class="linha-controles">
+          <div class="abas" id="abas-traj" role="group" aria-label="Subsistema ou bloco">
+            <button type="button" data-v="SE-sul">SE-sul</button>
+            <button type="button" data-v="SE-resto">SE-resto</button>
+            <button type="button" data-v="SE" aria-pressed="true">SE</button>
+            <button type="button" data-v="S">Sul</button>
+            <button type="button" data-v="NE">Nordeste</button>
+            <button type="button" data-v="N">Norte</button>
+          </div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+            <div class="abas" id="anos-traj" role="group" aria-label="Anos de comparação">
+              <button type="button" data-v="sim" aria-pressed="true">Anos similares</button>
+              <button type="button" data-v="fortes">El Niños fortes</button>
+            </div>
+            <label class="chave" for="chave-disp"><input type="checkbox" id="chave-disp"><span class="trilho"></span>Dispersão</label>
+            <label class="chave" for="chave-arm"><input type="checkbox" id="chave-arm"><span class="trilho"></span>ENA armazenável</label>
+          </div>
+        </div>
+      </div>
+      <svg id="g-traj" viewBox="0 0 1040 300" role="img" aria-label="Trajetória de 2026 e dos anos de comparação"></svg>
+      <div class="linha-legenda">
+        <div class="legenda-mini">
+          <span><i class="l" style="border-color:var(--bar-pers)"></i>Anos de comparação</span>
+          <span><i class="l" style="border-color:var(--c-s);border-top-width:3px"></i>2026 (último mês parcial)</span>
+          <span><i class="l" style="border-color:var(--accent)"></i>Modelo-v1</span>
+          <span><i class="t" style="border-color:var(--sim)"></i>Recomposição pelos similares</span>
+          <span id="leg-disp" hidden><i style="background:var(--sim);opacity:.18"></i>Faixa dos similares (mín.–máx.)</span>
+          <span id="leg-arm" hidden><i class="t" style="border-color:var(--c-s)"></i>ENA armazenável</span>
+          <span><i style="background:var(--vazio)"></i>Períodos úmidos</span>
+        </div>
+      </div>
+      <p class="leg" id="nota-disp" hidden>Faixa dos similares: do menor ao maior valor entre os 5 anos similares, cada um recomposto sobre o normal de hoje (a média deles é a linha tracejada; o valor de cada ano está na tabela mensal, acima). Com 5 anos, mínimo e máximo dizem mais que percentis; não é uma faixa de probabilidade como a p10–p90 do modelo-v1.</p>
+      <p class="leg" id="nota-arm" hidden>ENA armazenável (pontilhado fino): a parte da ENA que os reservatórios conseguem guardar; o resto passa pelas usinas a fio d'água ou é vertido. Só existe na ENA diária do ONS, de 2000 em diante: aparece para 2026 e para os anos de comparação a partir de 2000. As projeções são de ENA bruta.</p>
+      <p class="leg">Cada linha cinza é um ano de comparação, de julho do ano do evento a junho de dois anos depois, com o ano escrito no fim. 2026 segue com o realizado e, a partir da rodada, com as duas projeções (a faixa do modelo-v1 está nos gráficos de cima e no tooltip). A recomposição é a média dessas mesmas linhas sobre o normal de hoje (por isso não coincide com a média das linhas cinza, que estão em % da MLT da época).</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-hist">
+    <h2 id="s-hist">Os anos similares no histórico</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl">ENA de cada período úmido (nov–abr), % da MLT</div>
+        <div class="abas" id="filtro-hist" role="group" aria-label="Anos em destaque">
+          <button type="button" data-v="sim" aria-pressed="true">Anos similares</button>
+          <button type="button" data-v="enf" aria-pressed="false">El Niño forte</button>
+          <button type="button" data-v="lnf" aria-pressed="false">La Niña forte</button>
+        </div>
+      </div>
+      <div class="grade4" id="hist"></div>
+      <details class="abrir" id="abrir-se">
+        <summary>Abrir o Sudeste por bloco (SE-sul e SE-resto)</summary>
+        <div class="grade4" id="hist-se"></div>
+      </details>
+      <div class="legenda-mini">
+        <span><i style="background:var(--sim)"></i>Anos similares</span>
+        <span><i style="background:var(--accent)"></i>El Niño forte</span>
+        <span><i style="background:var(--c-resto)"></i>La Niña forte (≤ −1,0)</span>
+        <span><i class="t" style="border-color:var(--ink-3)"></i>100% da MLT</span>
+      </div>
+      <p class="leg">Cada barra é o período úmido que começa em novembro do ano indicado. Os botões escolhem quais anos ficam em destaque (pode marcar mais de um); por padrão, só os similares. Fase pelo Niño 3.4 relativo médio de out–dez.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-gw">
+    <h2 id="s-gw">Contribuição de cada bacia</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-gw">GWmed acima ou abaixo da MLT</div>
+        <div class="linha-controles">
+          <div class="abas" id="abas-gw" role="group" aria-label="Subsistema">
+            <button type="button" data-v="SE" aria-pressed="true">Sudeste</button>
+            <button type="button" data-v="S">Sul</button>
+            <button type="button" data-v="NE">Nordeste</button>
+            <button type="button" data-v="N">Norte</button>
+          </div>
+          <div class="abas" id="modo-gw" role="group" aria-label="Detalhe">
+            <button type="button" data-v="blocos" aria-pressed="true">Blocos</button>
+            <button type="button" data-v="bacias">Bacias</button>
+          </div>
+        </div>
+      </div>
+      <div class="legenda-mini" id="leg-gw"></div>
+      <svg id="g-gw" viewBox="0 0 1040 260" role="img" aria-label="Anomalia de ENA por bacia em GWmed"></svg>
+      <p class="leg" id="nota-gw"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-enso">
+    <h2 id="s-enso">Camada de El Niño forte</h2>
+    <div class="linha-estado" id="estado-enso"></div>
+    <div class="metades">
+      <div class="bloco">
+        <div class="ttl">Desvio histórico da persistência nos El Niños fortes</div>
+        <div class="rolagem">
+          <table class="tab-vies">
+            <thead><tr><th>Subsistema</th><th>Direção</th><th class="n">Média (p.p.)</th><th class="n">Faixa (p.p.)</th><th class="n">Eventos</th></tr></thead>
+            <tbody id="tab-vies"></tbody>
+          </table>
+        </div>
+        <p class="leg">Realizado menos previsto pela persistência, em p.p. de % MLT, média de 1 a 6 meses, nas emissões com Niño 3.4 relativo ≥ 1,5 (1965, 1972, 1982, 1991, 1997, 2015). Direção quando 5 ou 6 dos 6 eventos têm o mesmo sinal (acima: o realizado veio acima da persistência). A camada não altera o número do modelo.</p>
+      </div>
+      <div class="bloco">
+        <div class="barra-abas">
+          <div class="ttl">Niño 3.4 relativo (°C)</div>
+          <div class="abas" id="enso-sim" role="group" aria-label="Anos similares no gráfico">
+            <button type="button" data-v="nao">Só 2026</button>
+            <button type="button" data-v="sim" aria-pressed="true">Com anos similares</button>
+          </div>
+        </div>
+        <svg id="g-enso" viewBox="0 0 520 260" role="img" aria-label="Niño 3.4 relativo mensal e média de 3 meses"></svg>
+        <div class="legenda-mini">
+          <span><i class="l" style="border-color:var(--accent)"></i>Mensal</span>
+          <span><i class="l" style="border-color:var(--ink)"></i>Média de 3 meses</span>
+          <span id="leg-enso-sim"><i class="l" style="border-color:var(--bar-pers)"></i>Anos similares (mensal, mesmo calendário)</span>
+          <span><i class="t" style="border-color:var(--ink-3)"></i>Limiar 1,5</span>
+        </div>
+        <p class="leg">Calculado da ERSST v6 (NOAA), tipo RONI: desconta o aquecimento médio dos trópicos. Com anos similares: o Niño 3.4 mensal de cada ano no mesmo calendário (1997 no lugar de 2026, e assim por diante) e mais 9 meses, para ver o que o ENSO deles fez depois.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-sombra">
+    <h2 id="s-sombra">Modelos-sombra 2026/27</h2>
+    <p class="sub" id="sub-sombra">Variantes registradas a cada rodada para comparar com o realizado ao longo deste El Niño. Não são a projeção oficial.</p>
+    <div class="rolagem">
+      <table>
+        <thead id="cab-sombra"></thead>
+        <tbody id="tab-sombra"></tbody>
+      </table>
+    </div>
+    <p class="leg">T2: persistência ajustada pelos anos de ENSO mais parecidos, só em regime forte (no Sul ganhou 9% sobre a persistência nos eventos fortes, 1961–2025). T7: persistência + ENSO e gradiente do Atlântico (no Norte ganhou 1,9% em todos os anos e 9,5% nos eventos fortes). Fora do regime forte, o T2 é igual ao modelo-v1.</p>
+  </section>
+
+  <section aria-labelledby="s-desemp">
+    <h2 id="s-desemp">Desempenho do modelo-v1</h2>
+    <div class="bloco">
+      <div class="ttl">Ganho sobre a climatologia dos últimos 30 anos, por antecedência</div>
+      <svg id="g-hab" viewBox="0 0 1040 250" role="img" aria-label="CRPSS do modelo-v1 por antecedência e subsistema"></svg>
+      <p class="leg">CRPSS = 1 − erro probabilístico do modelo ÷ erro da climatologia; acima de 0, o modelo ganha. Fora da amostra: cada previsão de 1961 a 2025 usou só o que existia na data. No Sudeste, a persistência no subsistema inteiro; a versão em blocos soma +0,005.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-rod">
+    <h2 id="s-rod">Rodadas</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Emissão</th><th>Registrada em</th><th>Versão</th><th>Tipo</th><th class="n">Niño 3.4 rel. (3 meses)</th><th>Regime</th></tr></thead>
+        <tbody id="tab-rod"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="aviso">
+    <span>Projeção em % da MLT vigente (ONS, 28/03/2026). O modelo-v1 é a persistência ajustada: carrega a anomalia atual de cada subsistema com a memória medida em 1931–2025; o clima não entra no número. Uma rodada publicada nunca é recalculada. Método, testes e limitações em <a href="./metodologia.html">Metodologia</a>.</span>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script type="module">
+// dados da página: serving/hydro_inflow_similarity/produto.json (contas no Python, desenho no JS)
+const DADOS = await (await fetch("/dados/hydro_inflow_similarity/produto.json", { cache: "no-cache" })).json();
+  const R = DADOS.rodada, O = DADOS.observado;
+  const NOME = { "SE": "SE agregado", "SE-sul": "SE-sul", "SE-resto": "SE-resto", "S": "Sul", "NE": "Nordeste", "N": "Norte" };
+  const H_MAX = 12;
+  const somaMes = (p, k) => { const d = new Date(+p.slice(0, 4), +p.slice(5, 7) - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  // número principal: a atualização com o mês em curso (D021) quando existe; senão, a rodada mensal
+  const A = DADOS.atualizacao, PREV = A ? A.previsoes : R.previsoes;
+  const prev = nome => PREV.filter(p => p.nome === nome && p.alvo <= somaMes(R.emissao, H_MAX)).sort((a, b) => a.alvo < b.alvo ? -1 : 1);
+  // os similares ficam puros em todos os meses, inclusive o mês em curso (D022, escolha do Arthur): no começo do mês,
+  // com poucos dias observados, eles são uma referência independente do dado parcial
+  const SIM = DADOS.similares, simDe = nome => (SIM.por_nome?.[nome] ?? []).filter(p => p.h <= H_MAX);
+  const ANOS_SIM = (SIM.anos ?? []).map(a => a.ano);
+  const ultimoAlvo = somaMes(R.emissao, H_MAX);
+  // eixo de tempo comum: histórico observado + meses projetados
+  const MESES = [...O.meses];
+  for (let k = 1; somaMes(O.meses[O.meses.length - 1], k) <= ultimoAlvo; k++) MESES.push(somaMes(O.meses[O.meses.length - 1], k));
+  const iEmissao = MESES.indexOf(R.emissao);
+
+  // ---------- topo ----------
+  document.getElementById("horizonte").textContent = `Horizonte: ${rot(somaMes(R.emissao, 1))} a ${rot(ultimoAlvo)}`;
+  const I = R.insumos;
+  document.getElementById("premissas").innerHTML =
+    `<span>Premissas:</span><span>ENA ONS até ${rot(I.ultimo_mes_ena)}</span><span>ERSST v6 até ${rot(I.ultimo_mes_ersst)}</span>` +
+    `<span>Niño 3.4 rel. ${n(I.nino34_rel_3m, 2)} (${I.regime_enso.toLowerCase()})</span><span>${R.versao}</span>` +
+    (A ? `<span>Atualização com ${rot(A.mes)} parcial (${A.dias} dias, até ${dataBr(A.ate)})</span>` : "") +
+    `<span class="atualizado">Rodada de ${rot(R.emissao)} · registrada ${dataHoraBr(R.registrada_em)}</span>`;
+
+  const pSE = prev("SE")[0], pSul = prev("SE-sul")[0], pResto = prev("SE-resto")[0];
+  const iUlt = O.meses.length - 1;
+  const rSE = R.previsoes.find(p => p.nome === "SE" && p.alvo === pSE.alvo);
+  document.getElementById("leitura-se").innerHTML =
+    `Para ${rot(pSE.alvo)}${A ? ` (${A.dias} dias observados)` : ""}, o SE fica em <b>${n(pSE.media)}%</b> da MLT (p10–p90: ${n(pSE.p10)}–${n(pSE.p90)}%), ` +
+    `com SE-sul em ${n(pSul.media)}% e SE-resto em ${n(pResto.media)}%. ` +
+    (A && rSE ? `A rodada de ${rot(R.emissao)}, feita antes desses dias, previa ${n(rSE.media)}%: a projeção abaixo já parte do mês em curso.` : "");
+
+  // ---------- série realizada + projeção ----------
+  function serie(svg, nome, w, h, m, ymax, rotulosX) {
+    svg.replaceChildren();
+    const P = prev(nome), obs = O.pct[nome];
+    const hi = ymax ?? Math.max(...obs.filter(v => v != null), ...P.map(p => p.p90)) * 1.05;
+    const e = eixo(0, hi, 5);
+    const x = i => m.l + i * (w - m.l - m.r) / (MESES.length - 1), y = v => m.t + (h - m.t - m.b) * (1 - (v - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, n(t)); });
+    const ix = p => MESES.indexOf(p.alvo);
+    const banda = [[x(iEmissao), y(obs[O.meses.indexOf(R.emissao)])], ...P.map(p => [x(ix(p)), y(p.p90)]),
+                   ...P.slice().reverse().map(p => [x(ix(p)), y(p.p10)]), [x(iEmissao), y(obs[O.meses.indexOf(R.emissao)])]];
+    S(svg, "polygon", { points: banda.map(q => q.join(",")).join(" "), fill: "var(--faixa-proj)" });
+    S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(100), y2: y(100), stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+    S(svg, "line", { x1: x(iEmissao), x2: x(iEmissao), y1: m.t, y2: h - m.b, stroke: "var(--ink-3)", "stroke-dasharray": "2 3" });
+    S(svg, "text", { x: x(iEmissao) + 4, y: m.t + 9 }, "último mês fechado");
+    const completos = obs.map((v, i) => [i, v]).filter(([i, v]) => v != null && !O.parcial[i]);
+    S(svg, "polyline", { points: completos.map(([i, v]) => `${x(i)},${y(v)}`).join(" "), fill: "none", stroke: "var(--ink)", "stroke-width": 2 });
+    O.parcial.forEach((p, i) => { if (p) S(svg, "circle", { cx: x(i), cy: y(obs[i]), r: 4.5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5 }); });
+    const linha = [[x(iEmissao), y(obs[O.meses.indexOf(R.emissao)])], ...P.map(p => [x(ix(p)), y(p.media)])];
+    S(svg, "polyline", { points: linha.map(q => q.join(",")).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2.2 });
+    const PS = simDe(nome);
+    if (PS.length) S(svg, "polyline", { points: [[x(iEmissao), y(obs[O.meses.indexOf(R.emissao)])], ...PS.map(p => [x(ix(p)), y(p.media)])].map(q => q.join(",")).join(" "),
+      fill: "none", stroke: "var(--sim)", "stroke-width": 2, "stroke-dasharray": "5 3" });
+    MESES.forEach((mm, i) => {
+      if (rotulosX(mm)) S(svg, "text", { x: x(i), y: h - 8, "text-anchor": "middle" }, rot(mm));
+      const io = O.meses.indexOf(mm), p = P.find(q => q.alvo === mm);
+      const partes = [`<b>${rot(mm)}</b> · ${NOME[nome]}`];
+      if (io >= 0 && obs[io] != null) partes.push(`realizado ${n(obs[io])}%${O.parcial[io] ? " (parcial)" : ""}`);
+      if (p) partes.push(`modelo-v1 ${n(p.media)}% (p10–p90 ${n(p.p10)}–${n(p.p90)}%)${A && p.h === 0 ? " · mês em curso" : ""}`);
+      const pr = A ? R.previsoes.find(q => q.nome === nome && q.alvo === mm) : null;
+      if (pr) partes.push(`rodada de ${rot(R.emissao)}: ${n(pr.media)}%`);
+      const ps = PS.find(q => q.alvo === mm);
+      if (ps) partes.push(`anos similares ${n(ps.media)}% (${Object.entries(ps.anos).map(([a, v]) => `${a}: ${n(v)}`).join(" · ")})`);
+      if (nome === "SE" && io >= 0) partes.push(`SE-sul ${n(O.pct["SE-sul"][io])}% · SE-resto ${n(O.pct["SE-resto"][io])}%`);
+      if (nome === "SE-sul" && io >= 0) partes.push(`Paranapanema ${n(O.bacias.PARANAPANEMA[io])}% · Paraná incr. ${n(O.bacias.PARANA[io])}%`);
+      if (nome === "SE-resto" && io >= 0) partes.push(`Grande ${n(O.bacias.GRANDE[io])}% · Paranaíba ${n(O.bacias.PARANAIBA[io])}%`);
+      const alvo = S(svg, "rect", { x: x(i) - 8, y: m.t, width: 16, height: h - m.t - m.b, fill: "transparent" });
+      dicaEm(alvo, partes.join("<br>"));
+    });
+  }
+  const M4 = { l: 38, r: 10, t: 12, b: 24 }, rotX = mm => /-(01|07)$/.test(mm);
+  function resumo(nome, alvoId) {
+    const p = prev(nome)[0], io = O.meses.length - 1;
+    const ps = simDe(nome).find(q => q.alvo === p.alvo);
+    document.getElementById(alvoId).innerHTML = `${rot(p.alvo)}${A && p.h === 0 ? ` (${A.dias} dias)` : ""}: <b>${n(p.media)}%</b> (${n(p.p10)}–${n(p.p90)})` +
+      (ps ? ` · <span class="sim">similares ${n(ps.media)}%</span>` : "") +
+      (O.parcial[io] ? ` · realizado parcial ${n(O.pct[nome][io])}%` : "");
+  }
+  function desenharSE(nome) {
+    document.querySelectorAll("#abas-se button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === nome)));
+    document.getElementById("tt-se").textContent = nome === "SE" ? "Sudeste, % da MLT" : `Sudeste · ${NOME[nome]}, % da MLT`;
+    resumo(nome, "res-SE");
+    serie(document.getElementById("g-SE"), nome, 520, 250, M4, null, rotX);
+  }
+  document.getElementById("abas-se").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) desenharSE(b.dataset.v); });
+  desenharSE("SE");
+  ["S", "NE", "N"].forEach(nome => { resumo(nome, `res-${nome}`); serie(document.getElementById(`g-${nome}`), nome, 520, 250, M4, null, rotX); });
+
+  // ---------- tabela mês a mês (recolhida) ----------
+  (function () {
+    const mltDe = (nome, mm) => DADOS.mlt_sub[nome][+mm.slice(5, 7) - 1];
+    const cel = (pct, nome, mm, cls = "") => pct == null ? `<td class="n ${cls}">—</td>` :
+      `<td class="n ${cls}">${n(pct)}%<span class="mw">${n(pct / 100 * mltDe(nome, mm))}</span></td>`;
+    const obsDe = (nome, mm) => { const io = O.meses.indexOf(mm); return io >= 0 ? { v: O.pct[nome][io], parcial: O.parcial[io] } : null; };
+    const alvos = prev("SE").map(p => p.alvo);
+    const ROT = { SE: "SE agregado", "SE-sul": "SE-sul", "SE-resto": "SE-resto", S: "Sul", NE: "Nordeste", N: "Norte" };
+    function tabela(v) {
+      document.querySelectorAll("#abas-tab button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+      const cab = document.getElementById("cab-mes"), corpo = document.getElementById("corpo-mes");
+      cab.innerHTML = `<tr><th></th>${alvos.map(mm => `<th class="n">${rot(mm)}</th>`).join("")}</tr>`;
+      const linha = (rotulo, valores, cls = "", ini = false) => `<tr${ini ? ' class="grupo-ini"' : ""}><td class="rot">${rotulo}</td>${valores.join("")}</tr>`;
+      if (v === "geral") {
+        document.getElementById("tt-tab").textContent = "Visão geral: modelo-v1 e anos similares, % da MLT";
+        corpo.innerHTML = ["SE-sul", "SE-resto", "SE", "S", "NE", "N"].map(k =>
+          linha(`<b>${ROT[k]}</b> · modelo-v1`, alvos.map(mm => cel(prev(k).find(q => q.alvo === mm)?.media, k, mm)), "", true) +
+          linha(`<span class="sim">anos similares</span>`, alvos.map(mm => cel(simDe(k).find(q => q.alvo === mm)?.media, k, mm, "sim")))).join("");
+        document.getElementById("leg-tab").textContent = "Média do modelo-v1 e da recomposição pelos anos similares, mês a mês. Embaixo de cada %, em cinza, o valor em MWmed (% × MLT do mês).";
+        return;
+      }
+      document.getElementById("tt-tab").textContent = `${ROT[v]}: cenários mês a mês, % da MLT`;
+      const anos = ANOS_SIM.map(String), P = mm => prev(v).find(q => q.alvo === mm), PS = mm => simDe(v).find(q => q.alvo === mm);
+      corpo.innerHTML =
+        linha("MLT (MWmed)", alvos.map(mm => `<td class="n"><span class="fx">${n(mltDe(v, mm))}</span></td>`)) +
+        linha("Realizado", alvos.map(mm => { const o = obsDe(v, mm); return o && o.v != null ? `<td class="n">${n(o.v)}%${o.parcial ? '<span class="mw">parcial</span>' : ""}<span class="mw">${n(o.v / 100 * mltDe(v, mm))}</span></td>` : '<td class="n">—</td>'; }), "", true) +
+        linha("<b>Modelo-v1</b>", alvos.map(mm => cel(P(mm)?.media, v, mm)), "", true) +
+        linha("faixa p10–p90", alvos.map(mm => `<td class="n"><span class="fx">${P(mm) ? `${n(P(mm).p10)}–${n(P(mm).p90)}%` : "—"}</span></td>`)) +
+        linha('<b class="sim">Anos similares</b>', alvos.map(mm => cel(PS(mm)?.media, v, mm, "sim")), "", true) +
+        anos.map(a => linha(a, alvos.map(mm => cel(PS(mm)?.anos?.[a], v, mm)))).join("");
+      document.getElementById("leg-tab").textContent = "Modelo-v1: média e faixa p10–p90. Anos similares: média da recomposição e cada ano (a ENA daquele ano sobre o normal de hoje). Embaixo de cada %, em cinza, o valor em MWmed.";
+    }
+    document.getElementById("abas-tab").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) tabela(b.dataset.v); });
+    tabela("geral");
+  })();
+
+  // ---------- anos similares: quadro e desempenho ----------
+  (function () {
+    document.getElementById("resumo-anos").textContent = SIM.anos.map(a => a.ano).join(" · ");
+    document.getElementById("chips-sim").innerHTML = SIM.anos.map(a =>
+      `<div class="chip"><b>${a.ano}</b><span>Niño 3.4 ${n(a.n, 2)} · ${sn(a.dn, 2)} em 3 meses</span></div>`).join("");
+    document.getElementById("criterio-sim").innerHTML =
+      `Hoje (${rot(R.emissao)}): Niño 3.4 relativo de ${n(I.nino34_rel_3m, 2)} na média de 3 meses, subindo ${sn(I.nino34_rel_3m - (DADOS.enso.tres_meses.at(-4) ?? NaN), 2)} em 3 meses. ` +
+      `Critério: os 5 anos, na mesma fase do ENSO, com nível e subida do Niño 3.4 mais próximos na mesma época do ano. ` +
+      `A linha tracejada verde nos gráficos acima repete a ENA desses anos sobre o normal dos últimos 30 anos, inclusive no mês em curso: no começo do mês, com poucos dias observados, ela é uma referência independente do dado parcial. É um cenário ao lado do modelo-v1, não o substitui.` +
+      (SIM.calculado_depois ? ` <i>Calculado em ${dataBr(DADOS.gerado_em)} com dados até ${rot(R.emissao)} (a rodada foi registrada antes desta camada).</i>` : "");
+    const D = DADOS.similares_desempenho, achar = (nome, rec) => D.find(d => d.nome === nome && d.recorte === rec && d.ref === "PER");
+    document.getElementById("tab-confia").innerHTML = ["S", "N", "SE-sul", "SE", "SE-resto", "NE"].map(k => {
+      const cel = d => !d ? "<td class=\"n\">—</td>" : `<td class="n ${d.ic05 > 0 ? "bom" : d.ic95 < 0 ? "ruim" : ""}">${sn(d.crpss * 100, 0)}%</td>`;
+      return `<tr><td>${NOME[k]}</td>${cel(achar(k, "El Niño forte"))}${cel(achar(k, "todos"))}</tr>`;
+    }).join("");
+  })();
+
+  // ---------- 2026 ao lado dos anos similares ----------
+  (function () {
+    const T = DADOS.trajetorias, Y = T.ano_atual, MESES_T = ["jul", "ago", "set", "out", "nov", "dez", "jan", "fev", "mar", "abr", "mai", "jun"];
+    const pos = mm => (+mm.slice(0, 4) - Y) * 12 + (+mm.slice(5, 7) - 7);
+    let nomeT = "SE", grupoT = "sim", armOn = false, dispOn = false;
+    const serieT = (a, nome) => T.anos[a][nome], armT = (a, nome) => T.anos[a].armazenavel?.[nome] ?? null;
+    function desenhar() {
+      document.querySelectorAll("#abas-traj button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === nomeT)));
+      document.querySelectorAll("#anos-traj button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === grupoT)));
+      document.getElementById("tt-traj").textContent = `${NOME[nomeT]}: ENA mensal de julho a junho de dois anos depois, % da MLT`;
+      document.getElementById("nota-arm").hidden = !armOn;
+      document.getElementById("leg-arm").hidden = !armOn;
+      document.getElementById("nota-disp").hidden = !dispOn;
+      document.getElementById("leg-disp").hidden = !dispOn;
+      const anos = (grupoT === "sim" ? ANOS_SIM : T.fortes).map(String), atual = T.anos[String(Y)];
+      const P = prev(nomeT), PS = simDe(nomeT);
+      const armAnos = armOn ? [...anos, String(Y)].filter(a => armT(a, nomeT)) : [];
+      const svg = document.getElementById("g-traj"), w = 1040, h = 300, m = { l: 40, r: 70, t: 12, b: 28 };
+      svg.replaceChildren();
+      const vals = [...anos.flatMap(a => serieT(a, nomeT)), ...serieT(String(Y), nomeT), ...armAnos.flatMap(a => armT(a, nomeT)),
+        ...P.map(p => p.media), ...PS.map(p => p.media), ...(dispOn ? PS.map(p => p.maximo) : [])].filter(v => v != null);
+      const e = eixo(0, Math.max(...vals), 5), x = i => m.l + i * (w - m.l - m.r) / 23, y = v => m.t + (h - m.t - m.b) * (1 - (v - e.a) / (e.b - e.a));
+      [[4, 9], [16, 21]].forEach(([a, b]) => S(svg, "rect", { x: x(a) - 4, y: m.t, width: x(b) - x(a) + 8, height: h - m.t - m.b, fill: "var(--vazio)" }));
+      e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, n(t)); });
+      S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(100), y2: y(100), stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+      for (let i = 0; i < 24; i += 3) S(svg, "text", { x: x(i), y: h - 8, "text-anchor": "middle" }, `${MESES_T[i % 12]}${i >= 12 ? "/+1" : ""}`);
+      const fins = [];
+      anos.forEach(a => {
+        const v = serieT(a, nomeT), pts = v.map((q, i) => q == null ? null : [x(i), y(q), i, q]).filter(Boolean);
+        if (!pts.length) return;
+        S(svg, "polyline", { points: pts.map(p => `${p[0]},${p[1]}`).join(" "), fill: "none", stroke: "var(--bar-pers)", "stroke-width": 1.6 });
+        const [lx, ly] = pts[pts.length - 1]; fins.push({ t: a, x: lx, y: ly });
+      });
+      // ENA armazenável, quando ligada: pontilhado fino na cor de cada linha (cinza ou laranja), sem tirar a bruta
+      armAnos.forEach(a => {
+        const atualA = a === String(Y), va = armT(a, nomeT), pa = va.map((q, i) => q == null ? null : [x(i), y(q), i, q]).filter(Boolean);
+        if (!pa.length) return;
+        S(svg, "polyline", { points: pa.map(p => `${p[0]},${p[1]}`).join(" "), fill: "none", stroke: atualA ? "var(--c-s)" : "var(--bar-pers)", "stroke-width": atualA ? 2 : 1.3, "stroke-dasharray": "2 3" });
+        const u = pa[pa.length - 1]; fins.push({ t: `${a} armaz.`, x: u[0], y: u[1], cor: atualA ? "var(--c-s)" : null });
+      });
+      // 2026: projeções saindo do último mês completo antes da rodada, mais finas
+      const v = serieT(String(Y), nomeT), iR = pos(R.emissao), vR = v[iR];
+      // dispersão dos similares, quando ligada: mínimo–máximo dos 5 anos recompostos, saindo do último mês fechado
+      if (dispOn && PS.length) {
+        const banda = [[x(iR), y(vR)], ...PS.map(p => [x(pos(p.alvo)), y(p.maximo)]), ...PS.slice().reverse().map(p => [x(pos(p.alvo)), y(p.minimo)])];
+        S(svg, "polygon", { points: banda.map(q => q.join(",")).join(" "), fill: "var(--sim)", "fill-opacity": 0.14 });
+      }
+      const linhaProj = (L, cor, tracejado) => {
+        if (!L.length) return;
+        S(svg, "polyline", { points: [[x(iR), y(vR)], ...L.map(p => [x(pos(p.alvo)), y(p.media)])].map(q => q.join(",")).join(" "),
+          fill: "none", stroke: cor, "stroke-width": 1.8, "stroke-dasharray": tracejado ? "5 3" : null });
+        const u = L[L.length - 1]; fins.push({ t: tracejado ? "similares" : "modelo-v1", x: x(pos(u.alvo)), y: y(u.media), cor });
+      };
+      linhaProj(P, "var(--accent)", false);
+      linhaProj(PS, "var(--sim)", true);
+      // 2026 realizado por cima, em laranja, como nos fundamentos
+      const pts = v.map((q, i) => q == null ? null : [x(i), y(q), i, q]).filter(Boolean);
+      const iParcial = v.findIndex((_, i) => atual.parcial[i]);
+      const cheios = iParcial > 0 ? pts.filter(p => p[2] < iParcial) : pts;
+      S(svg, "polyline", { points: cheios.map(p => `${p[0]},${p[1]}`).join(" "), fill: "none", stroke: "var(--c-s)", "stroke-width": 3 });
+      if (iParcial > 0 && v[iParcial] != null) {
+        const a = pts.find(p => p[2] === iParcial - 1), b = pts.find(p => p[2] === iParcial);
+        S(svg, "line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: "var(--c-s)", "stroke-width": 2, "stroke-dasharray": "3 3" });
+        S(svg, "circle", { cx: b[0], cy: b[1], r: 4.5, fill: "var(--surface)", stroke: "var(--c-s)", "stroke-width": 2 });
+      }
+      const ult = cheios[cheios.length - 1];
+      S(svg, "text", { x: ult[0] - 6, y: ult[1] - 8, "text-anchor": "end", class: "forte", style: "fill:var(--c-s)" }, String(Y));
+      const r = fins.map(f => ({ el: S(svg, "text", { x: f.x + 6, y: f.y + 3, style: f.cor ? `fill:${f.cor}` : null }, f.t), x: f.x + 6, y: f.y + 3 }));
+      empilharRotulos(r, 40, 11);
+      // hover por mês: qualquer ponto da coluna do mês mostra o resumo daquele mês, com uma guia vertical
+      const guia = S(svg, "line", { y1: m.t, y2: h - m.b, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" });
+      const zona = S(svg, "rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: h - m.t - m.b, fill: "transparent" });
+      const coluna = ev => { const q = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(svg.getScreenCTM().inverse());
+        return Math.max(0, Math.min(23, Math.round((q.x - m.l) / ((w - m.l - m.r) / 23)))); };
+      dicaEm(zona, ev => { const i = coluna(ev); guia.setAttribute("x1", x(i)); guia.setAttribute("x2", x(i)); guia.setAttribute("visibility", "visible"); return resumoMes(i); });
+      zona.addEventListener("pointerleave", () => guia.setAttribute("visibility", "hidden"));
+      function resumoMes(i) {
+        const mm = `${Y + Math.floor((i + 6) / 12)}-${String((i + 6) % 12 + 1).padStart(2, "0")}`;
+        const cor = c => `<i style="display:inline-block;width:9px;height:3px;margin:0 6px 3px 0;background:${c}"></i>`;
+        const L = [`<b>${MESES_T[i % 12]}/${mm.slice(2, 4)}</b> · ${NOME[nomeT]}, % da MLT`];
+        if (v[i] != null) L.push(`${cor("var(--c-s)")}${Y}: <b>${n(v[i])}%</b>${atual.parcial[i] ? " (parcial)" : ""}${armOn && armT(String(Y), nomeT)?.[i] != null ? ` · armaz. ${n(armT(String(Y), nomeT)[i])}%` : ""}`);
+        const pv = P.find(p => p.alvo === mm), ps = PS.find(p => p.alvo === mm);
+        if (pv) L.push(`${cor("var(--accent)")}Modelo-v1: <b>${n(pv.media)}%</b> (p10–p90 ${n(pv.p10)}–${n(pv.p90)})`);
+        if (ps) L.push(`${cor("var(--sim)")}Similares: <b>${n(ps.media)}%</b>` + (dispOn ? ` (mín.–máx. ${n(ps.minimo)}–${n(ps.maximo)})` : ""));
+        const comp = anos.map(a => [a, serieT(a, nomeT)[i]]).filter(([, q]) => q != null).sort((a, b) => b[1] - a[1]);
+        if (comp.length) L.push(`${cor("var(--bar-pers)")}${comp.map(([a, q]) => `${a} ${n(q)}`).join(" · ")}`);
+        return L.join("<br>");
+      }
+    }
+    document.getElementById("abas-traj").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { nomeT = b.dataset.v; desenhar(); } });
+    document.getElementById("anos-traj").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { grupoT = b.dataset.v; desenhar(); } });
+    document.getElementById("chave-arm").addEventListener("change", ev => { armOn = ev.target.checked; desenhar(); });
+    document.getElementById("chave-disp").addEventListener("change", ev => { dispOn = ev.target.checked; desenhar(); });
+    desenhar();
+  })();
+
+  // ---------- cada período úmido, com os anos em destaque ----------
+  const U = DADOS.umido, filtros = new Set(["sim"]);
+  function destaque(i) {
+    const ano = U.anos[i];
+    if (filtros.has("sim") && ANOS_SIM.includes(ano)) return "var(--sim)";
+    if (filtros.has("enf") && U.fase[i] === "El Niño forte") return "var(--accent)";
+    if (filtros.has("lnf") && U.fase[i] === "La Niña forte") return "var(--c-resto)";
+    return null;
+  }
+  function umidoPainel(caixa, nome, titulo) {
+    const d = document.createElement("div"); d.className = "mini"; caixa.appendChild(d);
+    d.innerHTML = `<div class="ttl">${titulo}</div>`;
+    const w = 500, h = 210, m = { l: 34, r: 8, t: 20, b: 22 }, svg = S(d, "svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": `ENA de cada período úmido: ${titulo}` });
+    const todos = ["SE", "S", "NE", "N", "SE-sul", "SE-resto"].flatMap(k => U[k]).filter(v => v != null), e = eixo(0, Math.max(...todos), 4), v = U[nome];
+    const bw = (w - m.l - m.r) / U.anos.length, x = i => m.l + (i + 0.5) * bw, y = q => m.t + (h - m.t - m.b) * (1 - (q - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: "var(--rule)" }); S(svg, "text", { x: m.l - 5, y: y(t) + 3, "text-anchor": "end" }, n(t)); });
+    const rotulos = [];
+    U.anos.forEach((ano, i) => { const q = v[i]; if (q == null) return; const cor = destaque(i);
+      const r = S(svg, "rect", { x: x(i) - bw * 0.4, y: y(q), width: bw * 0.8, height: y(0) - y(q), fill: cor ?? "var(--bar-pers)", opacity: cor ? 1 : 0.75 });
+      dicaEm(r, `<b>Úmido ${ano}/${String(ano + 1).slice(2)}</b>${ANOS_SIM.includes(ano) ? " · ano similar" : ""}${U.fase[i] && U.fase[i] !== "outro" ? ` · ${U.fase[i]}` : ""}<br>${titulo}: ${n(q)}% da MLT<br>Niño 3.4 rel. out–dez: ${n(U.enso[i], 2)}`);
+      if (cor) rotulos.push({ el: S(svg, "text", { x: x(i), y: y(q) - 3, "text-anchor": "middle", class: "valor ano", style: `fill:${cor}` }, ano), x: x(i), y: y(q) - 3 });
+      if (ano % 20 === 0) S(svg, "text", { x: x(i), y: h - 6, "text-anchor": "middle" }, ano); });
+    S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(100), y2: y(100), stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+    empilharRotulos(rotulos, 26, 10);
+  }
+  function desenharHist() {
+    const a = document.getElementById("hist"), b = document.getElementById("hist-se");
+    a.replaceChildren(); b.replaceChildren();
+    [["SE", "Sudeste (agregado)"], ["S", "Sul"], ["NE", "Nordeste"], ["N", "Norte"]].forEach(([k, t]) => umidoPainel(a, k, t));
+    [["SE-sul", "SE-sul (Paranapanema, Tietê, Paraná incr.)"], ["SE-resto", "SE-resto (Grande, Paranaíba e demais)"]].forEach(([k, t]) => umidoPainel(b, k, t));
+  }
+  document.getElementById("filtro-hist").addEventListener("click", ev => { const btn = ev.target.closest("button"); if (!btn) return;
+    const on = btn.getAttribute("aria-pressed") !== "true"; btn.setAttribute("aria-pressed", String(on));
+    on ? filtros.add(btn.dataset.v) : filtros.delete(btn.dataset.v); desenharHist(); });
+  desenharHist();
+
+  // ---------- contribuição de cada bacia em GWmed ----------
+  const NOME_B = { PARANAPANEMA: "Paranapanema", TIETE: "Tietê", PARANA: "Paraná incr.", GRANDE: "Grande", PARANAIBA: "Paranaíba",
+    IGUACU: "Iguaçu", URUGUAI: "Uruguai", JACUI: "Jacuí", "SAO FRANCISCO": "São Francisco", demais: "Demais" };
+  const CORES = ["var(--g1)", "var(--g2)", "var(--g3)", "var(--g4)", "var(--g5)"];
+  let subGW = "SE", modoGW = "blocos";
+  function gruposGW() {
+    const C = DADOS.contribuicao, NOMES = { S: "Sul", NE: "Nordeste", N: "Norte" };
+    if (subGW === "SE" && modoGW === "blocos") return [["SE-sul", "SE-sul", "var(--c-sul)", O.gw["SE-sul"]], ["SE-resto", "SE-resto", "var(--c-resto)", O.gw["SE-resto"]]];
+    if (subGW !== "SE" && (modoGW === "blocos" || subGW === "N")) return [[subGW, `${NOMES[subGW]} (subsistema)`, "var(--g1)", O.gw[subGW]]];
+    const G = C[subGW], chaves = Object.keys(G);
+    return chaves.map((k, j) => [k, subGW === "N" ? "Norte (total)" : k === "demais" ? (subGW === "SE" ? "Demais do SE" : subGW === "S" ? "Demais do Sul" : "Demais do NE") : NOME_B[k],
+      k === "demais" ? (subGW === "N" ? "var(--g1)" : "var(--g-demais)") : CORES[j % CORES.length], G[k]]);
+  }
+  function desenharGW() {
+    document.querySelectorAll("#abas-gw button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === subGW)));
+    document.querySelectorAll("#modo-gw button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === modoGW)));
+    const bModo = document.querySelectorAll("#modo-gw button");
+    bModo[0].textContent = subGW === "SE" ? "Blocos" : "Subsistema";
+    bModo[1].disabled = subGW === "N";
+    bModo[1].title = subGW === "N" ? "Tocantins e Amazonas são divididos entre Norte e Sudeste; o ONS não publica a parte de cada um." : "";
+    if (subGW === "N") { modoGW = "blocos"; bModo.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === "blocos"))); }
+    const NOMES = { SE: "Sudeste", S: "Sul", NE: "Nordeste", N: "Norte" };
+    document.getElementById("tt-gw").textContent = `${NOMES[subGW]}: GWmed acima ou abaixo da MLT`;
+    const grupos = gruposGW(), svg = document.getElementById("g-gw"), w = 1040, h = 260, m = { l: 44, r: 12, t: 12, b: 28 };
+    svg.replaceChildren();
+    document.getElementById("leg-gw").innerHTML = grupos.map(([, t, cor]) => `<span><i style="background:${cor}"></i>${t}</span>`).join("") +
+      `<span><i style="background:var(--ink);border-radius:50%;width:8px;height:8px"></i>Total do subsistema</span><span><i style="background:transparent;border:1.5px dashed var(--ink-3)"></i>Projetado (modelo-v1)</span>`;
+    const totalSub = subGW !== "SE" && modoGW === "blocos";
+    document.getElementById("nota-gw").textContent = totalSub && subGW !== "N" ? "Subsistema fechado: anomalia total em GWmed, com a projeção do modelo-v1. Em \"Bacias\", a mesma anomalia aberta pelas principais bacias." : {
+      SE: modoGW === "blocos" ? "SE-sul: Paranapanema, Tietê e Paraná incremental; SE-resto: o restante. Os dois blocos somam exatamente o SE, e o modelo-v1 projeta cada um." :
+        "Bacias inteiramente no SE; \"demais\" fecha a soma (Paraíba do Sul, Doce, Paraguai e as partes do SE no Amazonas, Tocantins e São Francisco). Projeção só no total.",
+      S: "Iguaçu, Uruguai e Jacuí ficam inteiras no Sul; \"demais\" (Capivari, Itajaí e parte do Paranapanema) fecha a soma. Projeção só no total.",
+      NE: "São Francisco como bacia inteira (inclui Três Marias, que fica no SE); \"demais\" fecha a soma com o NE e pode ser negativo por isso. Projeção só no total.",
+      N: "O Norte não é aberto por bacia: Tocantins e Amazonas são divididos entre Norte e Sudeste, e o ONS não publica a parte de cada um. Barras = total do subsistema, com a projeção do modelo-v1." }[subGW];
+    const totalObs = i => grupos.reduce((a, g) => a + (g[3][i] ?? 0), 0);
+    const projTot = mm => { const p = prev(subGW).find(q => q.alvo === mm); if (!p) return null;
+      return p.anomalia_gw ?? (p.media / 100 - 1) * DADOS.mlt_sub[subGW][+mm.slice(5, 7) - 1] / 1000; };
+    const projBloco = (k, mm) => { const p = prev(k).find(q => q.alvo === mm); return p ? p.anomalia_gw : null; };
+    const proj = modoGW === "blocos";
+    const projBlocoOuTotal = (k, mm) => subGW === "SE" ? projBloco(k, mm) : projTot(mm);
+    let lo = 0, hi = 0;
+    MESES.forEach((mm, i) => { const io = O.meses.indexOf(mm);
+      const vals = io >= 0 ? grupos.map(g => g[3][io] ?? 0) : proj ? grupos.map(g => projBlocoOuTotal(g[0], mm) ?? 0) : [];
+      const t = io >= 0 ? null : projTot(mm);
+      hi = Math.max(hi, vals.filter(v => v > 0).reduce((a, b) => a + b, 0), t ?? 0); lo = Math.min(lo, vals.filter(v => v < 0).reduce((a, b) => a + b, 0), t ?? 0); });
+    const e = eixo(lo, hi, 5), bw = (w - m.l - m.r) / MESES.length;
+    const x = i => m.l + (i + 0.5) * bw, y = v => m.t + (h - m.t - m.b) * (1 - (v - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, n(t)); });
+    MESES.forEach((mm, i) => {
+      const io = O.meses.indexOf(mm), obs = io >= 0, parcial = obs && O.parcial[io];
+      const partes = obs ? grupos.map(g => [g, g[3][io]]) : proj ? grupos.map(g => [g, projBlocoOuTotal(g[0], mm)]) : [];
+      let topo = 0, base = 0;
+      partes.forEach(([g, v]) => { if (v == null) return; const y0 = v >= 0 ? topo : base, y1 = y0 + v; if (v >= 0) topo = y1; else base = y1;
+        S(svg, "rect", { x: x(i) - bw * 0.36, y: Math.min(y(y0), y(y1)), width: bw * 0.72, height: Math.max(Math.abs(y(y1) - y(y0)) - 1, 0.5),
+          fill: g[2], opacity: obs ? (parcial ? 0.6 : 1) : 0.35, stroke: obs ? null : g[2], "stroke-dasharray": obs ? null : "3 2" }); });
+      const tot = obs ? (subGW === "SE" ? O.gw.SE[io] : O.gw[subGW][io] ?? totalObs(io)) : projTot(mm);
+      if (tot != null) S(svg, "circle", { cx: x(i), cy: y(tot), r: 3.2, fill: obs ? "var(--ink)" : "var(--surface)", stroke: obs ? "var(--surface)" : "var(--ink)", "stroke-width": 1.5 });
+      if (/-(01|04|07|10)$/.test(mm)) S(svg, "text", { x: x(i), y: h - 8, "text-anchor": "middle" }, rot(mm));
+      const alvo = S(svg, "rect", { x: x(i) - bw / 2, y: m.t, width: bw, height: h - m.t - m.b, fill: "transparent" });
+      dicaEm(alvo, `<b>${rot(mm)}</b>${!obs ? " · projetado (modelo-v1)" : parcial ? " · parcial" : ""}<br>` +
+        partes.filter(([, v]) => v != null).map(([g, v]) => `${g[1]} ${sn(v, 1)}`).join("<br>") + (tot != null ? `<br><b>Total ${sn(tot, 1)} GWmed</b>` : ""));
+    });
+    S(svg, "line", { x1: x(iEmissao) + bw / 2, x2: x(iEmissao) + bw / 2, y1: m.t, y2: h - m.b, stroke: "var(--ink-3)", "stroke-dasharray": "2 3" });
+  }
+  document.getElementById("abas-gw").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { subGW = b.dataset.v; desenharGW(); } });
+  document.getElementById("modo-gw").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { modoGW = b.dataset.v; desenharGW(); } });
+  desenharGW();
+
+  // ---------- camada de El Niño forte ----------
+  (function () {
+    const v = R.vies_el_nino_forte, ativa3 = v.ativa_3m ?? v.ativa, ativaM = v.ativa_mes;
+    const ultimoN = DADOS.enso.mensal[DADOS.enso.mensal.length - 1];
+    document.getElementById("estado-enso").innerHTML =
+      `<span class="estado ${ativa3 ? "ativo" : ""}">${ativa3 ? "Ativa" : "Inativa"} pela média de 3 meses</span>` +
+      (ativaM != null ? `<span class="estado ${ativaM ? "ativo" : ""}">${ativaM ? "Ativa" : "Inativa"} pelo último mês</span>` : "") +
+      `<span>Niño 3.4 relativo na rodada: ${n(I.nino34_rel_3m, 2)} (média de 3 meses)${I.nino34_rel_mes != null ? `, ${n(I.nino34_rel_mes, 2)} no mês` : `; último mês publicado ${n(ultimoN, 2)}`}. Limiar do regime forte: 1,50.</span>`;
+    const dir = { "para cima": ["cima", "▲ acima"], "para baixo": ["baixo", "▼ abaixo"], "sem direção": ["sem", "—"] };
+    document.getElementById("tab-vies").innerHTML = ["S", "SE-sul", "SE-resto", "SE", "N", "NE"].map(k => {
+      const r = v.por_nome[k], [cls, txt] = dir[r.direcao], na = r.direcao === "para cima" ? r.positivos : r.direcao === "para baixo" ? r.eventos - r.positivos : null;
+      return `<tr><td>${NOME[k]}</td><td><span class="dir ${cls}">${txt}</span></td><td class="n">${sn(r.media)}</td>` +
+        `<td class="n">${sn(r.minimo)} a ${sn(r.maximo)}</td><td class="n ${na == null ? "fraco" : ""}">${na == null ? `${r.positivos}+ ${r.eventos - r.positivos}−` : `${na}/${r.eventos}`}</td></tr>`;
+    }).join("");
+    // série do Niño 3.4, com a opção de mostrar os anos similares no mesmo calendário
+    let ensoSim = true;
+    function desenharEnso() {
+      document.querySelectorAll("#enso-sim button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.v === "sim") === ensoSim)));
+      document.getElementById("leg-enso-sim").hidden = !ensoSim;
+      const E = DADOS.enso, ES = DADOS.enso_similares, svg = document.getElementById("g-enso"), w = 520, h = 260, m = { l: 34, r: ensoSim ? 36 : 8, t: 10, b: 22 };
+      svg.replaceChildren();
+      const meses = ensoSim ? ES.meses : E.meses, ix = mm => meses.indexOf(mm);
+      const extras = ensoSim ? Object.values(ES.anos).flat() : [];
+      const vals = [...E.mensal, ...E.tres_meses, ...extras].filter(q => q != null), e = eixo(Math.min(0, ...vals), Math.max(1.6, ...vals), 5);
+      const x = i => m.l + i * (w - m.l - m.r) / (meses.length - 1), y = q => m.t + (h - m.t - m.b) * (1 - (q - e.a) / (e.b - e.a));
+      e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 5, y: y(t) + 3, "text-anchor": "end" }, n(t, 1)); });
+      S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(1.5), y2: y(1.5), stroke: "var(--ink-3)", "stroke-dasharray": "4 3" });
+      if (ensoSim) {
+        const fins = [];
+        Object.entries(ES.anos).forEach(([a, v]) => {
+          const pts = v.map((q, i) => q == null ? null : [x(i), y(q), i, q]).filter(Boolean);
+          S(svg, "polyline", { points: pts.map(p => `${p[0]},${p[1]}`).join(" "), fill: "none", stroke: "var(--bar-pers)", "stroke-width": 1.3 });
+          pts.forEach(([px, py, i, q]) => dicaEm(S(svg, "circle", { cx: px, cy: py, r: 4, fill: "transparent" }),
+            `<b>${a}</b> · ${MES[+meses[i].slice(5, 7) - 1]}/${String(+meses[i].slice(0, 4) - (+R.emissao.slice(0, 4) - +a)).slice(2)}<br>Niño 3.4 relativo ${n(q, 2)}`));
+          const u = pts[pts.length - 1]; fins.push({ t: a, x: u[0], y: u[1] });
+        });
+        empilharRotulos(fins.map(f => ({ el: S(svg, "text", { x: f.x + 4, y: f.y + 3 }, f.t), x: f.x + 4, y: f.y + 3 })), 30, 10);
+      }
+      const pts = arr => E.meses.map((mm, i) => arr[i] == null ? null : `${x(ix(mm))},${y(arr[i])}`).filter(Boolean).join(" ");
+      S(svg, "polyline", { points: pts(E.mensal), fill: "none", stroke: "var(--accent)", "stroke-width": 1.8 });
+      S(svg, "polyline", { points: pts(E.tres_meses), fill: "none", stroke: "var(--ink)", "stroke-width": 2 });
+      meses.forEach((mm, i) => {
+        if (rotuloDeMes(mm)) S(svg, "text", { x: x(i), y: h - 6, "text-anchor": "middle" }, rot(mm));
+        const k = E.meses.indexOf(mm); if (k < 0) return;
+        const a = S(svg, "rect", { x: x(i) - 5, y: m.t, width: 10, height: h - m.t - m.b, fill: "transparent" });
+        dicaEm(a, `<b>${rot(mm)}</b><br>mensal ${n(E.mensal[k], 2)} · 3 meses ${n(E.tres_meses[k], 2)}${E.oni[k] != null ? `<br>ONI oficial (CPC) ${n(E.oni[k], 2)}` : ""}`);
+      });
+    }
+    document.getElementById("enso-sim").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { ensoSim = b.dataset.v === "sim"; desenharEnso(); } });
+    desenharEnso();
+  })();
+
+  // ---------- modelos-sombra ----------
+  (function () {
+    document.getElementById("sub-sombra").textContent = `Variantes registradas na rodada de ${rot(R.emissao)} (sem os dias de ${A ? rot(A.mes) : "o mês seguinte"}), para comparar com o realizado ao longo deste El Niño. Não são a projeção oficial.`;
+    const sh = R.sombra, hs = [1, 2, 3, 4, 5, 6];
+    document.getElementById("cab-sombra").innerHTML = `<tr><th>Subsistema · modelo</th>${hs.map(h => `<th class="n">${rot(somaMes(R.emissao, h))}</th>`).join("")}</tr>`;
+    const linhas = [];
+    const grupos = [...new Set(sh.map(s => `${s.nome}|${s.modelo}|${s.gatilho ?? ""}`))];
+    ["S", "SE-sul", "SE", "N"].forEach(nome => {
+      if (!grupos.some(g => g.startsWith(nome + "|"))) return;
+      const v1 = R.previsoes.filter(p => p.nome === nome);
+      linhas.push(`<tr><td>${NOME[nome]} · modelo-v1</td>${hs.map(h => { const p = v1.find(q => q.h === h); return `<td class="n">${p ? n(p.media) + "%" : "—"}</td>`; }).join("")}</tr>`);
+      grupos.filter(g => g.startsWith(nome + "|")).forEach(g => {
+        const [, mod, gat] = g.split("|");
+        linhas.push(`<tr><td>${NOME[nome]} · ${mod}${gat ? ` (gatilho ${gat === "mes" ? "último mês" : "3 meses"})` : ""}</td>` +
+          hs.map(h => { const s = sh.find(q => `${q.nome}|${q.modelo}|${q.gatilho ?? ""}` === g && q.h === h); return `<td class="n">${s ? n(s.media) + "%" : "—"}</td>`; }).join("") + "</tr>");
+      });
+    });
+    document.getElementById("tab-sombra").innerHTML = linhas.join("");
+  })();
+
+  // ---------- desempenho ----------
+  (function () {
+    const svg = document.getElementById("g-hab"), w = 1040, h = 250, m = { l: 44, r: 90, t: 12, b: 30 }, H = DADOS.habilidade;
+    const cores = { SE: "var(--accent)", S: "var(--c-s)", NE: "var(--c-ne)", N: "var(--c-n)" };
+    const vals = Object.values(H).flatMap(d => d.crpss), e = eixo(Math.min(-0.05, ...vals), Math.max(...vals), 5);
+    const x = hh => m.l + (hh - 1) * (w - m.l - m.r) / 17, y = v => m.t + (h - m.t - m.b) * (1 - (v - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, n(t, 2)); });
+    [1, 3, 6, 9, 12, 15, 18].forEach(hh => S(svg, "text", { x: x(hh), y: h - 12, "text-anchor": "middle" }, `${hh}`));
+    S(svg, "text", { x: (m.l + w - m.r) / 2, y: h, "text-anchor": "middle" }, "antecedência (meses)");
+    const rotulos = [];
+    Object.entries(H).forEach(([k, d]) => {
+      S(svg, "polyline", { points: d.h.map((hh, i) => `${x(hh)},${y(d.crpss[i])}`).join(" "), fill: "none", stroke: cores[k], "stroke-width": 2 });
+      d.h.forEach((hh, i) => { const c = S(svg, "circle", { cx: x(hh), cy: y(d.crpss[i]), r: 6, fill: "transparent" });
+        dicaEm(c, `<b>${NOME[k]}</b> · ${hh} ${hh === 1 ? "mês" : "meses"}<br>CRPSS ${n(d.crpss[i], 3)} (IC 90% ${n(d.ic05[i], 3)} a ${n(d.ic95[i], 3)})`); });
+      rotulos.push({ el: S(svg, "text", { x: x(18) + 8, y: y(d.crpss[d.crpss.length - 1]) + 3, class: "forte" }, NOME[k]), x: x(18) + 8, y: y(d.crpss[d.crpss.length - 1]) + 3 });
+    });
+    empilharRotulos(rotulos, 80, 12);
+  })();
+
+  // ---------- rodadas ----------
+  document.getElementById("tab-rod").innerHTML = DADOS.rodadas.slice().reverse().map(r =>
+    `<tr><td>${rot(r.emissao)}</td><td>${dataHoraBr(r.registrada_em)}</td><td>${r.versao}</td><td>${r.tipo}</td><td class="n">${n(r.nino3m, 2)}</td><td>${r.regime}</td></tr>`).join("");
+</script>
+</body>
+</html>

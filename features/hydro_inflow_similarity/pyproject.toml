@@ -1,0 +1,19 @@
+[project]
+name = "qe-hydro-inflow-similarity"
+version = "0.1.0"
+description = "Funcionalidade Hydro Inflow Similarity: projeção da ENA por subsistema (modelo-v1), atualização com o mês em curso, anos similares ao regime de ENSO e indicadores climáticos"
+requires-python = ">=3.14"
+dependencies = [
+    "netcdf4>=1.7.5.1.post1",
+    "qe-core",
+    "scipy>=1.18.1",
+    "typer>=0.27.3",
+    "xarray>=2026.9.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+qe-core = { workspace = true }

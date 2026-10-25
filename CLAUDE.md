@@ -2,7 +2,8 @@
 
 Aplicação com funcionalidades independentes, cada uma com a sua página e o seu pipeline:
 **Forecast Bandeiras** (código `forecast_bandeiras`), **Risk Lab DESSEM** (PLD horário; código `risk_lab_dessem`) e
-**Pricing Descolamento** (descolamento do NE e do N em relação ao SE; código `pricing_descolamento`). Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
+**Pricing Descolamento** (descolamento do NE e do N em relação ao SE; código `pricing_descolamento`) e **Hydro Inflow
+Similarity** (projeção da ENA por subsistema e anos similares ao regime de ENSO; código `hydro_inflow_similarity`). Pastas, pacotes (`qe_<código>`), comandos (`qe <código> …`), páginas
 (`web/<código>/`) e chaves (`processed/<código>/`, `serving/<código>/`) usam o código; `raw/` é por fonte.
 Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Responder sempre em português do Brasil.
 
@@ -22,7 +23,7 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
 
 ## Ambiente
 - uv workspace (raiz + `core`, `features/forecast_bandeiras`, `features/risk_lab_dessem`,
-  `features/pricing_descolamento`, `api`). Sempre
+  `features/pricing_descolamento`, `features/hydro_inflow_similarity`, `api`). Sempre
   `uv add --package <membro> <pacote>` e `uv run ...`. **Nunca pip.** Python 3.14 (`.python-version`); a origem do Python é configuração da máquina, não do projeto (sem o 3.14: `uv python install 3.14`).
 - Lint/format: `uv run ruff check .` e `uv run ruff format .`; testes: `uv run pytest`.
 
@@ -143,6 +144,31 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   (teste de paridade com node).
 - Testes: `tests/referencias/pricing_descolamento/` (períodos fechados até set/2026), regerados com `congelar`.
   Paridade com a pesquisa é opt-in (`QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta do pacote>`).
+
+## Hydro Inflow Similarity (projeção de ENA e anos similares): etapas e testes
+- Promovido de `../hydro-inflow-similarity-analytics` em 2026-10-24 (tag `promocao-quant-v1`, pacote
+  `docs/promocao_hydro_inflow_similarity.md` de lá), bloco a bloco; R1 a R9 conferidos sem diferença. Escopo: modelo-v1,
+  atualização com o mês em curso (U1b), anos similares, camada de El Niño forte, rodadas e as quatro páginas (Afluências
+  e ENSO, Indicadores climáticos, Fundamentos, Metodologia); **não trazer** os métodos testados (AN1, T1–T8, SIM-A, U1),
+  os modelos-sombra (ficam na pesquisa: decisão 5), o Tempo OK nem o site do GitHub Pages, nem como contexto.
+- Fontes só desta funcionalidade (`ingestao.py`; formato em `docs/entrada.md`): planilhas do ONS 1931–2024 (manual),
+  ENA diária (versão por hash, o ONS republica o ano), ERSST v6 (só a mais recente, com o hash de cada publicação),
+  índices da NOAA (versão por hash) e previsão do ENSO do CPC (por emissão). Coletores no `energia-data-ingestion`.
+- Etapas: `qe hydro_inflow_similarity ingerir | tratar | backtest | publicar | legado | congelar`. Dia a dia: `ingerir`
+  → `tratar` → `publicar` (atualização diária com o mês em curso); `backtest` uma vez por mês (~2,5 min).
+- Modelo em `qe_hydro_inflow_similarity.modelo.MODELO` (hoje `modelo-v1`: PER por série, SE pela soma dos blocos
+  SE-sul e SE-resto, D016/D018). Mudar = versão nova (decisão na pesquisa, `congelar`, tag
+  `hydro_inflow_similarity-modelo-<versão>`).
+- Rodada = emissão mensal, registrada pelo `publicar` quando a ENA do mês está completa e a ERSST do mês publicada
+  (por volta do dia 5); grava a versão (hash) de cada arquivo bruto usado. A atualização diária não é rodada.
+  `serving/hydro_inflow_similarity/historico_rodadas.json` é o registro: não apagar nem recalcular; a rodada 2026-09
+  veio da pesquisa (R10, levada como está, com a sombra de lá).
+- Página: contas no Python (`publicacao`), desenho no JS; cada página lê o seu JSON (`produto`, `fundamentos`,
+  `metodologia`, `clima`). Os fatos da página de fundamentos que vêm dos notebooks da pesquisa (correlações, memória,
+  décadas, bacias, pesos do T7) são dado estático da versão (`estaticos/`, decisão 4).
+- Testes: `tests/referencias/hydro_inflow_similarity/` (só períodos que não mudam: ENA e índices até dez/2024, modelo e
+  similares emitidos em set/2024, backtest com alvos até jun/2024, camada de El Niño forte até 2016), regerados com
+  `congelar`. Paridade com a pesquisa é opt-in (`QE_PARIDADE_HYDRO_INFLOW_SIMILARITY=<pasta do pacote>`).
 
 ## Regras herdadas do analytics (bandeiras)
 - PLD gatilho vem do deck do DECOMP da CCEE, nunca do CMO do ONS.

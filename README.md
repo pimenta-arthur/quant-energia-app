@@ -8,6 +8,7 @@ independente das outras:
 | Bandeiras tarifárias | pipeline completo (ingestão → publicação) e página | `forecast-bandeiras-analytics` |
 | PLD horário | análise exploratória | `risk-lab-dessem-analytics` |
 | Descolamento entre submercados | planejado | (a criar) |
+| Hydro Inflow Similarity (projeção de ENA e anos similares) | pipeline completo (ingestão → publicação) e quatro páginas | `hydro-inflow-similarity-analytics` |
 
 Roda local de forma simples e já usa as mesmas chaves e etapas que vão para a AWS.
 Nova funcionalidade a partir de uma pesquisa: `docs/nova_funcionalidade.md`.

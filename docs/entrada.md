@@ -98,6 +98,29 @@ Usa só fontes comuns, nas mesmas pastas das outras funcionalidades: o zip mensa
 entra junto com o dia), o PLD em `ccee_pld/` e os limites em `ccee_limites_pld/`. Recarga do histórico: links
 simbólicos dos zips na pasta da fonte (a ingestão apaga o link, não o original).
 
+## Hydro Inflow Similarity (projeção de ENA)
+
+```bash
+uv run qe hydro_inflow_similarity ingerir    # entrada → raw/
+uv run qe hydro_inflow_similarity tratar     # raw/ → ENA mensal, MLT, índices e ENA diária
+uv run qe hydro_inflow_similarity backtest   # mensal (minutos): CH, C30, PER, SPLIT e SIM, emissões 1961 até o último ano completo
+uv run qe hydro_inflow_similarity publicar   # rodada do mês (se pendente) e as quatro páginas
+```
+
+Fontes só desta funcionalidade. Os coletores do `energia-data-ingestion` gravam exatamente o que se solta aqui
+(a pasta `data/` de cada coletor pode ser copiada inteira para a pasta da fonte):
+
+| Pasta | O que soltar | Vai para `raw/` | Versão |
+|---|---|---|---|
+| `ons_ena_historica/` | `Enas_Subsistemas_1931-2024.xls` e `Enas_bacias_1931-2024.xls` (manual: não há coletor) | `ons_ena_historica/<mesmo nome>` | imutável (`--sobrescrever` para trocar) |
+| `ons_ena_diaria/` | `ENA_DIARIO_SUBSISTEMA_AAAA.csv`, `ENA_DIARIO_BACIAS_AAAA.csv` (coletor `ons-ena-diaria`) | `ons_ena_diaria/<nível>/ano=AAAA/v=<hash>/` + `_ingestao.json` | uma por conteúdo: o ONS republica o arquivo do ano (consistência); o tratamento usa a mais recente |
+| `noaa_ersst/` | `sst.mnmean.nc` ou `ersst.v6.sst.mnmean.nc` (coletor `noaa-ersst`) | `noaa_ersst/ersst.v6.sst.mnmean.nc` | **só a mais recente** (~90 MB; decisão da promoção): a nova substitui a anterior e o hash de cada publicação vai para `noaa_ersst/_publicacoes.json` |
+| `noaa_indices/` | `oni.ascii.txt`, `RONI.ascii.txt`, `soi.txt`, `aao_mensal.txt` (CPC), `ersst.v5.pdo.dat`, `ersst.v5.amo.dat` (NCEI) (coletor `noaa-indices`, pastas `cpc/` e `ncei/`) | `noaa_indices/<nome>/v=<hash>/` + `_ingestao.json` | uma por conteúdo: a NOAA revisa a série inteira |
+| `cpc_enso_previsao/` | as páginas HTML de probabilidade do ENSO por fase e por força (coletor `cpc-enso-previsao`, pasta `AAAA-MM/`) | `cpc_enso_previsao/emissao=AAAA-MM/probabilidades.html` e `forca.html` | por emissão, lida do conteúdo ("Issued <mês> <ano>"); o tipo, pelo número de colunas |
+
+Cada arquivo passa pelo leitor antes de ir para `raw/`. A ERSST é a exceção à regra de `raw/` imutável: guardar
+uma grade de 90 MB por mês não traz informação que o hash não registre.
+
 ## Na AWS
 `data/entrada/` vira `s3://<bucket>/entrada/<fonte>/`, e um upload dispara a ingestão; coletores
 automáticos (quando houver) gravam nas mesmas pastas.

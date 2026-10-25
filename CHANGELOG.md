@@ -8,6 +8,24 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-24] Hydro Inflow Similarity: promoção (promocao-quant-v1)
+
+Origem: `hydro-inflow-similarity-analytics`, tag `promocao-quant-v1` (pacote `docs/promocao_hydro_inflow_similarity.md`;
+decisões D005, D013, D016, D018–D026). Conferido contra `reports/promocao/2026-09/` sem diferença: leitores (R1),
+tabelas-base (R3), modelo-v1 com membros e ponto da PER (R4), rodada sem a sombra (R5), atualização com 23 dias de
+out/2026 (R6), similares e desempenho (R7), camada de El Niño forte (R8) e os quatro JSON das páginas (R9). O backtest
+difere da pesquisa só no mês-alvo set/2026 do N e do SE, revisado pelo ONS em 24/10/2026, depois dos backtests de lá.
+
+### Adicionado
+- Funcionalidade `hydro_inflow_similarity` (`features/hydro_inflow_similarity/`, `web/hydro_inflow_similarity/`):
+  ingestão de cinco fontes novas, tratamento (ENA mensal com o Paraná incremental, MLT, índices da ERSST v6 e oficiais),
+  modelo-v1, atualização com o mês em curso, anos similares, backtest (CH, C30, PER, SPLIT, SIM), camada de El Niño
+  forte, rodadas mensais com a versão de cada arquivo bruto e as quatro páginas.
+- Leitores no `qe_core`: `leitores.ons.ler_planilha_ena`, `ler_ena_diaria`, `nome_bacia`; novo `leitores.noaa` (ONI,
+  RONI, SOI, AAO, PDO, AMO e previsão do ENSO do CPC).
+- Decisões da promoção (Arthur, 24/10/2026): backtests de PER, C30 e SIM reimplementados e fatos dos notebooks como dado
+  estático; modelos-sombra só na pesquisa; ERSST só a publicação mais recente em `raw/`; atualização diária sem registro.
+
 ## [2026-10-22] Pricing Descolamento: leva promocao-quant-v4 (degrau do histórico de rodadas)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v4` (seção 11, "v3 → v4"; D040). Texto e um dado pequeno,

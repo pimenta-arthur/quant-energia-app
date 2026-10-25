@@ -3,6 +3,7 @@
 import typer
 
 from qe_forecast_bandeiras.cli import app as forecast_bandeiras
+from qe_hydro_inflow_similarity.cli import app as hydro_inflow_similarity
 from qe_pricing_descolamento.cli import app as pricing_descolamento
 from qe_risk_lab_dessem.cli import app as risk_lab_dessem
 
@@ -12,6 +13,7 @@ app = typer.Typer(
 app.add_typer(forecast_bandeiras, name="forecast_bandeiras")
 app.add_typer(risk_lab_dessem, name="risk_lab_dessem")
 app.add_typer(pricing_descolamento, name="pricing_descolamento")
+app.add_typer(hydro_inflow_similarity, name="hydro_inflow_similarity")
 
 
 @app.command()

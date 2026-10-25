@@ -8,6 +8,7 @@ dependencies = [
     "qe-api",
     "qe-forecast-bandeiras",
     "qe-core",
+    "qe-hydro-inflow-similarity",
     "qe-pricing-descolamento",
     "qe-risk-lab-dessem",
     "typer>=0.27.3",
@@ -26,6 +27,7 @@ members = [
     "features/forecast_bandeiras",
     "features/risk_lab_dessem",
     "features/pricing_descolamento",
+    "features/hydro_inflow_similarity",
     "api",
 ]
 
@@ -50,6 +52,7 @@ qe-forecast-bandeiras = { workspace = true }
 qe-api = { workspace = true }
 qe-risk-lab-dessem = { workspace = true }
 qe-pricing-descolamento = { workspace = true }
+qe-hydro-inflow-similarity = { workspace = true }
 
 [tool.ruff.lint.isort]
 known-first-party = [
@@ -58,6 +61,7 @@ known-first-party = [
     "qe_forecast_bandeiras",
     "qe_risk_lab_dessem",
     "qe_pricing_descolamento",
+    "qe_hydro_inflow_similarity",
     "qe_api",
 ]
 

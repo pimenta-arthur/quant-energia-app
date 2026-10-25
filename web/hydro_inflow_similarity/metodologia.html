@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metodologia de ENA e ENSO</title>
+<!-- Padrão visual Quant Energia v1.3.1 (web/padrao). Dados em dados_metodologia.js (hydro_inflow_similarity_analytics.web) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<style>
+  /* só desta página: cores por subsistema (as mesmas das outras páginas) e componentes da metodologia */
+  :root { --c-s: #a8592a; --c-ne: #1d8a84; --c-n: #7d6a1c; --sim: #1d8a84; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-s: #e3a06c; --c-ne: #5ccac3; --c-n: #d4bb5f; --sim: #5ccac3; } }
+  :root[data-theme="dark"] { --c-s: #e3a06c; --c-ne: #5ccac3; --c-n: #d4bb5f; --sim: #5ccac3; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .meta-linha { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.82rem; color: var(--ink-3); }
+  .tecnico { margin-top: 4px; }
+  .tecnico > summary { font-size: 0.9rem; }
+  .tecnico[open] > summary { margin-bottom: 10px; }
+  .tecnico > div { display: grid; gap: 10px; }
+  .leg { font-size: 0.82rem; color: var(--ink-3); }
+  td .fx { display: block; font-size: 0.72rem; color: var(--ink-3); white-space: nowrap; }
+  .dica { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4;
+    padding: 7px 10px; border-radius: 4px; max-width: 320px; white-space: normal; transform: translate(12px, 12px); }
+  [hidden] { display: none !important; }
+  .grafico svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .legenda i.l { height: 0; border-top: 2px solid; border-radius: 0; width: 16px; }
+  .versoes td:first-child { white-space: nowrap; font-family: var(--f-data); }
+  table.memorial { font-size: 0.9rem; }
+  table.memorial td:first-child { font-family: var(--f-data); color: var(--accent); width: 2.5rem; }
+  table.memorial td.n { white-space: nowrap; }
+  td.bom { color: var(--accent); font-weight: 600; } td.ruim { color: var(--c-s); }
+  .fluxo h3 { font-size: 1rem; }
+  section h3 { margin-top: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./index.html">Afluências e ENSO</a>
+    <a href="./clima.html">Indicadores climáticos</a>
+    <a href="./fundamentos.html">Fundamentos</a>
+    <a href="./metodologia.html" aria-current="page">Metodologia</a>
+  </nav>
+
+  <header>
+    <span class="rotulo">Metodologia · modelo-v1</span>
+    <h1>Como a ENA é projetada e o que os anos similares acrescentam</h1>
+    <p class="lead">O modelo projeta a ENA de cada subsistema para os próximos 12 meses a partir do estado atual dos rios. Ao lado dele, os anos
+      com ENSO mais parecido com o de hoje dão um segundo cenário, que pesa mais no Sul e no Norte quando o El Niño é forte.</p>
+    <div class="meta-linha" id="m-meta"></div>
+    <nav class="indice" aria-label="Seções">
+      <a href="#resumo">Em uma tela</a><a href="#passos">Passo a passo</a><a href="#exemplo">Exemplo com números</a><a href="#desempenho">Desempenho</a>
+      <a href="#testes">O que foi testado</a><a href="#limites">Limitações</a><a href="#rodadas">Rodadas</a><a href="#versoes">Versões</a><a href="#glossario">Glossário</a>
+    </nav>
+  </header>
+
+  <section id="resumo" aria-labelledby="t-resumo">
+    <h2 id="t-resumo">Em uma tela</h2>
+    <div class="fluxo">
+      <div class="passo"><span class="n">1 · Normal</span><h3>Média dos últimos 30 anos</h3>
+        <p>Cada mês é comparado com a média do mesmo mês nos 30 anos anteriores, e não com a MLT de 1931–2024: o normal mudou.</p></div>
+      <div class="passo"><span class="n">2 · Modelo-v1</span><h3>Persistência ajustada</h3>
+        <p>A anomalia dos últimos 3 meses é levada adiante com a memória medida em 95 anos, para cada mês do ano e cada antecedência.</p></div>
+      <div class="passo"><span class="n">3 · Sudeste</span><h3>Dois blocos</h3>
+        <p>SE-sul (Paranapanema, Tietê, Paraná) e SE-resto são projetados separados e somados em MWmed.</p></div>
+      <div class="passo"><span class="n">4 · Cenário</span><h3>Anos similares</h3>
+        <p>Os 5 anos com ENSO mais parecido repetem sua ENA sobre o normal de hoje. Ao lado do modelo, sem alterá-lo.</p></div>
+    </div>
+    <div class="eq">ENA projetada = normal de 30 anos do mês × e<sup>a + b · log(ENA dos últimos 3 meses ÷ normal desses meses)</sup> × e<sup>erro histórico</sup></div>
+  </section>
+
+  <section id="passos" aria-labelledby="t-passos">
+    <h2 id="t-passos">Passo a passo</h2>
+
+    <div class="passo-det"><span class="n">1</span><div>
+      <h3>Dados e corte de informação</h3>
+      <p class="texto">A série de ENA vem do ONS: a série oficial de 1931 a 2024, que aplica o parque de hoje a todo o histórico (e por isso compara anos
+        de forma justa), emendada com a ENA diária de 2025 em diante. O clima vem da NOAA. Cada rodada só usa o que estava publicado no fim do mês da
+        emissão.</p>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">ENA</span><span>Planilhas "Histórico de ENAS" do ONS (subsistema e 23 bacias, 1931–2024) e ENA bruta diária
+            (<code>ena_subsistema_di</code>, <code>ena_bacia_di</code>) agregada no mês desde 2025. % da MLT sobre a MLT vigente (ONS, 28/03/2026).</span></li>
+          <li><span class="tag">Conferências</span><span>MLT do PDF = média 1931–2024 da planilha (diferença ≤ 0,01%). Planilha × diária em 2023–2024:
+            erro médio de 0,3% a 2%. Na planilha, o Paraná é acumulado (inclui Grande, Paranaíba, Tietê e Paranapanema); o estudo usa o incremental, e
+            assim as 23 bacias somam o SIN.</span></li>
+          <li><span class="tag">Clima</span><span>ERSST v6 (a mesma base do ONI do CPC): Niño 3.4 relativo (tipo RONI), Atlântico, Índico; PDO da NCEI.
+            O Niño 3.4 calculado reproduz o ONI com correlação de 0,98 e o RONI com 0,999.</span></li>
+          <li><span class="tag">Corte</span><span>Testes automáticos confirmam que a previsão de uma emissão não muda quando se alteram dados posteriores
+            a ela, e que uma rodada publicada nunca é recalculada.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">2</span><div>
+      <h3>O normal: média dos 30 anos anteriores</h3>
+      <p class="texto">A MLT é a média de 94 anos, mas o patamar mudou: o normal do Nordeste caiu de 112% da MLT (até 1990) para 73% (1995–2024), e o do
+        Sul subiu de 83% para 114%. Por isso o modelo mede tudo contra a média do mesmo mês nos 30 anos anteriores à emissão. Nos testes, essa troca
+        sozinha melhora o Nordeste em 10% sobre usar todo o histórico.</p>
+      <div class="eq">normal<sub>m</sub> = média da ENA (% MLT) do mês m nos 30 últimos anos disponíveis na emissão</div>
+    </div></div>
+
+    <div class="passo-det"><span class="n">3</span><div>
+      <h3>Modelo-v1: persistência ajustada</h3>
+      <p class="texto">Um período úmido forte deixa a seca seguinte alta (correlação de 0,85 no Nordeste e 0,67 no Sudeste): a água no solo e nos rios
+        demora a escoar. O modelo mede quanto da anomalia de hoje sobrevive em cada antecedência, separadamente para cada mês do ano, e a leva adiante.
+        A faixa vem dos erros que essa mesma regra cometeu no passado.</p>
+      <div class="eq">log(ENA<sub>t+h</sub> ÷ normal) = <var>a</var> + <var>b</var> · log(ENA dos 3 meses até t ÷ normal desses meses) + erro</div>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">Ajuste</span><span><var>a</var> e <var>b</var> por mínimos quadrados, um par por mês de emissão e antecedência h (1 a
+            18), com todas as emissões anteriores do mesmo mês cujo alvo já é conhecido (~90 pares). Refeito a cada rodada.</span></li>
+          <li><span class="tag">Faixa</span><span>Os membros são o ponto mais cada resíduo histórico do ajuste; a média dos membros é o número
+            publicado, e p10–p90 a faixa. Cobertura medida da faixa p10–p90: 70% a 78% (o ideal seria 80%).</span></li>
+          <li><span class="tag">Código</span><span><code>modelo_v1.py</code>; versão congelada, verificada por <code>tests/test_modelo_v1.py</code>.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">4</span><div>
+      <h3>O Sudeste em dois blocos</h3>
+      <p class="texto">No El Niño, as bacias do sul do Sudeste (Paranapanema, Tietê e Paraná) enchem junto com o Sul, e as do norte (Grande, Paranaíba)
+        não respondem. No agregado, uma metade anula a outra. O modelo aplica a persistência a cada bloco e soma em MWmed; a página mostra o SE agregado e
+        a contribuição de cada bloco.</p>
+      <div class="eq">SE = SE-sul + SE-resto (em MWmed) · SE-sul = Paranapanema + Tietê + Paraná incremental (17,8 GWmed de MLT) · SE-resto = SE − SE-sul</div>
+    </div></div>
+
+    <div class="passo-det"><span class="n">5</span><div>
+      <h3>Anos similares e recomposição</h3>
+      <p class="texto">Os anos similares são os 5 anos, na mesma fase do ENSO, cujo Niño 3.4 estava mais perto do de hoje em nível e em subida, na
+        mesma época do ano. A recomposição pega a ENA que cada um teve em relação ao normal da época e aplica sobre o normal de hoje. Ela não usa o
+        estado atual dos rios: responde à pergunta "e se este ano repetir os parecidos?".</p>
+      <div class="eq">recomposição<sub>t+h</sub> = normal de hoje × média, nos 5 anos, de (ENA do ano no mês-alvo ÷ normal daquela época)</div>
+      <details class="tecnico"><summary>Detalhe técnico</summary><div>
+        <ul class="lista">
+          <li><span class="tag">Estado</span><span>N = Niño 3.4 relativo médio dos 3 meses até a emissão; ΔN = variação de N em 3 meses. Distância
+            euclidiana em (N, ΔN) padronizados pelos candidatos.</span></li>
+          <li><span class="tag">Candidatos</span><span>Anos anteriores com os 18 meses seguintes conhecidos e na mesma fase: N ≥ 0,5 se hoje é El
+            Niño; N ≤ −0,5 se La Niña. Sem a restrição de fase, anos neutros entravam entre os vizinhos e a recomposição piorava.</span></li>
+          <li><span class="tag">Código</span><span><code>similares.py</code>.</span></li>
+        </ul>
+      </div></details>
+    </div></div>
+
+    <div class="passo-det"><span class="n">6</span><div>
+      <h3>Camada de El Niño forte</h3>
+      <p class="texto">Quando o Niño 3.4 relativo passa de 1,5, a página mostra para que lado a persistência errou nos El Niños fortes anteriores. Ela
+        ficou baixa no Sul em 6 de 6 eventos e no SE-sul em 5 de 6, e alta no Norte em 6 de 6. A direção é confiável, o tamanho não (no Sul, de +15 a +166
+        pontos), e por isso a camada não altera o número.</p>
+    </div></div>
+
+    <div class="passo-det"><span class="n">7</span><div>
+      <h3>Atualização com o mês em curso</h3>
+      <p class="texto">A rodada é emitida no fim do mês, mas os dias do mês seguinte chegam todo dia. Com 20 dias observados, a média parcial já erra
+        o mês inteiro em só 6% no Sudeste. A página usa esses dias: estima o mês em curso pela média parcial, corrigida pelo padrão do mesmo mês nos
+        anos anteriores (em outubro, o fim do mês costuma ser mais úmido que o começo), e reemite o modelo-v1 a partir dele. Em 2000–2025, isso
+        reduziu o erro do mês em curso em 63% a 71% e o do mês seguinte em 4% a 11%, em relação à rodada do fim do mês anterior. A rodada continua
+        registrada como estava.</p>
+      <div class="eq">mês em curso = média dos dias observados ÷ (média dos mesmos dias ÷ mês inteiro, no mesmo mês dos anos anteriores)</div>
+    </div></div>
+
+    <div class="passo-det"><span class="n">8</span><div>
+      <h3>Rodadas e modelo-sombra</h3>
+      <p class="texto">Cada rodada fica registrada com a previsão, os insumos e as variantes em teste, e nunca é recalculada. Como desde 1950 só houve 5
+        El Niños fortes, os ajustes com clima que mostraram ganho em parte dos subsistemas ficam em teste ao vivo neste evento: o ajuste por anos
+        parecidos no Sul (T2) e no SE-sul (T3), o modelo com ENSO e Atlântico no Norte (T7) e a recomposição pelos anos similares.</p>
+    </div></div>
+  </section>
+
+  <section id="exemplo" aria-labelledby="t-exemplo">
+    <h2 id="t-exemplo">Exemplo com números: SE-sul, rodada de set/26, previsão para out/26</h2>
+    <div class="rolagem"><table class="memorial"><tbody id="memorial"></tbody></table></div>
+    <h3>Os anos similares para o mesmo mês</h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Ano</th><th class="n">ENA em outubro (% MLT)</th><th class="n">Normal da época</th><th class="n">Razão</th><th class="n">Sobre o normal de hoje</th></tr></thead>
+      <tbody id="tab-ex-sim"></tbody>
+    </table></div>
+    <p class="nota" id="nota-ex"></p>
+  </section>
+
+  <section id="desempenho" aria-labelledby="t-desemp">
+    <h2 id="t-desemp">Desempenho</h2>
+    <p class="texto">Cada previsão de 1961 a 2025 foi refeita como se fosse feita na época, só com os dados que existiam. A régua é a climatologia dos
+      últimos 30 anos; o CRPSS mede quanto o erro probabilístico cai em relação a ela (acima de 0, ganha).</p>
+    <div class="rolagem"><table>
+      <thead><tr><th>Ganho sobre a climatologia de 30 anos, 1 a 6 meses</th><th class="n">Sudeste</th><th class="n">Sul</th><th class="n">Nordeste</th><th class="n">Norte</th></tr></thead>
+      <tbody id="tab-desemp"></tbody>
+    </table></div>
+    <p class="leg">Negrito azul: intervalo de 90% acima de zero (reamostrando anos). Climatologia histórica = média de todos os anos desde 1931.</p>
+    <div class="grafico">
+      <div class="legenda" id="leg-hab"></div>
+      <svg id="g-hab" viewBox="0 0 1040 260" role="img" aria-label="Ganho do modelo-v1 por antecedência"></svg>
+    </div>
+    <p class="leg">Ganho do modelo-v1 sobre a climatologia de 30 anos por antecedência. O horizonte útil é de cerca de 5 meses no Sudeste, 9 a 12 no Norte e
+      1 a 2 no Sul; no Nordeste, mais longo, mas puxado pela queda de patamar. O próximo período úmido (13 a 18 meses) não tem habilidade, exceto no Nordeste.</p>
+    <h3>Onde os anos similares merecem mais peso</h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Recomposição contra o modelo-v1, 1 a 6 meses</th><th class="n">Sul</th><th class="n">Norte</th><th class="n">SE-sul</th><th class="n">SE agregado</th><th class="n">SE-resto</th><th class="n">Nordeste</th></tr></thead>
+      <tbody id="tab-sim"></tbody>
+    </table></div>
+    <p class="leg">Em El Niño forte, intervalo reamostrando os 8 eventos (|N| ≥ 1,5 desde 1961). No Sul e no Norte, a recomposição ganha do modelo-v1; no
+      Sudeste e no Nordeste, o estado atual dos rios pesa mais.</p>
+  </section>
+
+  <section id="testes" aria-labelledby="t-testes">
+    <h2 id="t-testes">O que foi testado e não entrou</h2>
+    <p class="texto">Cada ideia foi testada contra a persistência, uma de cada vez, com o critério de aceite escrito antes de rodar. O padrão foi o mesmo:
+      o clima ajuda no Sul e no Norte nos eventos fortes, e atrapalha no Sudeste e no Nordeste.</p>
+    <div class="rolagem"><table>
+      <thead><tr><th>Teste</th><th>O que mudou</th><th>Resultado (1 a 6 meses)</th><th>Decisão</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>Análogos (7 anos parecidos em ENSO e estado dos rios) no lugar da persistência</td><td>Sul +2,8%; Sudeste −5,5%, Nordeste −4,1%</td><td>não entrou</td></tr>
+        <tr><td>T1</td><td>Persistência corrigida pela média dos erros dela em 7 anos de ENSO parecido</td><td>piora os 4 subsistemas (−2% a −5%)</td><td>não entrou</td></tr>
+        <tr><td>T1b</td><td>Persistência + termo linear de ENSO</td><td>Sul em out–dez +6,7%; resto ≈ 0 ou negativo</td><td>não entrou</td></tr>
+        <tr><td>T2</td><td>Correção do T1 só com El Niño forte (limiar 1,5)</td><td>Sul +9,0%; Sudeste −6,7%</td><td>modelo-sombra no Sul</td></tr>
+        <tr><td>T3</td><td>Sudeste em dois blocos, correção só no SE-sul</td><td>dividir: +0,5%; corrigir o SE-sul: −4,0%</td><td>blocos adotados; correção no modelo-sombra</td></tr>
+        <tr><td>T7</td><td>Persistência + ENSO, Atlântico, PDO e Índico com encolhimento</td><td>Norte +1,9% (+9,5% em El Niño forte); demais ≈ 0</td><td>modelo-sombra no Norte</td></tr>
+        <tr><td>T8</td><td>T7 nos dois blocos do Sudeste</td><td>−1,2%</td><td>não entrou</td></tr>
+        <tr><td>Similares</td><td>Recomposição pelos 5 anos na mesma fase do ENSO</td><td>El Niño forte: Sul +15%, Norte +15%; SE e NE perdem</td><td>cenário ao lado do modelo</td></tr>
+        <tr><td>Similares ancorada</td><td>Recomposição partindo do mês em curso e seguindo a variação de cada ano similar</td><td>pior que a recomposição pura no SE (−17%), no Sul (−38%) e no Norte (−20%); só ajuda no 1º mês no NE e no N</td><td>não entrou; a recomposição pura segue em todos os meses, inclusive o mês em curso</td></tr>
+        <tr><td>Mês em curso</td><td>Modelo-v1 reemitido com o mês parcial estimado pelos dias observados</td><td>mês em curso +63% a +71%; mês seguinte +4% a +11%</td><td>adotado: é o número principal da página</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="limites" aria-labelledby="t-limites">
+    <h2 id="t-limites">Limitações</h2>
+    <ul class="lista">
+      <li><span class="tag">Poucos eventos</span><span>Só 5 El Niños fortes desde 1950 pelo índice relativo (1965, 1972, 1982, 1997, 2015). Qualquer ajuste
+        específico para eles é estimado com muito pouco; 2026 pode passar do máximo histórico (1,92), fora do que o histórico viu.</span></li>
+      <li><span class="tag">Faixa estreita</span><span>A faixa p10–p90 do modelo-v1 cobre 70% a 78% dos casos, um pouco abaixo dos 80% esperados.</span></li>
+      <li><span class="tag">Norte por bacia</span><span>Tocantins e Amazonas são divididos entre Norte e Sudeste, e o ONS não publica a parte de cada um:
+        o Norte não é aberto por bacia.</span></li>
+      <li><span class="tag">Revisões</span><span>O ONI e a ENA são revisados depois de publicados; o histórico usa os valores revisados, uma aproximação do
+        que se sabia em cada data.</span></li>
+      <li><span class="tag">Patamar</span><span>A queda do Nordeste e do Sudeste desde os anos 1990 não está explicada no estudo (seca, usos consuntivos,
+        uso do solo); o normal de 30 anos acompanha a mudança com atraso.</span></li>
+      <li><span class="tag">Índice</span><span>A fase do ENSO usa o Niño 3.4 relativo (tipo RONI). Pelo ONI tradicional, 2023 seria El Niño forte; pelo
+        relativo, moderado.</span></li>
+    </ul>
+  </section>
+
+  <section id="rodadas" aria-labelledby="t-rod">
+    <h2 id="t-rod">Rodadas</h2>
+    <div class="rolagem"><table>
+      <thead><tr><th>Emissão</th><th>Registrada em</th><th>Versão</th><th>Tipo</th><th>Regime do ENSO</th></tr></thead>
+      <tbody id="tab-rod"></tbody>
+    </table></div>
+    <p class="leg">A rodada de um mês é registrada depois do fechamento, quando a ENA e a temperatura do mar daquele mês estão publicadas (por volta do dia 5).</p>
+  </section>
+
+  <section id="versoes" aria-labelledby="t-vers">
+    <h2 id="t-vers">Versões</h2>
+    <div class="rolagem"><table class="versoes">
+      <thead><tr><th>Versão</th><th>Data</th><th>O que é</th><th>Por quê</th></tr></thead>
+      <tbody>
+        <tr class="destaque"><td>modelo-v1 (vigente)</td><td>21/10/26</td><td>Persistência ajustada em N, NE e S; Sudeste em dois blocos somados.</td>
+          <td>Única estrutura que ganhou da climatologia fora da amostra nos 4 subsistemas (1 a 6 meses: Norte +11,5%, Nordeste +19,3%, Sudeste +13,1%, Sul +0,3%).</td></tr>
+        <tr><td>anos similares</td><td>22/10/26</td><td>Cenário de recomposição pelos 5 anos na mesma fase do ENSO, ao lado do modelo.</td>
+          <td>Ganha do modelo-v1 no Sul e no Norte em El Niño forte.</td></tr>
+        <tr><td>atualização diária</td><td>22/10/26</td><td>Modelo-v1 reemitido com o mês em curso estimado pelos dias observados.</td>
+          <td>Mês em curso 63% a 71% melhor e mês seguinte 4% a 11% melhor que a rodada do fim do mês anterior (2000–2025).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="glossario" aria-labelledby="t-glos">
+    <h2 id="t-glos">Glossário</h2>
+    <dl class="glossario">
+      <dt>ENA</dt><dd>Energia natural afluente: a energia que a vazão natural dos rios produziria nas usinas, em MWmed.</dd>
+      <dt>MLT</dt><dd>Média de longo termo: média da ENA de cada mês de 1931 a 2024, na configuração atual do parque (ONS, 28/03/2026).</dd>
+      <dt>Normal de 30 anos</dt><dd>Média do mesmo mês nos 30 anos anteriores à emissão; a referência do modelo.</dd>
+      <dt>Persistência ajustada</dt><dd>O modelo-v1: leva a anomalia atual adiante com a memória medida no histórico, por mês e antecedência.</dd>
+      <dt>Niño 3.4 relativo</dt><dd>Anomalia de temperatura do mar no Pacífico central menos a média dos trópicos (a ideia do RONI do CPC). Forte ≥ 1,5;
+        moderado 1,0–1,5; fraco 0,5–1,0; La Niña ≤ −0,5.</dd>
+      <dt>Anos similares</dt><dd>Os 5 anos na mesma fase do ENSO com Niño 3.4 mais parecido em nível e subida, na mesma época do ano.</dd>
+      <dt>Recomposição</dt><dd>A ENA dos anos similares aplicada sobre o normal de hoje.</dd>
+      <dt>SE-sul / SE-resto</dt><dd>Paranapanema, Tietê e Paraná incremental / o restante do Sudeste.</dd>
+      <dt>CRPS / CRPSS</dt><dd>Erro de uma previsão com faixa, que pune tanto errar o centro quanto errar a largura. CRPSS = 1 − CRPS ÷ CRPS da referência.</dd>
+      <dt>Fora da amostra</dt><dd>Previsão feita só com dados anteriores à data prevista, como teria sido feita na época.</dd>
+      <dt>Modelo-sombra</dt><dd>Variante registrada a cada rodada para comparar com o realizado, sem ser a projeção oficial.</dd>
+    </dl>
+  </section>
+
+  <footer>Registro completo do raciocínio, das decisões (D001–D020) e dos testes pré-registrados: <code>docs/metodologia.md</code> no repositório da pesquisa.</footer>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script type="module">
+// dados da página: serving/hydro_inflow_similarity/metodologia.json (contas no Python, desenho no JS)
+const MET = await (await fetch("/dados/hydro_inflow_similarity/metodologia.json", { cache: "no-cache" })).json();
+"use strict";
+const E = MET.exemplo, NOME = { SE: "Sudeste", S: "Sul", NE: "Nordeste", N: "Norte", "SE-sul": "SE-sul", "SE-resto": "SE-resto" };
+const ultima = MET.rodadas[MET.rodadas.length - 1];
+document.getElementById("m-meta").innerHTML = `<span>Última rodada: ${rot(ultima.emissao)} (${dataBr(ultima.registrada_em)})</span><span>ENA: ONS 1931–hoje</span><span>Clima: NOAA ERSST v6</span>`;
+
+// exemplo de ponta a ponta
+const ex = [
+  ["1", "ENA do SE-sul nos 3 meses até a emissão", `${E.meses.map((m, i) => `${rot(m)} ${n(E.pct[i], 1)}%`).join(" · ")}`],
+  ["2", "Normal de 30 anos desses meses", `${E.normal.map(v => n(v, 1) + "%").join(" · ")}`],
+  ["3", "Anomalia inicial x = log(média ÷ normal)", `log(${n(E.pct.reduce((a, b) => a + b, 0) / 3, 1)} ÷ ${n(E.normal.reduce((a, b) => a + b, 0) / 3, 1)}) = ${n(E.x, 3)}`],
+  ["4", `Memória ajustada para emissões de setembro, 1 mês à frente (${E.n_pares} pares, 1931–2025)`, `a = ${sn(E.a, 3)} · b = ${n(E.b, 3)}`],
+  ["5", "Ponto em log: a + b · x", `${sn(E.a, 3)} + ${n(E.b, 3)} × ${n(E.x, 3)} = ${n(E.ponto_log, 3)}`],
+  ["6", `Normal de 30 anos de ${rot(E.alvo)}`, `${n(E.normal_alvo, 1)}% da MLT`],
+  ["7", "Mediana: normal × e^ponto", `${n(E.normal_alvo, 1)} × e^${n(E.ponto_log, 3)} = ${n(E.mediana, 1)}%`],
+  ["8", `Membros = mediana × e^(erros históricos; desvio ${n(E.dp_residuos, 3)})`, `média <b>${n(E.media, 1)}%</b> · p10–p90 ${n(E.p10)}–${n(E.p90)}% · ${n(E.media / 100 * E.mlt_alvo)} MWmed`],
+  ["9", `Anos similares (Niño 3.4 de ${n(E.n3, 2)}, subindo ${sn(E.dn3, 2)} em 3 meses)`, `${E.anos.map(a => a.ano).join(", ")} → recomposição <b>${n(E.media_similares, 1)}%</b>`],
+];
+if (E.realizado != null) ex.push(["10", `Realizado em ${rot(E.alvo)}${E.realizado_parcial ? " (parcial)" : ""}`, `<b>${n(E.realizado, 1)}%</b>`]);
+document.getElementById("memorial").innerHTML = ex.map(([k, t, v]) => `<tr><td>${k}</td><td>${t}</td><td class="n">${v}</td></tr>`).join("");
+document.getElementById("tab-ex-sim").innerHTML = E.anos.map(a =>
+  `<tr><td>${a.ano}</td><td class="n">${n(a.pct, 1)}%</td><td class="n">${n(a.normal_epoca, 1)}%</td><td class="n">${n(a.razao, 3)}</td><td class="n">${n(a.hoje, 1)}%</td></tr>`).join("") +
+  `<tr class="destaque"><td>Média</td><td></td><td></td><td></td><td class="n">${n(E.media_similares, 1)}%</td></tr>`;
+document.getElementById("nota-ex").innerHTML = E.realizado != null ?
+  `Em ${rot(E.alvo)}${E.realizado_parcial ? " (parcial)" : ""}, o SE-sul está em ${n(E.realizado, 1)}%: acima do modelo-v1 (${n(E.media, 1)}%) e da recomposição (${n(E.media_similares, 1)}%), ` +
+  `na direção que a camada de El Niño forte aponta para o SE-sul. Em ${rot(E.emissao)} o Niño 3.4 relativo de 3 meses ainda estava em ${n(E.n3, 2)}, abaixo de 1,5, e a camada não estava ativa.` : "";
+
+// desempenho
+(function () {
+  const D = MET.desempenho, rotulo = { CH: "Climatologia histórica (desde 1931)", PER: "<b>Modelo-v1 (persistência ajustada)</b>", SIM: "Anos similares (recomposição)" };
+  document.getElementById("tab-desemp").innerHTML = ["PER", "SIM", "CH"].map(m => `<tr${m === "PER" ? ' class="destaque"' : ""}><td>${rotulo[m]}</td>` +
+    ["SE", "S", "NE", "N"].map(k => { const d = D.find(q => q.metodo === m && q.nome === k);
+      return `<td class="n ${d.ic05 > 0 ? "bom" : d.ic95 < 0 ? "ruim" : ""}">${sn(d.crpss * 100, 1)}%</td>`; }).join("") + "</tr>").join("");
+  const S2 = MET.similares_desempenho, nomes = ["S", "N", "SE-sul", "SE", "SE-resto", "NE"];
+  document.getElementById("tab-sim").innerHTML = [["El Niño forte", "Em El Niño forte"], ["El Niño (N≥0,5)", "Em El Niño (Niño 3.4 ≥ 0,5)"], ["todos", "Em todos os anos"]].map(([rec, t]) =>
+    `<tr><td>${t}</td>` + nomes.map(k => { const d = S2.find(q => q.nome === k && q.recorte === rec && q.ref === "PER");
+      return d ? `<td class="n ${d.ic05 > 0 ? "bom" : d.ic95 < 0 ? "ruim" : ""}">${sn(d.crpss * 100, 0)}%</td>` : "<td class=\"n\">—</td>"; }).join("") + "</tr>").join("");
+  // gráfico por antecedência
+  const H = MET.habilidade, svg = document.getElementById("g-hab"), w = 1040, h = 260, m = { l: 44, r: 90, t: 12, b: 32 };
+  const cores = { SE: "var(--accent)", S: "var(--c-s)", NE: "var(--c-ne)", N: "var(--c-n)" };
+  document.getElementById("leg-hab").innerHTML = Object.keys(cores).map(k => `<span><i class="l" style="border-color:${cores[k]}"></i>${NOME[k]}</span>`).join("");
+  const vals = Object.values(H).flatMap(d => d.crpss), e = eixo(Math.min(-0.05, ...vals), Math.max(...vals), 5);
+  const x = hh => m.l + (hh - 1) * (w - m.l - m.r) / 17, y = v => m.t + (h - m.t - m.b) * (1 - (v - e.a) / (e.b - e.a));
+  e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, n(t, 2)); });
+  [1, 3, 6, 9, 12, 15, 18].forEach(hh => S(svg, "text", { x: x(hh), y: h - 14, "text-anchor": "middle" }, `${hh}`));
+  S(svg, "text", { x: (m.l + w - m.r) / 2, y: h, "text-anchor": "middle" }, "antecedência (meses)");
+  const rotulos = [];
+  Object.entries(H).forEach(([k, d]) => {
+    S(svg, "polygon", { points: [...d.h.map((hh, i) => `${x(hh)},${y(d.ic95[i])}`), ...d.h.slice().reverse().map((hh, i) => `${x(hh)},${y(d.ic05[d.h.length - 1 - i])}`)].join(" "), fill: cores[k], opacity: 0.08 });
+    S(svg, "polyline", { points: d.h.map((hh, i) => `${x(hh)},${y(d.crpss[i])}`).join(" "), fill: "none", stroke: cores[k], "stroke-width": 2 });
+    d.h.forEach((hh, i) => { const c = S(svg, "circle", { cx: x(hh), cy: y(d.crpss[i]), r: 6, fill: "transparent" });
+      dicaEm(c, `<b>${NOME[k]}</b> · ${hh} ${hh === 1 ? "mês" : "meses"}<br>ganho ${sn(d.crpss[i] * 100, 1)}% (IC 90% ${sn(d.ic05[i] * 100, 1)} a ${sn(d.ic95[i] * 100, 1)}%)`); });
+    rotulos.push({ el: S(svg, "text", { x: x(18) + 8, y: y(d.crpss[d.crpss.length - 1]) + 3 }, NOME[k]), x: x(18) + 8, y: y(d.crpss[d.crpss.length - 1]) + 3 });
+  });
+  empilharRotulos(rotulos, 80, 12);
+})();
+
+document.getElementById("tab-rod").innerHTML = MET.rodadas.slice().reverse().map(r =>
+  `<tr><td>${rot(r.emissao)}</td><td>${dataHoraBr(r.registrada_em)}</td><td>${r.versao}</td><td>${r.tipo}</td><td>${r.regime}</td></tr>`).join("");
+</script>
+</body>
+</html>

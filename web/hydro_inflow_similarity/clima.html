@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indicadores climáticos</title>
+<!-- Padrão visual Quant Energia v1.3.1 (web/padrao). Dados em dados_clima.js (hydro_inflow_similarity_analytics.web) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  /* só desta página: escala divergente da previsão (La Niña azul, El Niño laranja) e cartões dos índices */
+  :root { --frio-3: #1c5cab; --frio-2: #4f86c6; --frio-1: #9dbfe3; --quente-1: #f2c094; --quente-2: #e48b4a; --quente-3: #c4561f; --quente-4: #8f3410; --neutro: #b8c0c8; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --frio-3: #6fa6e6; --frio-2: #4f86c6; --frio-1: #2f5584; --quente-1: #8a5631; --quente-2: #c06d33; --quente-3: #e48b4a; --quente-4: #f2b07a; --neutro: #5a646d; } }
+  :root[data-theme="dark"] { --frio-3: #6fa6e6; --frio-2: #4f86c6; --frio-1: #2f5584; --quente-1: #8a5631; --quente-2: #c06d33; --quente-3: #e48b4a; --quente-4: #f2b07a; --neutro: #5a646d; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .selo { justify-self: start; font-family: var(--f-data); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; background: var(--vazio); color: var(--ink-2); }
+  .selo.cenario { background: var(--accent-soft); color: var(--accent); }
+  .selo.teste { background: color-mix(in srgb, var(--quente-2) 18%, transparent); color: var(--quente-3); }
+  .ficha { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; scroll-margin-top: 16px; }
+  @media (max-width: 860px) { .ficha { grid-template-columns: 1fr; } }
+  .ficha h3 { font-size: 1.1rem; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+  .ficha h3 .selo { font-weight: 400; }
+  .ficha .bloco-t { display: grid; gap: 8px; min-width: 0; font-size: 0.93rem; align-content: start; }
+  .ficha .bloco-t h4 { margin: 4px 0 0; font: 600 0.82rem var(--f-data); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+  .ficha .bloco-t p { color: var(--ink-2); }
+  .ficha .bloco-t a { color: var(--accent); }
+  .ficha .bloco-g { display: grid; gap: 8px; min-width: 0; align-content: start; }
+  .mini-tab { font-size: 0.8rem; } .mini-tab th, .mini-tab td { padding: 4px 6px; white-space: nowrap; }
+  .tab-prev { font-size: 0.86rem; } .tab-prev th, .tab-prev td { padding: 6px 8px; white-space: nowrap; text-align: center; }
+  .tab-prev td.cel { color: var(--ink); font-family: var(--f-data); }
+  .fontes li { font-size: 0.9rem; }
+  .leitura { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .leitura .item { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) minmax(0, 1.2fr); gap: 6px 18px; padding: 12px 16px; border-bottom: 1px solid var(--rule); align-items: start; }
+  .leitura .item:last-child { border-bottom: 0; }
+  .leitura .grupo { font: 600 0.95rem var(--f-display); display: grid; gap: 4px; }
+  .leitura .grupo a { font: 400 0.75rem var(--f-data); color: var(--accent); text-decoration: none; }
+  .leitura .estado { font-size: 0.93rem; } .leitura .estado b { font-weight: 600; }
+  .leitura .implica { font-size: 0.93rem; color: var(--ink-2); padding-left: 12px; border-left: 3px solid var(--rule); }
+  .leitura .implica.forte { border-left-color: var(--accent); color: var(--ink); }
+  .leitura .rot { display: block; font: 0.68rem var(--f-data); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); margin-bottom: 2px; }
+  @media (max-width: 760px) { .leitura .item { grid-template-columns: 1fr; } }
+  .tab-todos { font-size: 0.86rem; } .tab-todos th, .tab-todos td { padding: 6px 8px; white-space: nowrap; }
+  .tab-todos td a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--ink-3); }
+  details.abrir summary { font-size: 0.92rem; padding-block: 4px; }
+  .abas button { white-space: nowrap; }
+  .barra-abas { align-items: center; } .abas { align-items: center; }
+  .abas-topo { border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+  .abas-topo button { font-size: 0.92rem; padding: 6px 14px; }
+  .duas.cpc { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  @media (max-width: 860px) { .duas.cpc { grid-template-columns: 1fr; } }
+  .fontes a { color: var(--accent); }
+  /* tabela histórica (formato da tabela do ONI no CPC) */
+  .hist { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-top: 8px; }
+  .hist .legenda-tab { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--ink-2); margin: 8px 0; }
+  .hist .legenda-tab span { display: inline-flex; align-items: center; gap: 5px; }
+  .hist .legenda-tab i { width: 14px; height: 12px; border-radius: 2px; border: 1px solid var(--rule); }
+  .hist .caixa { max-height: 440px; overflow: auto; border: 1px solid var(--rule); border-radius: 6px; }
+  .tab-hist { font: 0.78rem var(--f-data); border-collapse: separate; border-spacing: 0; width: 100%; }
+  .tab-hist th, .tab-hist td { padding: 3px 6px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--surface); }
+  .tab-hist thead th { position: sticky; top: 0; background: var(--surface); color: var(--ink-3); font-weight: 600; z-index: 1; border-bottom: 1px solid var(--rule); }
+  .tab-hist th.ano { width: 4.5rem; position: sticky; left: 0; background: var(--surface); text-align: left; color: var(--ink-2); font-weight: 400; }
+  .tab-hist th.ano.sim { color: var(--accent); font-weight: 600; }
+  .tab-hist td.q1, .legenda-tab i.q1 { background: color-mix(in srgb, var(--quente-3) 20%, transparent); }
+  .tab-hist td.q2, .legenda-tab i.q2 { background: color-mix(in srgb, var(--quente-3) 40%, transparent); }
+  .tab-hist td.q3, .legenda-tab i.q3 { background: color-mix(in srgb, var(--quente-3) 62%, transparent); }
+  .tab-hist td.q4, .legenda-tab i.q4 { background: color-mix(in srgb, var(--quente-3) 88%, transparent); color: var(--surface); font-weight: 600; }
+  .tab-hist td.f1, .legenda-tab i.f1 { background: color-mix(in srgb, var(--frio-3) 22%, transparent); }
+  .tab-hist td.f2, .legenda-tab i.f2 { background: color-mix(in srgb, var(--frio-3) 45%, transparent); }
+  .tab-hist td.f3, .legenda-tab i.f3 { background: color-mix(in srgb, var(--frio-3) 80%, transparent); color: var(--surface); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="./index.html">Afluências e ENSO</a>
+    <a href="./clima.html" aria-current="page">Indicadores climáticos</a>
+    <a href="./fundamentos.html">Fundamentos</a>
+    <a href="./metodologia.html">Metodologia</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo">Pacífico, Atlântico, Índico e Hemisfério Sul · NOAA</span>
+    <h1 id="titulo">Indicadores climáticos</h1>
+    <p class="sub">O que os oceanos dizem hoje e o que isso implica para a ENA. O Resumo traz a leitura por grupo e a previsão oficial do ENSO; as outras
+      abas trazem uma ficha para cada um dos 14 índices acompanhados no estudo, com histórico, literatura e o quanto cada um pesou nos nossos testes.</p>
+    <div class="meta" id="meta"></div>
+  </section>
+
+  <div class="abas abas-topo" id="abas-grupo" role="group" aria-label="Seções da página"></div>
+
+  <div id="painel-resumo" style="display:grid;gap:34px">
+  <section aria-labelledby="s-leitura">
+    <h2 id="s-leitura">Leitura de hoje</h2>
+    <div class="leitura" id="leitura"></div>
+    <details class="abrir" id="abrir-todos">
+      <summary>Ver os 14 índices numa tabela</summary>
+      <div class="rolagem"><table class="tab-todos"><thead><tr><th>Índice</th><th class="n">Hoje</th><th>Fase</th><th class="n">3 meses</th><th class="n">Percentil desde 1950</th><th>Papel no estudo</th></tr></thead><tbody id="tab-todos"></tbody></table></div>
+    </details>
+  </section>
+
+  <section aria-labelledby="s-cpc">
+    <h2 id="s-cpc">Previsão oficial do ENSO (CPC/NOAA)</h2>
+    <div class="duas cpc">
+      <div class="bloco">
+        <div class="ttl">Chance de cada fase e intensidade, por trimestre</div>
+        <svg id="g-cpc" viewBox="0 0 640 300" role="img" aria-label="Probabilidades oficiais de La Niña, neutro e El Niño por trimestre"></svg>
+        <div class="legenda-mini" id="leg-cpc"></div>
+        <p class="leg" id="nota-cpc"></p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Em números</div>
+        <div class="rolagem"><table class="tab-prev"><thead><tr><th>Trimestre</th><th>La Niña</th><th>Neutro</th><th>El Niño</th><th>RONI ≥ 2,0</th></tr></thead><tbody id="tab-cpc"></tbody></table></div>
+        <p class="leg">O CPC verifica as previsões pelo RONI (Niño 3.4 relativo, a mesma ideia do índice que usamos). Um RONI acima de 2,0 seria o maior
+          desde 1950: o máximo de 1950–2025 foi 1,92 (fev/1983).</p>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <section aria-labelledby="s-fichas" id="painel-fichas" style="scroll-margin-top:16px">
+    <h2 id="s-fichas">Os índices, um a um</h2>
+    <p class="sub" id="desc-grupo"></p>
+    <div id="fichas" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section aria-labelledby="s-fontes">
+    <h2 id="s-fontes">Fontes</h2>
+    <ul class="lista fontes" id="fontes"></ul>
+  </section>
+
+  <div class="aviso">
+    <span>O que a literatura associa a cada índice é resumido de estudos publicados e não foi verificado por nós, exceto onde dito "o que medimos". As
+      medições usam 1931–2026 (ou desde o início de cada série), correlações de Spearman entre o índice dos 3 meses até um mês e a ENA de 1 a 6 meses
+      depois, com correção para os milhares de testes do estudo. Detalhes em <a href="./metodologia.html">Metodologia</a> e
+      <a href="./fundamentos.html">Fundamentos</a>.</span>
+  </div>
+</main>
+<div class="dica" id="dica" hidden></div>
+<script src="../padrao/graficos.js"></script>
+<script type="module">
+// dados da página: serving/hydro_inflow_similarity/clima.json (contas no Python, desenho no JS)
+const CLIMA = await (await fetch("/dados/hydro_inflow_similarity/clima.json", { cache: "no-cache" })).json();
+"use strict";
+const I = CLIMA.indices, SUBN = { SE: "Sudeste", S: "Sul", NE: "Nordeste", N: "Norte" };
+const SELO = { cenario: ["cenario", "Entra no cenário"], teste: ["teste", "Em teste (modelo-sombra)"], contexto: ["", "Só contexto"], referencia: ["", "Referência oficial"] };
+const F = { // fontes citadas nas fichas
+  cptec: ["CPTEC/INPE, Painel El Niño (boletim mensal)", "https://clima.cptec.inpe.br/gpc/pdf/painel_el_nino_boletim_mensal_no_02.pdf"],
+  ana: ["ANA, Painel El Niño (jun/2026)", "https://www.gov.br/ana/pt-br/assuntos/noticias-e-eventos/noticias/ana-reforca-monitoramento-de-rios-e-reservatorios-diante-da-chegada-do-el-nino/painel-el-nino-junho-26.pdf"],
+  epcp: ["Frontiers in Earth Science (2024): El Niño do leste × do centro e a chuva na América do Sul", "https://frontiersin.org/journals/earth-science/articles/10.3389/feart.2024.1134782/full"],
+  dipolo: ["Repositório UFPA: gradiente de TSM do Atlântico e chuva no Nordeste", "https://www.repositorio.ufpa.br/bitstream/2011/6310/1/Artigo_ModelosAcopladosIPCCAR4.pdf"],
+  zcas: ["Annales Geophysicae (2008): TSM do Atlântico Sul subtropical e a chuva na América do Sul", "https://angeo.copernicus.org/articles/26/3457/2008"],
+  iod: ["Atmosphere/MDPI (2021): Dipolo do Índico e a chuva na América do Sul", "https://www.mdpi.com/2073-4433/12/11/1437"],
+  aao: ["Repositório UFSC: Oscilação Antártica e a chuva no Sul do Brasil (2001–2020)", "https://repositorio.ufsc.br/handle/123456789/233966"],
+  pdo: ["International Journal of Climatology: a PDO modula as teleconexões do ENSO na América do Sul", "https://openpolar.no/Record/crwiley:10.1002%2Fjoc.1824"],
+  amo: ["Water Resources Research (2024): AMO, PDO e as vazões no Brasil", "https://cris.unibo.it/bitstream/11585/1012402/1/2024_Chagas_WaterResourcesResearch_2.pdf"],
+  cpc_oni: ["CPC/NOAA: ONI e RONI", "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/"],
+  cpc_prob: ["CPC/NOAA: probabilidades oficiais do ENSO", "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/probabilities/"],
+  psl: ["NOAA PSL: séries de índices climáticos", "https://psl.noaa.gov/data/timeseries/month/"],
+  ersst: ["NOAA ERSST v6 (temperatura da superfície do mar)", "https://psl.noaa.gov/data/gridded/data.noaa.ersst.v6.html"],
+};
+const MESES_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const emitida = t => { if (!t) return "—"; const [mes, ano] = t.split(" "); const i = MESES_EN.indexOf(mes); return i < 0 ? t : `${MESL[i]} de ${ano}`; };
+const cita = (...ks) => ks.map(k => `<a href="${F[k][1]}" target="_blank" rel="noopener">${F[k][0]}</a>`).join("; ");
+
+// fases em palavras, por índice
+const faseEnso = v => v >= 1.5 ? "El Niño forte" : v >= 1.0 ? "El Niño moderado" : v >= 0.5 ? "El Niño fraco" : v > -0.5 ? "Neutro" : v > -1.0 ? "La Niña fraca" : "La Niña forte";
+const faixa = (v, lim, alto, baixo, meio = "Perto do normal") => v >= lim ? alto : v <= -lim ? baixo : meio;
+
+// textos de cada índice: o que é, o que a literatura associa ao Brasil, o que medimos (resumo) e o papel no estudo
+const INFO = [
+  { grupo: "Pacífico: El Niño e La Niña (ENSO)" },
+  { k: "nino34_rel", nome: "Niño 3.4 relativo", unid: "°C", fase: faseEnso, lims: [0.5, 1.5, -0.5, -1.0],
+    oque: "Anomalia da temperatura da superfície do mar no Pacífico equatorial central (5°S–5°N, 170°W–120°W) menos a anomalia média de todos os trópicos. Descontar o aquecimento comum dos trópicos é a ideia do RONI, que o CPC passou a usar para a força dos eventos. Calculado por nós na ERSST v6 desde 1850; reproduz o RONI oficial com correlação de 0,999.",
+    lit: `El Niño traz chuva acima do normal no Sul do Brasil e em parte de MS, SP e sul de MG, e chuva abaixo no Norte e no Nordeste (${cita("cptec", "ana")}).`,
+    papel: "É o índice central do estudo: define os anos similares, a camada de El Niño forte e o regime do modelo-sombra. No número do modelo-v1 não entra (o número é a persistência)." },
+  { k: "roni", nome: "RONI (oficial)", unid: "°C", fase: faseEnso, lims: [0.5, 1.5, -0.5, -1.0],
+    oque: "Índice oficial do CPC para a força do ENSO: a média de 3 meses do Niño 3.4 relativo (ERSST v6). O valor mostrado é o do trimestre centrado no mês indicado.",
+    lit: `Mesma leitura do Niño 3.4 relativo (${cita("cpc_oni")}).`,
+    papel: "Referência oficial para conferir o nosso cálculo e para a previsão do CPC, que é verificada pelo RONI." },
+  { k: "oni", nome: "ONI (oficial)", unid: "°C", fase: faseEnso, lims: [0.5, 1.5, -0.5, -1.0],
+    oque: "Índice tradicional do CPC: média de 3 meses da anomalia do Niño 3.4, sem descontar os trópicos. Com o aquecimento dos oceanos, o ONI tende a mostrar eventos mais fortes que o RONI (2026: ONI 2,16 contra RONI 1,69 em jul–set).",
+    lit: `É o índice mais citado no noticiário e nos boletins (${cita("cpc_oni")}).`,
+    papel: "Referência. Pelo ONI, 2023 seria El Niño forte; pelo índice relativo, moderado. O estudo usa o relativo." },
+  { k: "nino12", nome: "Niño 1+2", unid: "°C", fase: v => faixa(v, 0.5, v >= 2 ? "Pacífico leste muito quente" : "Pacífico leste quente", "Pacífico leste frio"), lims: [0.5, -0.5],
+    oque: "Anomalia de temperatura do mar junto à costa do Peru e do Equador (10°S–0, 90°W–80°W). Mostra se o El Niño está concentrado no leste do Pacífico (\"El Niño costeiro\") ou no centro.",
+    lit: `O El Niño do leste do Pacífico tem o padrão clássico mais marcado (chuva no sudeste da América do Sul); o El Niño do centro tem efeito mais fraco e às vezes oposto nessa região (${cita("epcp")}).`,
+    papel: "Só contexto: entrou nas correlações, mas não nos modelos. Em 2026 está no maior valor desde 1950, o que indica um evento do tipo leste." },
+  { k: "soi", nome: "SOI (Oscilação Sul)", unid: "padronizado", fase: v => v <= -1 ? "Atmosfera em modo El Niño" : v <= -0.5 ? "Tendendo a El Niño" : v >= 1 ? "Atmosfera em modo La Niña" : v >= 0.5 ? "Tendendo a La Niña" : "Neutro", lims: [0.5, -0.5],
+    oque: "Diferença padronizada de pressão ao nível do mar entre Taiti e Darwin: a parte atmosférica do ENSO. Negativo = El Niño (ventos alísios enfraquecidos).",
+    lit: `Confirma se a atmosfera está acoplada ao aquecimento do oceano; um El Niño com SOI muito negativo costuma ter impactos mais consistentes (${cita("cpc_oni")}).`,
+    papel: "Só contexto: é redundante com o Niño 3.4 nos testes." },
+  { grupo: "Atlântico" },
+  { k: "tna", nome: "Atlântico Norte tropical (TNA)", unid: "°C", fase: v => faixa(v, 0.25, "Mais quente que o normal", "Mais frio que o normal"), lims: [0.25, -0.25],
+    oque: "Anomalia de temperatura do mar no Atlântico tropical norte (5,5°N–23,5°N, 57,5°W–15°W). Calculado por nós na ERSST v6; reproduz o índice da NOAA (PSL) com correlação de 0,96.",
+    lit: `Junto com o Atlântico Sul, define o gradiente que posiciona a ZCIT, a faixa de chuva tropical do Atlântico (${cita("dipolo")}).`,
+    papel: "Só contexto: isolado, não teve relação significativa com a ENA. O que importa é o gradiente (abaixo)." },
+  { k: "tsa", nome: "Atlântico Sul tropical (TSA)", unid: "°C", fase: v => faixa(v, 0.25, "Mais quente que o normal", "Mais frio que o normal"), lims: [0.25, -0.25],
+    oque: "Anomalia de temperatura do mar no Atlântico tropical sul (20°S–0, 30°W–10°E). Calculado por nós na ERSST v6.",
+    lit: `Atlântico Sul mais quente puxa a ZCIT para o sul e favorece chuva no norte do Nordeste em fev–mai (${cita("dipolo")}).`,
+    papel: "Só contexto, pelo mesmo motivo do TNA." },
+  { k: "grad_atl", nome: "Gradiente do Atlântico (TNA − TSA)", unid: "°C", fase: v => v > 0.25 ? "Norte mais quente: ZCIT ao norte" : v < -0.25 ? "Sul mais quente: ZCIT ao sul" : "Sem gradiente marcado", lims: [0.25, -0.25],
+    oque: "Diferença entre o Atlântico tropical norte e o sul (o \"dipolo do Atlântico\"). Positivo: norte mais quente.",
+    lit: `Gradiente positivo afasta a ZCIT do Brasil e reduz a chuva no norte do Nordeste e na Amazônia oriental; negativo faz o contrário (${cita("dipolo")}).`,
+    papel: "Em teste: é a segunda variável de maior peso no modelo do Norte (T7), que está no modelo-sombra de 2026/27. Positivo reduz a ENA do Norte." },
+  { k: "atl_sul_se", nome: "Atlântico Sul na costa do Sudeste", unid: "°C", fase: v => faixa(v, 0.25, "Mais quente que o normal", "Mais frio que o normal"), lims: [0.25, -0.25],
+    oque: "Anomalia de temperatura do mar entre 30°S–20°S e 50°W–40°W, em frente ao Sudeste. Definição própria deste estudo (não é um índice oficial), calculada na ERSST v6.",
+    lit: `A temperatura do Atlântico Sul subtropical influencia a posição da ZCAS, a faixa de chuva de verão do Sudeste, e pode pesar mais que o ENSO nesse ponto (${cita("zcas")}).`,
+    papel: "Só contexto: o teste multivariado deu peso perto de zero em todos os subsistemas." },
+  { grupo: "Oceano Índico" },
+  { k: "dmi", nome: "Dipolo do Índico (DMI/IOD)", unid: "°C", fase: v => v >= 0.4 ? "IOD positivo" : v <= -0.4 ? "IOD negativo" : "Neutro", lims: [0.4, -0.4],
+    oque: "Diferença de temperatura do mar entre o oeste (50°E–70°E, 10°S–10°N) e o sudeste do Índico (90°E–110°E, 10°S–0). Positivo acima de 0,4. Calculado por nós na ERSST v6.",
+    lit: `IOD positivo foi associado a déficit de chuva na primavera em grande parte do Brasil (2019) e altera a umidade que chega ao Sudeste; o negativo tende ao oposto. Costuma ocorrer junto com o ENSO, o que dificulta separar os efeitos (${cita("iod")}).`,
+    papel: "Só contexto: peso pequeno no teste multivariado. Em 2026 está positivo e subindo (percentil 98), junto com o El Niño, como em 1997." },
+  { grupo: "Hemisfério Sul" },
+  { k: "aao", nome: "Oscilação Antártica (AAO/SAM)", unid: "padronizado", fase: v => v >= 1 ? "Positiva forte" : v >= 0.5 ? "Positiva" : v <= -1 ? "Negativa forte" : v <= -0.5 ? "Negativa" : "Neutra", lims: [0.5, -0.5],
+    oque: "Padrão de pressão entre as latitudes médias e a Antártica (CPC, desde 1979). Muda a trajetória das frentes frias no Sul.",
+    lit: `Fase negativa associada a chuva acima do normal no Sul do Brasil no verão e no outono; a frequência de frentes frias varia com a fase e a estação (${cita("aao")}).`,
+    papel: "Só contexto: sem relação significativa com a ENA nos testes. A série começa em 1979, o que limita a amostra. Varia muito de um mês para outro." },
+  { grupo: "Escala de décadas" },
+  { k: "pdo", nome: "Oscilação Decenal do Pacífico (PDO)", unid: "padronizado", fase: v => v >= 0.5 ? "Positiva (fase quente)" : v <= -0.5 ? "Negativa (fase fria)" : "Neutra", lims: [0.5, -0.5],
+    oque: "Padrão de temperatura do mar no Pacífico Norte que muda de fase a cada 20 a 30 anos (NCEI, ERSST v5).",
+    lit: `Quando PDO e ENSO estão na mesma fase, as teleconexões do ENSO com a chuva na América do Sul ficam mais fortes; em fases opostas, mais fracas (${cita("pdo")}).`,
+    papel: "Só contexto. Em 2026 a PDO está negativa (−1,55) com um El Niño forte: fases opostas, o que pela literatura atenuaria os impactos. O filtro por PDO ainda não foi testado (fila de testes)." },
+  { k: "amo_rel", nome: "Oscilação Multidecenal do Atlântico (AMO, relativa)", unid: "°C", fase: v => faixa(v, 0.1, "Fase quente", "Fase fria"), lims: [0.1, -0.1],
+    oque: "Temperatura do Atlântico Norte (0–60°N) menos a média global de 60°S a 60°N: remove o aquecimento global e deixa a oscilação de 60 a 80 anos. Calculada por nós na ERSST v6.",
+    lit: `AMO quente associada a menos chuva no norte do Nordeste em mar–mai; secas e cheias longas nos rios brasileiros acompanham a AMO e a PDO (${cita("amo")}).`,
+    papel: "Só contexto: teve correlação negativa com o Nordeste e o Sudeste, mas pode ser coincidência com a queda de ENA desde os anos 1990. Não usada." },
+  { k: "amo_ncei", nome: "AMO (NCEI, sem remover tendência)", unid: "°C", fase: v => faixa(v, 0.2, "Atlântico Norte quente", "Atlântico Norte frio"), lims: [0.2, -0.2],
+    oque: "Anomalia de temperatura do Atlântico Norte (0–60°N) publicada pela NCEI, sem descontar o aquecimento global. Por isso fica em recordes nos anos recentes.",
+    lit: `Mesma leitura da AMO relativa, mas misturada com a tendência de aquecimento (${cita("amo")}).`,
+    papel: "Referência. Para comparar anos, o estudo usa a versão relativa." },
+];
+
+document.getElementById("meta").innerHTML = `<span>Valores até ${rot(I.nino34_rel.ultimo_mes)}</span><span>Previsão do CPC emitida em ${emitida(CLIMA.cpc_fases.emitida)}</span><span>Fontes: NOAA (CPC, PSL, NCEI)</span>`;
+
+// ---------- leitura de hoje: estado e o que isso implica para a ENA, por grupo ----------
+const GRUPOS = [
+  { id: "pacifico", nome: "Pacífico", desc: "El Niño e La Niña (ENSO): o principal sinal climático para a ENA, sobretudo no Sul, no SE-sul e no Norte." },
+  { id: "atlantico", nome: "Atlântico", desc: "Temperatura do Atlântico tropical e subtropical: posiciona a ZCIT (Norte e Nordeste) e influencia a ZCAS (Sudeste)." },
+  { id: "indico", nome: "Índico", desc: "Dipolo do Índico (IOD): efeito remoto sobre a América do Sul, muitas vezes junto com o ENSO." },
+  { id: "hemisferio", nome: "Hemisfério Sul", desc: "Oscilação Antártica (AAO): trajetória das frentes frias no Sul." },
+  { id: "decadas", nome: "Décadas", desc: "PDO e AMO: oscilações lentas, de décadas, que podem reforçar ou atenuar o ENSO." },
+];
+const GRUPO_DE = { nino34_rel: "pacifico", roni: "pacifico", oni: "pacifico", nino12: "pacifico", soi: "pacifico",
+  tna: "atlantico", tsa: "atlantico", grad_atl: "atlantico", atl_sul_se: "atlantico", dmi: "indico", aao: "hemisferio",
+  pdo: "decadas", amo_rel: "decadas", amo_ncei: "decadas" };
+const info = k => INFO.find(x => x.k === k);
+(function () {
+  const n34 = I.nino34_rel, fEn = faseEnso(n34.valor), sobe = n34.variacao_3m > 0.1 ? "subindo" : n34.variacao_3m < -0.1 ? "caindo" : "estável";
+  const prox = CLIMA.cpc_forca.linhas[1] ?? CLIMA.cpc_forca.linhas[0], fasesCpc = CLIMA.cpc_fases.linhas;
+  const ultEN = fasesCpc.filter(l => l.valores[2] >= 50).pop();
+  const forteEN = n34.valor >= 1.5 || (prox && prox.valores[7] + prox.valores[8] >= 50);
+  const enso = {
+    estado: `<b>${fEn}</b> e ${sobe}: Niño 3.4 relativo ${sn(n34.valor, 2)} em ${rot(n34.ultimo_mes)}, maior que ${n(n34.percentil)}% dos meses desde 1950. ` +
+      (prox ? `CPC: ${prox.valores[8]}% de chance de passar de 2,0 em ${prox.trimestre}` : "") + (ultEN ? `; El Niño provável até ${ultEN.trimestre}.` : "."),
+    implica: forteEN ? "Nos 6 El Niños fortes desde 1961, a ENA do <b>Sul</b> e do <b>SE-sul</b> veio acima do que a persistência previa e a do <b>Norte</b>, abaixo. A direção é confiável, o tamanho não. Os anos similares ganham peso no Sul e no Norte." :
+      n34.valor >= 0.5 ? "El Niño mais fraco: o Sul tende a ficar acima do normal, mas o sinal é menor e menos consistente." :
+      n34.valor <= -0.5 ? "La Niña: efeito fraco e disperso na ENA; no histórico, só o Nordeste ficou abaixo do normal na La Niña fraca." : "ENSO neutro: sem sinal climático relevante; vale a persistência.",
+    forte: forteEN };
+  const g = I.grad_atl, tn = I.tna, ts = I.tsa;
+  const atl = {
+    estado: `<b>${info("grad_atl").fase(g.valor)}</b> (gradiente ${sn(g.valor, 2)}). Os dois lados do Atlântico tropical estão ${tn.valor > 0.25 && ts.valor > 0.25 ? "quentes" : "perto do normal"} (norte ${sn(tn.valor, 2)}, sul ${sn(ts.valor, 2)}).`,
+    implica: g.valor > 0.25 ? "Tende a reduzir a chuva no norte do Nordeste e a ENA do <b>Norte</b> (é a segunda variável do modelo do Norte em teste)." :
+      g.valor < -0.25 ? "Tende a favorecer a chuva no norte do Nordeste e a ENA do <b>Norte</b>." : "Sem sinal do Atlântico para o Norte e o Nordeste: nada a acrescentar ao ENSO.",
+    forte: Math.abs(g.valor) > 0.25 };
+  const d = I.dmi;
+  const ind = {
+    estado: `<b>${info("dmi").fase(d.valor)}</b> (${sn(d.valor, 2)}, ${d.variacao_3m > 0.1 ? "subindo" : d.variacao_3m < -0.1 ? "caindo" : "estável"}; percentil ${n(d.percentil)}).`,
+    implica: d.valor >= 0.4 ? "A literatura associa o IOD positivo a menos chuva na primavera em grande parte do Brasil; nos nossos testes o peso foi pequeno. Costuma andar junto com o El Niño (como em 1997)." :
+      d.valor <= -0.4 ? "A literatura associa o IOD negativo a mais chuva no norte do Brasil; nos nossos testes o peso foi pequeno." : "Sem sinal relevante.",
+    forte: false };
+  const a = I.aao;
+  const hs = { estado: `<b>${info("aao").fase(a.valor)}</b> (${sn(a.valor, 2)}).`,
+    implica: "Varia muito de um mês para outro e não teve efeito medido na ENA. Fase negativa persistente favoreceria chuva no Sul no verão (literatura).", forte: false };
+  const p = I.pdo, am = I.amo_rel, oposta = (p.valor <= -0.5 && n34.valor >= 0.5) || (p.valor >= 0.5 && n34.valor <= -0.5);
+  const dec = { estado: `PDO <b>${info("pdo").fase(p.valor).toLowerCase()}</b> (${sn(p.valor, 2)}); AMO ${info("amo_rel").fase(am.valor).toLowerCase()} (${sn(am.valor, 2)}).`,
+    implica: oposta ? "PDO em fase oposta ao ENSO: pela literatura, isso tende a <b>atenuar</b> os impactos do evento. Ainda não testado nos nossos dados." :
+      "Sem combinação que mude a leitura do ENSO.", forte: oposta };
+  const linhas = [["pacifico", enso], ["atlantico", atl], ["indico", ind], ["hemisferio", hs], ["decadas", dec]];
+  document.getElementById("leitura").innerHTML = linhas.map(([id, l]) => { const G = GRUPOS.find(x => x.id === id);
+    return `<div class="item"><div class="grupo">${G.nome}<a href="#fichas-${id}" data-grupo="${id}">ver índices →</a></div>` +
+      `<div class="estado"><span class="rot">Como está</span>${l.estado}</div><div class="implica ${l.forte ? "forte" : ""}"><span class="rot">O que significa para a ENA</span>${l.implica}</div></div>`; }).join("");
+  document.getElementById("tab-todos").innerHTML = INFO.filter(x => x.k).map(x => { const dd = I[x.k];
+    return `<tr><td><a href="#f-${x.k}" data-grupo="${GRUPO_DE[x.k]}">${x.nome}</a></td><td class="n">${sn(dd.valor, 2)}</td><td>${x.fase(dd.valor)}</td>` +
+      `<td class="n">${sn(dd.variacao_3m, 2)}</td><td class="n">${n(dd.percentil)}</td><td>${SELO[dd.peso][1]}</td></tr>`; }).join("");
+})();
+
+// ---------- previsão oficial do CPC ----------
+(function () {
+  const P = CLIMA.cpc_fases, FZ = CLIMA.cpc_forca;
+  // classes de força: ≤−2, −2..−1,5, −1,5..−1, −1..−0,5, neutro, 0,5..1, 1..1,5, 1,5..2, ≥2
+  const cores = ["var(--frio-3)", "var(--frio-3)", "var(--frio-2)", "var(--frio-1)", "var(--neutro)", "var(--quente-1)", "var(--quente-2)", "var(--quente-3)", "var(--quente-4)"];
+  const nomes = ["La Niña muito forte (≤ −2,0)", "La Niña muito forte", "La Niña forte (−1,5 a −1,0)", "La Niña fraca/moderada (−1,0 a −0,5)", "Neutro", "El Niño fraco (0,5 a 1,0)", "El Niño moderado (1,0 a 1,5)", "El Niño forte (1,5 a 2,0)", "El Niño muito forte (≥ 2,0)"];
+  const svg = document.getElementById("g-cpc"), w = 640, h = 300, m = { l: 38, r: 10, t: 10, b: 30 };
+  const bw = (w - m.l - m.r) / FZ.linhas.length, y = v => m.t + (h - m.t - m.b) * (1 - v / 100);
+  [0, 25, 50, 75, 100].forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: y(t), y2: y(t), stroke: "var(--rule)" }); S(svg, "text", { x: m.l - 6, y: y(t) + 3, "text-anchor": "end" }, `${t}%`); });
+  FZ.linhas.forEach((l, i) => {
+    let base = 0; const x0 = m.l + i * bw + bw * 0.15;
+    l.valores.forEach((v, j) => { if (!v) return;
+      const r = S(svg, "rect", { x: x0, y: y(base + v), width: bw * 0.7, height: y(base) - y(base + v) - 1, fill: cores[j], rx: 2 });
+      dicaEm(r, `<b>${l.trimestre}</b><br>${nomes[j]}: ${v}%`); base += v; });
+    S(svg, "text", { x: x0 + bw * 0.35, y: h - 10, "text-anchor": "middle", class: "forte" }, l.trimestre);
+  });
+  document.getElementById("leg-cpc").innerHTML = [[3, "La Niña"], [4, "Neutro"], [5, "El Niño fraco"], [6, "moderado"], [7, "forte"], [8, "muito forte (≥ 2,0)"]]
+    .map(([j, t]) => `<span><i style="background:${cores[j]}"></i>${t}</span>`).join("");
+  document.getElementById("nota-cpc").textContent = `Emitida em ${emitida(P.emitida)} pelo CPC/NOAA. Trimestres móveis: SON = set–out–nov, e assim por diante. Atualizada na segunda quinta-feira de cada mês.`;
+  document.getElementById("tab-cpc").innerHTML = P.linhas.map((l, i) => {
+    const f = FZ.linhas[i]?.valores; const muitoForte = f ? f[8] : null;
+    return `<tr><td class="cel">${l.trimestre}</td><td class="cel">${l.valores[0]}%</td><td class="cel">${l.valores[1]}%</td><td class="cel"><b>${l.valores[2]}%</b></td><td class="cel">${muitoForte != null ? muitoForte + "%" : "—"}</td></tr>`;
+  }).join("");
+})();
+
+// ---------- fichas ----------
+(function () {
+  const box = document.getElementById("fichas");
+  INFO.forEach(x => {
+    if (x.grupo) return;
+    const d = I[x.k], [cls, txt] = SELO[d.peso];
+    const med = Object.keys(d.medido).length ? ["SE", "S", "NE", "N"].map(k => { const r = d.medido[k]; if (!r) return "";
+      return `<tr><td>${SUBN[k]}</td><td class="n">${sn(r.r, 2)}</td><td>${r.mes_indice} → ${r.mes_alvo}</td><td>${r.significativo ? `sim (${r.n_sig})` : "não"}</td></tr>`; }).join("") : "";
+    const pes = d.pesos_t7 ? ["SE", "S", "NE", "N"].map(k => `${SUBN[k]} ${Object.values(d.pesos_t7[k]).map(v => sn(v, 3)).join(" / ")}`).join(" · ") : null;
+    const par = d.parecidos.map(p => `<tr><td>${p.ano}</td><td class="n">${sn(p.valor, 2)}</td>${["SE", "S", "NE", "N"].map(k => `<td class="n">${p.umido[k] != null ? n(p.umido[k]) + "%" : "—"}</td>`).join("")}</tr>`).join("");
+    const f = document.createElement("article"); f.className = "ficha"; f.id = `f-${x.k}`; f.dataset.grupo = GRUPO_DE[x.k];
+    f.innerHTML = `<div class="bloco-t">
+        <h3>${x.nome}<span class="selo ${cls}">${txt}</span></h3>
+        <p><b>Hoje (${rot(d.ultimo_mes)}):</b> ${sn(d.valor, 2)} ${x.unid} · ${x.fase(d.valor)} · percentil ${n(d.percentil)} desde 1950.</p>
+        <h4>O que é</h4><p>${x.oque}</p>
+        <h4>O que a literatura associa ao Brasil</h4><p>${x.lit}</p>
+        <h4>Papel no estudo</h4><p>${x.papel}</p>
+        ${med ? `<h4>O que medimos</h4><div class="rolagem"><table class="mini-tab"><thead><tr><th>Subsistema</th><th class="n">Correlação mais forte</th><th>Índice → ENA</th><th>Significativa (casos)</th></tr></thead><tbody>${med}</tbody></table></div>` : ""}
+        ${pes ? `<p class="leg">Peso no teste multivariado (T7, efeito em log da ENA por desvio-padrão): ${pes}.</p>` : ""}
+      </div>
+      <div class="bloco-g">
+        <svg viewBox="0 0 560 230" role="img" aria-label="Histórico de ${x.nome}"></svg>
+        <p class="leg">Mensal desde ${rot(d.serie.inicio)}; tracejado: limiares de fase; ponto: último valor.</p>
+        ${par ? `<h4 style="margin:4px 0 0;font:600 0.82rem var(--f-data);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)">Anos com valor parecido em ${MES[+d.ultimo_mes.slice(5, 7) - 1]} e o período úmido seguinte</h4>
+        <div class="rolagem"><table class="mini-tab"><thead><tr><th>Ano</th><th class="n">Valor</th><th class="n">SE</th><th class="n">Sul</th><th class="n">NE</th><th class="n">Norte</th></tr></thead><tbody>${par}</tbody></table></div>
+        <p class="leg">Média de 3 meses até ${MES[+d.ultimo_mes.slice(5, 7) - 1]} mais próxima da de hoje (${sn(d.tres_meses, 2)}); ENA de nov a abr seguinte, em % da MLT. É leitura, não previsão.</p>` : ""}
+      </div>
+      ${d.tabela ? `<details class="hist abrir"><summary>Histórico completo em tabela (${d.tabela.anos[d.tabela.anos.length - 1]}–${d.tabela.anos[0]})</summary><div class="corpo-hist"></div></details>` : ""}`;
+    box.appendChild(f);
+    if (d.tabela) f.querySelector("details.hist").addEventListener("toggle", ev => { const c = ev.target.querySelector(".corpo-hist");
+      if (ev.target.open && !c.childElementCount) tabelaHistorica(c, x, d.tabela); });
+    // gráfico do histórico
+    const svg = f.querySelector("svg"), w = 560, h = 230, m = { l: 36, r: 10, t: 10, b: 22 }, v = d.serie.valores;
+    const a0 = +d.serie.inicio.slice(0, 4), m0 = +d.serie.inicio.slice(5, 7) - 1;
+    const vals = v.filter(q => q != null), e = eixo(Math.min(...vals, ...x.lims), Math.max(...vals, ...x.lims), 5);
+    const xx = i => m.l + i * (w - m.l - m.r) / (v.length - 1), yy = q => m.t + (h - m.t - m.b) * (1 - (q - e.a) / (e.b - e.a));
+    e.t.forEach(t => { S(svg, "line", { x1: m.l, x2: w - m.r, y1: yy(t), y2: yy(t), stroke: Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--rule)" }); S(svg, "text", { x: m.l - 5, y: yy(t) + 3, "text-anchor": "end" }, n(t, Math.abs(e.b - e.a) < 4 ? 1 : 0)); });
+    x.lims.forEach(l => S(svg, "line", { x1: m.l, x2: w - m.r, y1: yy(l), y2: yy(l), stroke: "var(--ink-3)", "stroke-dasharray": "3 3", opacity: 0.7 }));
+    for (let ano = Math.ceil(a0 / 10) * 10; ano <= a0 + v.length / 12; ano += 10) { const i = (ano - a0) * 12 - m0; if (i >= 0) S(svg, "text", { x: xx(i), y: h - 6, "text-anchor": "middle" }, ano); }
+    const pts = v.map((q, i) => q == null ? null : `${xx(i)},${yy(q)}`).filter(Boolean).join(" ");
+    S(svg, "polyline", { points: pts, fill: "none", stroke: "var(--ink-3)", "stroke-width": 0.9 });
+    const rec = v.map((q, i) => q == null || i < v.length - 24 ? null : `${xx(i)},${yy(q)}`).filter(Boolean).join(" ");
+    S(svg, "polyline", { points: rec, fill: "none", stroke: "var(--accent)", "stroke-width": 2 });
+    S(svg, "circle", { cx: xx(v.length - 1), cy: yy(v[v.length - 1]), r: 4, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 1.5 });
+    const alvo = S(svg, "rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: h - m.t - m.b, fill: "transparent" });
+    dicaEm(alvo, ev => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * w;
+      const i = Math.max(0, Math.min(v.length - 1, Math.round((px - m.l) / (w - m.l - m.r) * (v.length - 1)))), mm = m0 + i;
+      return `<b>${MES[mm % 12]}/${a0 + Math.floor(mm / 12)}</b><br>${x.nome}: ${v[i] == null ? "—" : sn(v[i], 2)}`; });
+  });
+})();
+
+// ---------- tabela histórica de cada índice (formato da tabela do ONI no CPC) ----------
+const NOTA_TAB = {
+  cpc: "Média de 3 meses, com 1 casa como publica o CPC. A cor marca os episódios pelo critério oficial: ±0,5 °C por pelo menos 5 trimestres seguidos; o tom é a intensidade do trimestre. Um episódio em formação só ganha cor quando completa os 5 trimestres. Fonte: CPC/NOAA (ERSST v6).",
+  icen: "Média de 3 meses centrada no mês (coluna = trimestre). Cor pelo critério do Índice Costeiro El Niño (ICEN) do ENFEN, do Peru: evento com 3 meses seguidos acima de +0,4 °C (ou abaixo de −1,0 °C). Aplicado à nossa série (ERSST v6, base 1991–2020): não é o ICEN oficial, e os valores podem diferir dos publicados pelo ENFEN.",
+  intensidade: "Valor mensal. Sem critério oficial de episódio: a cor só mostra o tamanho do desvio (limiares em múltiplos do desvio-padrão desde 1950, salvo indicação), para ver o histórico de relance.",
+};
+function tabelaHistorica(caixa, x, t) {
+  const sim = new Set(CLIMA.anos_similares || []), cls = c => c > 0 ? `q${c}` : c < 0 ? `f${-c}` : "";
+  const completo = new Map(t.legenda.map(([c, , r]) => [c, r]));
+  const nomeClasse = c => c ? completo.get(c) : t.criterio === "intensidade" ? "perto do normal" : "sem episódio";
+  const casas = t.casas;
+  const leg = t.legenda.map(([c, r]) => `<span><i class="${cls(c)}"></i>${r}</span>`).join("") +
+    (sim.size ? `<span><b style="color:var(--accent)">◆</b> ano similar ao regime atual</span>` : "");
+  const corpo = t.anos.map((a, i) => `<tr><th class="ano${sim.has(a) ? " sim" : ""}" scope="row">${sim.has(a) ? "◆ " : ""}${a}</th>` +
+    t.linhas[i].map(([v, c], j) => `<td class="${cls(c)}" data-i="${i}" data-j="${j}">${v == null ? "" : sn(v, casas)}</td>`).join("") + "</tr>").join("");
+  caixa.innerHTML = `<div class="legenda-tab">${leg}</div>
+    <div class="caixa"><table class="tab-hist"><thead><tr><th class="ano">Ano</th>${t.colunas.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${corpo}</tbody></table></div>
+    <p class="leg">${NOTA_TAB[t.criterio]}${x.k === "soi" ? " SOI negativo é o lado do El Niño, por isso a cor vermelha fica nos valores negativos." : ""}${x.k === "nino34_rel" ? " Limiares fixos de 0,5, 1,0, 1,5 e 2,0 °C, os mesmos do ONI." : ""} Ano mais recente no topo.</p>`;
+  dicaEm(caixa.querySelector("tbody"), ev => { const td = ev.target.closest("td[data-i]");
+    if (!td) { const th = ev.target.closest("th"); return th ? `<b>${th.textContent}</b>` : ""; }
+    const [v, c] = t.linhas[+td.dataset.i][+td.dataset.j], a = t.anos[+td.dataset.i];
+    return v == null ? `<b>${t.colunas[+td.dataset.j]} ${a}</b><br>sem dado` : `<b>${t.colunas[+td.dataset.j]} ${a}</b>${sim.has(a) ? " · ano similar" : ""}<br>${x.nome}: ${sn(v, casas)} ${x.unid}<br>${nomeClasse(c)}`; });
+}
+
+// ---------- abas no topo: Resumo e um grupo de índices por aba ----------
+const ABAS = [{ id: "resumo", nome: "Resumo" }, ...GRUPOS];
+function mostrarGrupo(id) {
+  document.querySelectorAll("#abas-grupo button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === id)));
+  const resumo = id === "resumo";
+  document.getElementById("painel-resumo").hidden = !resumo;
+  document.getElementById("painel-fichas").hidden = resumo;
+  if (!resumo) {
+    document.querySelectorAll("#fichas .ficha").forEach(f => { f.hidden = f.dataset.grupo !== id; });
+    document.getElementById("s-fichas").textContent = `${GRUPOS.find(g => g.id === id).nome}: os índices, um a um`;
+    document.getElementById("desc-grupo").textContent = GRUPOS.find(g => g.id === id).desc;
+  }
+  try { history.replaceState(null, "", resumo ? "#resumo" : `#fichas-${id}`); } catch (e) { /* sem histórico no visualizador */ }
+}
+document.getElementById("abas-grupo").innerHTML = ABAS.map(g => `<button type="button" data-v="${g.id}">${g.nome}</button>`).join("");
+document.getElementById("abas-grupo").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) mostrarGrupo(b.dataset.v); });
+document.addEventListener("click", ev => { const a = ev.target.closest("a[data-grupo]"); if (!a) return;
+  ev.preventDefault(); mostrarGrupo(a.dataset.grupo);
+  const alvo = document.querySelector(a.getAttribute("href").startsWith("#f-") ? a.getAttribute("href") : "#abas-grupo");
+  if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" }); });
+const inicial = (location.hash.match(/^#fichas-(\w+)$/) || [])[1];
+mostrarGrupo(GRUPOS.some(g => g.id === inicial) ? inicial : "resumo");
+
+document.getElementById("fontes").innerHTML = Object.values(F).map(([t, u]) => `<li><span class="tag">fonte</span><span><a href="${u}" target="_blank" rel="noopener">${t}</a></span></li>`).join("");
+</script>
+</body>
+</html>
