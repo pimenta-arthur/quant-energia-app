@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../padrao/base.css">
 <style>
+  .abas-met { display: flex; gap: 6px; margin: 0 0 -34px; }  /* o main tem 56px de espaço entre blocos; aqui fica em 22px entre as tabs e o texto */
+  .abas-met a { padding: 6px 14px; border: 1px solid var(--rule); border-radius: 999px; font: 500 0.85rem var(--f-body); color: var(--ink-2); text-decoration: none; }
+  .abas-met a[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
   /* só desta página */
   :root { --c-clim: #b35c1e; --c-rep: #1d8a84; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-clim: #e3a06c; --c-rep: #5ccac3; } }
@@ -58,10 +61,16 @@
 <main>
   <nav class="nav" aria-label="Páginas">
     <a class="marca" href="/">Quant Energia</a>
+    <a href="compra_venda.html">Compra e venda NE e N</a>
     <a href="./">Descolamento NE e N</a>
     <a href="fundamentos.html">Fundamentos</a>
     <a href="metodologia.html" aria-current="page">Metodologia</a>
   </nav>
+
+  <div class="abas-met" role="tablist" aria-label="Metodologia">
+    <a href="metodologia.html" role="tab" aria-selected="true">Descolamento</a>
+    <a href="compra_venda_metodologia.html" role="tab" aria-selected="false">Compra e venda</a>
+  </div>
 
   <header>
     <span class="rotulo">Metodologia · modelo <span id="m-versao">v2.2</span></span>

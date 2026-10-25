@@ -142,6 +142,12 @@ Roda local primeiro e vai para a AWS depois, sem mudar o código das etapas. Res
   fundamentos por produto); a conta da curva (resolver do ano ao mês, d por cenário, justo e faixa, choque) em
   `web/pricing_descolamento/descolamento_conta.js` e em `qe_pricing_descolamento.conta`: mudar uma exige mudar a outra
   (teste de paridade com node).
+- **Compra e venda NE e N** (leva `promocao-quant-v5`, D041 a D055; sem mudança de modelo): página `web/pricing_descolamento/compra_venda.html` (+ `compra_venda.js`),
+  `compra_venda_metodologia.html` (tab da Metodologia) e menu com "Compra e venda NE e N" primeiro. Dados: `cv_backtest`, `cv_historico`, `cv_exemplo`
+  (`qe_pricing_descolamento.compra_venda`, gravados pelo `publicar`). A conta da cotação roda no navegador (`compra_venda_conta.js`) e tem a porta em Python
+  (`compra_venda.precificar`, `cotar_produto`, `contribuicao_para_o_ano`): mudar uma exige mudar a outra (teste de paridade com node e referência R16 da pesquisa
+  em `tests/referencias/pricing_descolamento/compra_venda/`). Política Conservador (p 0,30, α 10%, λ 1) com a venda ancorada no realizado; a seção de swap está
+  oculta (`hidden`) e o NE × N está em teste (decisão D054 da pesquisa).
 - Testes: `tests/referencias/pricing_descolamento/` (períodos fechados até set/2026), regerados com `congelar`.
   Paridade com a pesquisa é opt-in (`QE_PARIDADE_PRICING_DESCOLAMENTO=<pasta do pacote>`).
 

@@ -8,6 +8,28 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-25] Pricing Descolamento: leva promocao-quant-v5 (Compra e venda NE e N)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v5` (seção 11, "v4 → v5"; D041 a D055). **Sem mudança de método,
+de modelo, de preço, de faixa nem de rodadas** (modelo v2.2): página nova e a metodologia dela, com o menu e as tabs da
+metodologia. Conferido contra `reports/promocao/2026-10/`: `R13_cv_exemplo`, `R14_cv_backtest` (59 casos) e `R15_cv_historico` sem
+diferença; `R16_cv_cotacoes_se270` (162 produtos, produto sozinho e contribuição para o ano, NE e N) dentro de R$ 0,001, no Python e na
+página (lida no navegador); painel do passado da política Conservador igual ao do pacote.
+
+### Adicionado
+- Página "Compra e venda NE e N" (`web/pricing_descolamento/compra_venda.html` e `compra_venda.js`): curva do SE, cotação por produto
+  (compra / venda por ano, semestre, trimestre e mês, com o toggle "Fechar o ano" e o descritivo por clique), resumo por produto (NE e N, descolamento e
+  PLD implícito), gráfico do descolamento por mês, fundamentos do deck, descolamento realizado (com o ano de referência da venda ancorada), painel do
+  passado e próximos passos. A seção de swap fica oculta (código preservado).
+- Metodologia de compra e venda (`compra_venda_metodologia.html`) e **tabs** na Metodologia ("Descolamento", o padrão, e "Compra e venda").
+- `compra_venda_conta.js` (cotação: quantil, cauda, venda ancorada, swap) e `qe_pricing_descolamento.compra_venda` (porta de `curvas.precificar`,
+  `cv_backtest`, `cv_historico`, `cv_exemplo` e a cotação de um produto, referência em Python da lógica da página), com teste de paridade com node.
+- Chaves publicadas `cv_backtest`, `cv_historico` e `cv_exemplo` (`serving/pricing_descolamento/`).
+
+### Alterado
+- Menu das páginas do Pricing Descolamento: "Compra e venda NE e N" primeiro. A página inicial do app aponta para a compra e venda.
+- `publicar` grava as três chaves novas (mesmo deck e modelo: não registra rodada).
+
 ## [2026-10-24] Hydro Inflow Similarity: promoção (promocao-quant-v1)
 
 Origem: `hydro-inflow-similarity-analytics`, tag `promocao-quant-v1` (pacote `docs/promocao_hydro_inflow_similarity.md`;

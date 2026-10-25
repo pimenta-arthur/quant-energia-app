@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Descolamento: Metodologia de compra e venda</title>
+<!-- Padrão visual Quant Energia · v1.3.1 · 2026-10 · metodologia da compra e venda do descolamento, portada de pricing-descolamento-analytics
+     (promocao-quant-v5; D041 a D055). Dados do exemplo trabalhado: serving/pricing_descolamento/cv_exemplo.json. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<style>
+  .abas-met { display: flex; gap: 6px; margin: 0 0 -34px; }  /* o main tem 56px de espaço entre blocos; aqui fica em 22px entre as tabs e o texto */
+  .abas-met a { padding: 6px 14px; border: 1px solid var(--rule); border-radius: 999px; font: 500 0.85rem var(--f-body); color: var(--ink-2); text-decoration: none; }
+  .abas-met a[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  /* só desta página */
+  main { grid-template-columns: minmax(0, 1fr); }
+  .meta-linha { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-data); font-size: 0.82rem; color: var(--ink-3); }
+  .tecnico { margin-top: 4px; }
+  .tecnico > summary { font-size: 0.9rem; }
+  .tecnico[open] > summary { margin-bottom: 10px; }
+  .tecnico > div { display: grid; gap: 10px; }
+  .leg { font-size: 0.82rem; color: var(--ink-3); }
+  [hidden] { display: none !important; }
+  td.ruim, td.bom { font-weight: 600; }
+  td.ruim { color: var(--ink); }
+  tr.dest td { font-weight: 600; background: var(--accent-soft); }
+  .decisoes td:first-child { white-space: nowrap; font-family: var(--f-data); }
+  .faixa-estado { border-left: 3px solid var(--accent); }
+  .lista .tag, th.sem-caixa { text-transform: none; }  /* p, α e λ não podem virar maiúsculas (P é o preço) */
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="compra_venda.html">Compra e venda NE e N</a>
+    <a href="./">Descolamento NE e N</a>
+    <a href="fundamentos.html">Fundamentos</a>
+    <a href="metodologia.html" aria-current="page">Metodologia</a>
+  </nav>
+
+  <div class="abas-met" role="tablist" aria-label="Metodologia">
+    <a href="metodologia.html" role="tab" aria-selected="false">Descolamento</a>
+    <a href="compra_venda_metodologia.html" role="tab" aria-selected="true">Compra e venda</a>
+  </div>
+
+  <header>
+    <span class="rotulo">Metodologia · compra e venda · página de operação v2 no ar</span>
+    <h1>Compra e venda do descolamento: como a cotação é construída</h1>
+    <p class="lead">Esta página define o que será construído: o instrumento, como a cotação sai do modelo, o que cada parâmetro de risco significa e o que o preço
+      não cobre. Cada escolha vem com o motivo e a alternativa descartada, para quem decide saber o que está assumindo.</p>
+    <div class="nota faixa-estado"><strong>Estado:</strong> definições e pré-registro feitos; backtest ao vencimento e validação por período feitos (seção &ldquo;O que o backtest mostrou&rdquo;); <a href="compra_venda.html">página de operação, versão 2</a> (política Conservador com a âncora no realizado como chave, sem erro do modelo) disponível. O swap com uma perna no SE está na página de operação; NE × N está em teste. Os números dos exemplos abaixo são
+      <strong>exemplos trabalhados</strong> com o modelo <span id="c-versao">v2.2</span> (deck <span id="c-deck"></span>, SE plano de R$ <span id="c-se"></span>), <strong>não são cotações</strong>.</div>
+    <nav class="indice" aria-label="Seções">
+      <a href="#resumo">Em uma tela</a><a href="#instrumento">O instrumento</a><a href="#cotacao">A cotação</a><a href="#pagina">Como ler a página</a><a href="#risco">Política de risco</a><a href="#ancora">Venda: modelo × histórico</a><a href="#swap">Swap</a>
+      <a href="#naocobre">O que o preço não cobre</a><a href="#decisoes">Decisões</a><a href="#teste">Como será testado</a><a href="#backtest">O que o backtest mostrou</a><a href="#glossario">Glossário</a>
+    </nav>
+  </header>
+
+  <!-- em uma tela -->
+  <section id="resumo" aria-labelledby="t-resumo">
+    <h2 id="t-resumo">Em uma tela</h2>
+    <div class="fluxo">
+      <div class="passo"><span class="n">1 · Instrumento</span><h3>Paga o descolamento do período</h3>
+        <p>Comprar é receber o descolamento e pagar um preço P; vender é o contrário. O preço justo é a média dos anos climáticos.</p></div>
+      <div class="passo"><span class="n">2 · Cotação</span><h3>Compra abaixo, venda acima</h3>
+        <p>A compra fica abaixo do justo e a venda acima, por uma política de risco que a mesa ajusta. Cada lado é calculado sozinho.</p></div>
+      <div class="passo"><span class="n">3 · Swap</span><h3>Diferença entre duas pernas</h3>
+        <p>Troca entre submercados ou entre períodos. O preço é a diferença das pernas, ano climático a ano climático.</p></div>
+      <div class="passo"><span class="n">4 · Limites</span><h3>O que o preço não cobre</h3>
+        <p>Risco do SE, erro do modelo, poucos anos, saída antes do vencimento, custos e liquidez ficam por conta de quem opera.</p></div>
+    </div>
+    <div class="eq">compra ≤ preço justo ≤ venda &nbsp;·&nbsp; cada lado usa uma curva de SE e os seus parâmetros; não é preciso informar as duas</div>
+  </section>
+
+  <!-- instrumento -->
+  <section id="instrumento" aria-labelledby="t-instr">
+    <h2 id="t-instr">O instrumento</h2>
+    <p class="texto">O produto paga o <strong>descolamento</strong> do período: o PLD do submercado (NE ou N) menos o PLD do SE, em R$/MWh, médio no período e ponderado por horas.
+      Os períodos são os mesmos da página principal: mês, trimestre, semestre e ano.</p>
+    <div class="eq">d = PLD do submercado − PLD do SE (média do período)<br>
+      comprar a P: recebe d e paga P → ganho = d − P (perde se o descolamento vier abaixo de P)<br>
+      vender a P: paga d e recebe P → ganho = P − d (perde se o descolamento vier acima de P)</div>
+    <p class="texto">O descolamento do NE e do N costuma ser negativo (o submercado fica abaixo do SE). Comprar a um P mais negativo é comprar mais barato. O preço do submercado
+      é uma leitura equivalente: SE + descolamento.</p>
+    <h3 id="t-ex1"></h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Se o descolamento realizado for…</th><th class="n">Valor</th><th class="n">Ganho de quem compra</th><th class="n">Ganho de quem vende</th></tr></thead>
+      <tbody id="c-ganhos"></tbody>
+    </table></div>
+    <p class="leg" id="c-ganhos-leg"></p>
+  </section>
+
+  <!-- cotação -->
+  <section id="cotacao" aria-labelledby="t-cot">
+    <h2 id="t-cot">A cotação</h2>
+    <p class="texto">A cotação parte do preço justo do modelo e abre uma margem em cada lado. A margem tem três parcelas, na ordem em que entram:</p>
+    <ul class="lista">
+      <li><span class="tag">Variabilidade climática</span><span>A distribuição do descolamento entre os anos históricos (2021 em diante): cada ano é um cenário de vento, sol e chuva. É a única parcela que existe hoje
+        no modelo.</span></li>
+      <li><span class="tag">Erro do modelo</span><span>O quanto o modelo errou no passado, medido no backtest só com alvos já encerrados na data do deck. <strong>Ainda não está incluída</strong>: é o trabalho da fase 2
+        (calibração da faixa).</span></li>
+      <li><span class="tag">Margem da mesa</span><span>Um parâmetro editável de lucro e de risco. A primeira versão parte da política da v1 (próxima seção), como valor inicial, e a mesa ajusta.</span></li>
+    </ul>
+    <p class="texto"><strong>Cada lado é calculado sozinho.</strong> A cotação de compra depende de uma curva de SE (a da operação) e dos parâmetros dela; a de venda, igual. Quem só vai vender não precisa
+      informar o lado da compra. Se a mesa quiser comparar, roda duas cotações, sem dependência entre elas.</p>
+    <details class="tecnico"><summary>Detalhe técnico</summary><div>
+      <p class="texto">Com a curva do SE informada, o modelo calcula o descolamento de cada mês em cada ano climático; o valor do período em cada ano é a média dos meses ponderada por horas, e o
+        preço justo é a média simples entre os anos (a mesma conta da página principal). Só entram anos presentes em todos os meses do período.</p>
+      <div class="eq">justo = média dos anos de d &nbsp;·&nbsp; compra = f(distribuição, p, α, λ) ≤ justo &nbsp;·&nbsp; venda = g(distribuição, p, α, λ) ≥ justo</div>
+    </div></details>
+  </section>
+
+  <!-- como ler a página de operação -->
+  <section id="pagina" aria-labelledby="t-pagina">
+    <h2 id="t-pagina">Como ler a página de operação</h2>
+    <p class="texto">A página <a href="compra_venda.html">Compra e venda</a> tem três blocos de leitura. Nada aqui muda a conta da cotação; é só a forma de ver o resultado.</p>
+    <ul class="lista">
+      <li><span class="tag">Curva do Sudeste</span><span>É a entrada. Pode-se informar o SE no ano, no semestre, no trimestre ou no mês; vale o nível mais específico, e os demais períodos do mesmo ano são derivados para fechar a média ponderada por horas.</span></li>
+      <li><span class="tag">Cotação por produto</span><span>A tabela principal: uma linha por ano, e em cada célula <b>compra / venda</b> do ano, dos semestres e dos trimestres, com o SE em cinza (e o preço justo, se marcado). Clicar na compra ou na venda abre o descritivo do produto (valor de cada ano climático, critério e mês a mês); &ldquo;abrir&rdquo; mostra os meses. Tem filtros próprios: NE ou N, descolamento ou PLD implícito, e o alternador Produto sozinho / Fechar o ano.</span></li>
+      <li><span class="tag">Resumo por produto</span><span>Só leitura: NE e N lado a lado, em descolamento e em PLD implícito (SE + descolamento), por mês, trimestre, semestre ou ano, com o preço justo opcional e a opção de copiar a tabela. Os toggles &ldquo;Fechar o ano&rdquo; e &ldquo;Mostrar justo&rdquo; da Cotação por produto valem também aqui (a tabela não tem toggles próprios): com &ldquo;Fechar o ano&rdquo;, semestres, trimestres e meses mostram a contribuição para o preço do ano.</span></li>
+      <li><span class="tag">Gráfico e fundamentos</span><span>O gráfico &ldquo;Descolamento por mês&rdquo; (preço justo e faixa entre cenários, NE ou N, descolamento ou PLD implícito, com a razão de cada mês ao passar o mouse) e o bloco &ldquo;Fundamentos do deck&rdquo; (renovável, carga, hidráulica, sobra, limite de exportação, trava e k) vêm da página de descolamento e explicam o comportamento do modelo. Mudanças de modelo são trabalhadas e testadas na página de descolamento; só o que for validado passa para esta.</span></li>
+      <li><span class="tag">Aviso e política</span><span>&ldquo;Leia antes de usar&rdquo; e &ldquo;Política de cotação&rdquo; ficam no cabeçalho, fechados; abrem como painéis sem empurrar a página.</span></li>
+    </ul>
+    <h3>Semestres e trimestres fecham o ano</h3>
+    <p class="texto">Na tabela principal, o alternador <strong>Produto sozinho / Fechar o ano</strong> escolhe o que cada semestre, trimestre e mês mostra. <strong>Produto sozinho</strong> é o padrão: a cotação do período como produto próprio (é o que foi testado no backtest e o que se negocia). No modo <strong>Fechar o ano</strong>, o valor é a <strong>contribuição dele para a cotação do ano</strong>, de modo que a média ponderada por horas dos semestres (e a dos trimestres) reproduz a cotação do ano. A <b>venda</b> do pedaço é a média por horas da venda usada dos meses dele (a mesma regra mês a mês da âncora). A <b>compra</b> do pedaço é o valor dele no ano climático que sustenta a compra do ano (o pior). Qualquer diferença para a cotação do ano, por política diferente ou por a cotação ter sido limitada ao preço justo oficial, entra como um ajuste uniforme.</p>
+    <div class="nota"><strong>Contribuição não é a cotação do produto sozinho.</strong> Quem negocia só o 2º semestre cota o 2º semestre com o pior ano do próprio semestre, que pode ser outro. Exemplo (SE plano de R$ 270, deck out/26, NE, 2027): a compra do ano é −34,0, com o 1º semestre contribuindo com −62,8 e o 2º com −5,8; mas o 2º semestre cotado sozinho tem compra de −14,7. O descritivo de cada produto mostra as duas leituras. Os números deste exemplo foram lidos da página na data do deck e podem mudar com a rodada.</div>
+    <p class="texto"><strong>Produto informado abaixo do ano.</strong> Se o SE foi informado só para um semestre, um trimestre ou um mês, o ano não tem preço completo e os produtos completos aparecem pela cotação deles sozinhos; as células sem preço em todos os meses mostram &ldquo;—&rdquo;.</p>
+  </section>
+
+  <!-- política de risco -->
+  <section id="risco" aria-labelledby="t-risco">
+    <h2 id="t-risco">Política de risco: p, α e λ</h2>
+    <p class="texto">Na v1 a margem vinha de dois critérios, e a compra e a venda usam o mais conservador dos dois (método "combinado"). Os valores usados foram p = 0,30, α = 10% e λ = 0,30.
+      Eles foram tratados como <strong>política de risco, não como ajuste por dado</strong> (decisão D007 da v1).</p>
+    <ul class="lista">
+      <li><span class="tag">p (quantil)</span><span>A compra fica no nível que o descolamento supera em (1 − p) dos cenários. Com p = 0,30, a probabilidade de perda é de cerca de 30% de cada lado. A venda é o espelho.</span></li>
+      <li><span class="tag">α e λ (cauda)</span><span>Olha os α piores cenários de cada lado (α = 10%) e desconta da compra λ vezes a perda média neles. Com λ = 0,30, o desconto é 30% do que se perderia, em média, nos 10% piores casos.</span></li>
+      <li><span class="tag">Por que os dois</span><span>O quantil sozinho deixava a compra no justo quando a distribuição tem muitos valores perto de zero e cauda para baixo (caso típico do NE). A cauda sozinha deixava a venda exposta. O combinado usa o mais conservador em cada lado.</span></li>
+    </ul>
+    <h3 id="t-ex2"></h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Ano climático</th><th class="n">Descolamento do NE</th></tr></thead>
+      <tbody id="c-cen"></tbody>
+    </table></div>
+    <div class="rolagem"><table>
+      <thead><tr><th>Método</th><th class="n">Compra</th><th class="n">Justo</th><th class="n">Venda</th><th class="n">Largura</th></tr></thead>
+      <tbody id="c-met"></tbody>
+    </table></div>
+    <h3>O que cada parâmetro faz na conta</h3>
+    <div class="rolagem"><table>
+      <thead><tr><th class="sem-caixa">p</th><th class="sem-caixa">λ</th><th class="n">Compra</th><th class="n">Venda</th><th>Leitura</th></tr></thead>
+      <tbody id="c-sens"></tbody>
+    </table></div>
+    <ul class="lista">
+      <li><span class="tag">λ</span><span>Mexe na compra: λ pequeno deixa a compra perto do justo; λ = 1 leva a compra ao <strong>pior ano</strong>. É o botão de conservadorismo mais forte.</span></li>
+      <li><span class="tag">p</span><span>Mexe pouco: com poucos anos, o quantil só interpola entre dois anos vizinhos.</span></li>
+    </ul>
+    <div class="nota"><strong>Por que não levar os valores da v1 sem repensar.</strong> Há só <span id="c-ncen"></span> anos climáticos neste período (<span id="c-ntri"></span> nos trimestres de 2027), então α = 10% é exatamente o pior ano e o
+      quantil é uma interpolação entre dois anos. E a distribuição reflete só a variabilidade climática, sem o erro do modelo. Por isso, na página de operação, p, α e λ serão <strong>campos editáveis</strong>
+      com o efeito de cada um mostrado na cotação; os da v1 entram só como ponto de partida, e o erro do modelo entra como uma parcela separada e visível.</div>
+  </section>
+
+  <!-- venda: modelo x histórico (âncora no realizado) -->
+  <section id="ancora" aria-labelledby="t-ancora">
+    <h2 id="t-ancora">Venda: o modelo climático × o histórico realizado</h2>
+    <p class="texto"><strong>O problema.</strong> A venda feita só pelos anos climáticos do modelo ficou baixa demais em testes da mesa. Exemplo (T1/27 do NE, SE plano de R$ 270, deck out/26): a venda pelo modelo com λ = 1 saía em −27,8, mas em fev/26 o descolamento realizado foi só −2,3, com o SE em R$ 382. Quem vende a −27,8 recebe −27,8 e paga o descolamento: se ele vier em −2,3, perde 25,5. Os anos climáticos do modelo não incluem o que já se realizou naquele mês do calendário, e a venda precisa levar isso em conta.</p>
+    <p class="texto"><strong>A regra (a âncora no realizado).</strong> Mês a mês, a venda é o <em>maior</em> entre duas coisas:</p>
+    <ul class="lista">
+      <li><span class="tag">Venda do modelo</span><span>A venda climática do mês com λ = 1: o melhor ano climático do modelo naquele mês.</span></li>
+      <li><span class="tag">Venda pelo histórico</span><span>O descolamento já realizado naquele mês do calendário (2021 até D−2), medido em <strong>fração da folga</strong> (descolamento ÷ (SE − piso)) e aplicado à folga do SE informado. Vale a maior fração (a menos negativa) entre os anos; só entram anos com folga de pelo menos R$ 20. O ano que a deu é o &ldquo;ano de referência&rdquo; do mês.</span></li>
+    </ul>
+    <p class="texto">O produto é a média dos meses ponderada por horas. A <strong>compra</strong> não muda: continua o pior ano climático do bloco (λ = 1). A âncora é uma chave: pode ser desligada na política.</p>
+    <h3>Exemplo trabalhado: T1/27 do NE a R$ 270</h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Mês</th><th class="n">Venda do modelo (ano)</th><th class="n">Venda pelo histórico (ano de referência · % da folga)</th><th class="n">Venda usada</th></tr></thead>
+      <tbody>
+        <tr><td>jan/27</td><td class="n">−0,2 (2021)</td><td class="n">−4,1 (2021 · −1,9%)</td><td class="n"><b>−0,2</b> modelo</td></tr>
+        <tr><td>fev/27</td><td class="n">−17,0 (2021)</td><td class="n">−1,5 (2026 · −0,7%)</td><td class="n"><b>−1,5</b> histórico</td></tr>
+        <tr><td>mar/27</td><td class="n">−59,5 (2026)</td><td class="n">−44,7 (2026 · −21,0%)</td><td class="n"><b>−44,7</b> histórico</td></tr>
+        <tr><td><b>Trimestre</b></td><td class="n">−25,9</td><td class="n">−17,3</td><td class="n"><b>−16,0</b></td></tr>
+      </tbody>
+    </table></div>
+    <p class="leg">Sem a âncora, a venda do trimestre pelo bloco inteiro seria −27,8; com a âncora, −16,0. Números lidos da página de operação no deck de out/26; mudam com a rodada e com o SE informado.</p>
+    <div class="nota"><strong>Por que fração da folga e não R$.</strong> Em mar/21 o descolamento foi −31,0, menor em R$ que o de mar/26 (−51,5); mas em 2021 o SE estava em R$ 109 (folga pequena) e −31,0 consumiu 52% dela, enquanto em 2026 (SE R$ 302) −51,5 consumiu 21%. Aplicado ao SE de hoje, a fração de 2026 é a que vale. <strong>O ano de referência de cada mês é fixo</strong> para um dado histórico: não depende do SE digitado (o SE só muda a folga em que a fração é aplicada); só muda quando entra um novo mês realizado.</div>
+    <h3>O que o backtest mostrou</h3>
+    <ul class="lista">
+      <li><span class="tag">Perda da venda</span><span>No NE (trimestres), de 27% dos períodos (modelo λ = 1) para 0%; no N, de 12% para 0%. A venda ficou mais alta: a largura da cotação (venda − compra) foi de 24,3 para 28,9 no NE (+19%).</span></li>
+      <li><span class="tag">Compra</span><span>Não muda. A do N ainda perde em 58% dos períodos, mas por R$ 0,3 a 1,4.</span></li>
+      <li><span class="tag">Critérios pré-registrados</span><span>Atendidos os de redução de perda e de largura; o de perda da compra e da venda dentro dos limites ficou fora, só por causa da compra do N.</span></li>
+    </ul>
+    <div class="nota"><strong>Limites.</strong> (1) A regra foi escolhida <em>depois</em> de ver os dados e testada na <strong>mesma amostra</strong> de 5 períodos: não é garantia fora da amostra. (2) O histórico em cada mês se apoia em <strong>um ano só</strong>, o mais ameno; poucos anos de dados. (3) Supõe que o descolamento é <strong>proporcional à folga</strong>, o que ainda não foi confirmado. (4) A venda sobe com o histórico: o preço fica menos competitivo para quem compra de você; é a escolha conservadora de quem vende.</div>
+  </section>
+
+  <!-- swap -->
+  <section id="swap" aria-labelledby="t-swap">
+    <h2 id="t-swap">Swap</h2>
+    <p class="texto">Um swap é a troca de duas pernas. Cada perna é um <strong>submercado</strong> (SE, NE ou N), um <strong>período</strong> (mês, trimestre, semestre ou ano), uma <strong>curva de SE</strong> e um volume.
+      O preço é a diferença entre os preços das pernas, calculada <strong>ano climático a ano climático</strong> (o que preserva a correlação) e depois resumida do mesmo modo que a compra e venda.</p>
+    <ul class="lista">
+      <li><span class="tag">Entre submercados</span><span>Mesmo período, submercados diferentes: SE × NE, SE × N ou NE × N. Por exemplo, NE × N no T1: a diferença é d do NE menos d do N em cada ano.</span></li>
+      <li><span class="tag">Temporal</span><span>Períodos diferentes, no mesmo submercado ou em submercados diferentes: por exemplo, o 1º trimestre do NE contra o 3º trimestre de outro submercado. Cada perna usa o SE do seu período.</span></li>
+    </ul>
+    <h3>Como está na página de operação</h3>
+    <p class="texto">Cada perna tem submercado, produto, período, <strong>curva de SE própria</strong> (um campo; vazio usa a curva da página) e <strong>volume em MWm</strong>. O swap é: <em>recebe</em> uma perna e <em>paga</em> a outra, com spread = PLD de quem recebe − k × PLD de quem paga, k = (volume × horas pagos) ÷ (volume × horas recebidos). Quem compra o swap a X ganha spread − X; quem vende, X − spread.</p>
+    <ul class="lista">
+      <li><span class="tag">Uma perna é o SE</span><span>O SE é a curva da mesa e não varia por ano climático; o risco vem só do descolamento da outra perna. A cotação é a do produto (com a política e a âncora) deslocada pela diferença de SE: recebe NE e paga SE a R$ 250, com NE a R$ 270: spread = (270 + d) − 250. Se a mesma curva vale nas duas pernas e o período é o mesmo, o swap é exatamente o descolamento.</span></li>
+      <li><span class="tag">NE × N (e o mesmo submercado em períodos diferentes)</span><span><strong>Em teste.</strong> Spread ano climático a ano climático (D045), cotado com a política de risco sobre a distribuição do spread; a âncora no realizado não é aplicada. Em períodos diferentes, o mesmo ano nas duas pernas pode subestimar o risco.</span></li>
+    </ul>
+    <div class="nota"><strong>Ideias para o NE × N, ainda sem decisão.</strong> (1) <em>Pareado</em> (o que está no ar): a diferença entre os dois submercados no mesmo ano climático; é o que o modelo conhece, mas não vê o NE e o N se descolando por motivos diferentes. (2) <em>Cruzado</em>: todas as combinações de anos (6 × 6) para tratar as pernas como independentes; alarga a faixa e dá um teto de risco. (3) <em>Mais conservador dos dois</em>: compra pelo menor dos dois e venda pelo maior. (4) <em>Âncora no realizado do spread</em>: o histórico mensal de NE − N, em fração da folga, como na venda; precisa de teste próprio, porque a relação entre os dois submercados é diferente da do SE. Backtest do spread NE − N feito (seção 46 do <code>metodologia.md</code>; 5 trimestres): o pareado perde na compra em 40% dos períodos (spread realizado em 2026 ficou perto de zero), o cruzado zera as perdas da compra mas alarga a cotação em 72%, e a âncora zera as da venda sem tocar a compra; nenhum atendeu os critérios pré-registrados. Exploração pós-hoc: compra pelo cruzado e venda pela âncora zeram as perdas nos dois lados, com largura de 1,8 vezes a do pareado, na mesma amostra. Nada foi adotado.</div>
+    <h3 id="t-ex3"></h3>
+    <div class="rolagem"><table>
+      <thead><tr><th>Ano climático</th><th class="n">NE</th><th class="n">N</th><th class="n">NE − N</th></tr></thead>
+      <tbody id="c-swap"></tbody>
+    </table></div>
+    <p class="leg" id="c-swap-leg"></p>
+    <div class="nota"><strong>Duas premissas que o trader precisa ter em mente.</strong>
+      <br>1. <strong>O risco do SE não está no modelo.</strong> O SE de cada perna é um insumo da mesa; num swap temporal, a diferença de SE entre os períodos domina o preço e fica toda por conta de quem opera.
+      <br>2. <strong>O mesmo ano climático nas duas pernas.</strong> Num swap de períodos diferentes, usar o mesmo ano nas duas pernas as faz andar juntas e pode <strong>subestimar</strong> o risco da diferença
+      (por exemplo, entre o mesmo trimestre de dois anos).</div>
+  </section>
+
+  <!-- o que o preço não cobre -->
+  <section id="naocobre" aria-labelledby="t-nc">
+    <h2 id="t-nc">O que o preço não cobre</h2>
+    <ul class="lista">
+      <li><span class="tag">Risco do SE</span><span>O SE é a curva da mesa; o modelo não o projeta nem trata a incerteza dele. Se o SE realizado ficar longe do informado, o descolamento muda (quanto mais alto o SE, mais negativo o descolamento).</span></li>
+      <li><span class="tag">Erro do modelo</span><span>A faixa entre cenários é só variabilidade climática. Nos trimestres de 2026 ela cobriu cerca de 75% a 78% dos realizados, e não inclui o regime do k (trava rasa ou funda no 1º semestre) nem o erro dos insumos do deck. A parcela de erro entra na fase 2.</span></li>
+      <li><span class="tag">Poucos anos</span><span>Cinco ou seis cenários por período. Quantis e caudas são aproximações grosseiras.</span></li>
+      <li><span class="tag">Saída antes do vencimento</span><span>Sem preço de mercado, o resultado de sair da posição antes de liquidar não é medido. O que se poderá mostrar é o quanto a visão do próprio modelo muda de um deck para outro, e isso <strong>não é PnL de mercado</strong>.</span></li>
+      <li><span class="tag">Custos e liquidez</span><span>Comissões, margens de garantia, liquidez e risco de contraparte não entram.</span></li>
+      <li><span class="tag">Piso e teto do PLD</span><span>Com o SE perto do piso o descolamento vai a zero; o modelo respeita os limites do ano.</span></li>
+    </ul>
+  </section>
+
+  <!-- decisões -->
+  <section id="decisoes" aria-labelledby="t-dec">
+    <h2 id="t-dec">Decisões e o motivo de cada uma</h2>
+    <div class="rolagem"><table class="decisoes">
+      <thead><tr><th>ID</th><th>Decisão</th><th>Alternativa descartada</th><th>Por quê</th><th>O que implica</th></tr></thead>
+      <tbody>
+        <tr><td>D041</td><td>Páginas novas e separadas (esta e, adiante, a de operação), sem alterar as existentes.</td><td>Colocar compra e venda na página principal.</td><td>Não misturar o que está validado com o que ainda está em teste.</td><td>As páginas atuais não mudam; este trabalho só acrescenta.</td></tr>
+        <tr><td>D042</td><td>Cada lado (compra e venda) é calculado sozinho, com uma curva de SE e os seus parâmetros.</td><td>Exigir as duas curvas de SE (compra e venda) e cruzá-las.</td><td>Quem só opera um lado não deve ser obrigado a informar o outro; evita dependência e parâmetros extras.</td><td>Não se aproveita o spread de SE da mesa como folga natural; a folga vem só da política de risco.</td></tr>
+        <tr><td>D043</td><td>Instrumento como na v1: compra = receber d e pagar P; venda = pagar d e receber P.</td><td>Definir o produto pelo preço do submercado (SE + d).</td><td>O descolamento isolado é o que o modelo estima; o preço do submercado é uma leitura equivalente.</td><td>O preço do submercado aparece como visão, não como produto separado.</td></tr>
+        <tr><td>D044</td><td>p, α e λ são entradas editáveis; os valores da v1 (0,30; 10%; 0,30) são só o ponto de partida.</td><td>Fixar a política no código ou ajustá-la por dado.</td><td>É política de risco da mesa; com poucos casos, ajustar por dado seria falsa precisão.</td><td>A mesa decide o conservadorismo e vê o efeito de cada parâmetro na cotação.</td></tr>
+        <tr><td>D045</td><td>Swap = diferença de duas pernas, ano climático a ano climático.</td><td>Precificar cada perna separada e subtrair as médias.</td><td>Preserva a correlação entre as pernas dentro do mesmo ano.</td><td>Assume o mesmo ano nas duas pernas, o que pode subestimar o risco em períodos diferentes.</td></tr>
+        <tr><td>D046</td><td>Backtest ao vencimento, com o PLD realizado e o SE realizado como insumo; sem preço de mercado.</td><td>Medir PnL contra preço de mercado.</td><td>Não temos preço de mercado; o backtest do descolamento já usa o SE realizado.</td><td>O teste cobre o descolamento dado o SE. O risco do SE e a saída antecipada ficam fora.</td></tr>
+        <tr><td>D053</td><td>Swap com uma perna no SE: spread = PLD de quem recebe − k × PLD de quem paga; cada perna com curva de SE e volume (MWm) próprios; a cotação é a do descolamento da outra perna (com política e âncora) deslocada pela diferença de SE.</td><td>Pareamento por ano climático também para o SE; curva única nas duas pernas.</td><td>O SE é insumo da mesa e não varia por ano; a mesa usa curvas diferentes por perna e volumes diferentes.</td><td>O risco do SE (e o SE líquido de volumes diferentes) fica por conta da mesa. Swap SE × NE/N no mesmo período e curva = descolamento.</td></tr>
+        <tr><td>D054</td><td>NE × N (e mesmo submercado em períodos diferentes): spread pareado por ano climático (D045) com a política de risco, sem âncora; <b>em teste</b>.</td><td>Âncora no realizado já aplicada ao spread; combinações cruzadas de anos.</td><td>Não há ainda regra de histórico validada para NE − N; o pareado é o que o modelo conhece.</td><td>Pendente: escolher entre pareado, cruzado, o mais conservador ou âncora própria, com backtest do spread NE − N.</td></tr>
+        <tr><td>D055</td><td>O valor principal de cada ano, semestre, trimestre e mês na tabela principal é o <b>produto sozinho</b>; o alternador &ldquo;Fechar o ano&rdquo; mostra as contribuições (D051), com a conferência de que semestres e trimestres reproduzem o ano.</td><td>Contribuição como padrão.</td><td>O backtest validou o produto sozinho; a contribuição do 2º sem/27, por exemplo, tem compra −5,8 contra −14,7 do produto sozinho, menos conservadora do que a política testada. A mesa ainda tem a leitura de repartição à mão.</td><td>Os pedaços sozinhos não somam o preço do ano na compra (o pior ano muda de período); a página mostra a diferença. Mês e ano não têm backtest suficiente.</td></tr>
+        <tr><td>D051</td><td>Na tabela principal, semestres e trimestres mostram a <b>contribuição para a cotação do ano</b> (venda = média por horas da venda usada dos meses; compra = valor do pedaço no ano climático que sustenta a compra do ano; resíduo como ajuste uniforme).</td><td>Mostrar a cotação de cada produto sozinho nas células, ou compra composta pelo pior ano de cada pedaço.</td><td>A mesa pergunta quanto cada semestre carrega para fechar o ano; a soma dos pedaços tem de reproduzir o preço do ano. A compra sozinha de cada semestre soma menos que a do ano (o pior ano muda de pedaço).</td><td>A cotação do produto sozinho fica no descritivo e na tabela &ldquo;Resumo por produto&rdquo;. Falta decidir qual das duas leituras a mesa quer como número principal em cada célula.</td></tr>
+        <tr><td>D052</td><td>Produtos completos informados abaixo do ano (só semestre, trimestre ou mês) aparecem pela cotação deles sozinhos.</td><td>Esconder o ano e todos os pedaços até a curva ficar completa.</td><td>A mesa precifica por pedaços; sumir com tudo parecia erro de cálculo.</td><td>Sem o ano completo não há contribuição: o valor mostrado é o do produto sozinho.</td></tr>
+        <tr><td>D050</td><td>No apetite Conservador, a <b>venda</b> é o maior valor entre o melhor ano do modelo no mês e o maior descolamento já realizado naquele mês do calendário (em fração da folga × a folga do SE informado), mês a mês; a <b>compra</b> é o pior ano do modelo (λ = 1).</td><td>Venda só pelo modelo (λ = 1); composição no nível do produto (e não mês a mês).</td><td>Nos testes do Arthur (T1/27 a R$ 270, venda −27,8) o modelo ficou negativo demais: fev/26 foi −2,3 com o SE em R$ 382 e nenhum ano climático chega perto. No backtest (NE, trimestres), a perda da venda foi de 27% para 0% com a largura 19% maior; mês a mês foi melhor que no trimestre (12%).</td><td>Regra escolhida depois de ver dados e testada na mesma amostra (5 períodos); o histórico vem de poucos anos (2021, 2025, 2026) e supõe descolamento proporcional à folga. A compra não muda (a do N perde com frequência, por valores pequenos).</td></tr>
+        <tr><td>D049</td><td>A página de operação tem <b>uma só política, a Conservador</b> (λ = 1 nos dois lados), e a <b>âncora no realizado</b> como chave (ligada por padrão); p, α e λ por lado ficam em &ldquo;Avançado&rdquo;.</td><td>Um botão de apetite com um nível &ldquo;menos conservador&rdquo; (política da v1, λ = 0,30), e campos de parâmetros sempre à vista.</td><td>Quanto mais entradas, pior para o trader decidir; o λ = 1 era o que a mesa usaria, e o λ = 0,30 nunca foi testado como apetite (veio da v1). O modelo é o mesmo; a única escolha relevante é ter ou não o filtro do realizado.</td><td>Só o λ = 1 com a âncora (e sem ela, como referência) tem resultado de backtest; outros valores em &ldquo;Avançado&rdquo; são por conta de quem opera. Níveis intermediários dependem de a mesa definir o que significam.</td></tr>
+        <tr><td>D048</td><td>A primeira versão da página de operação usa a política da v1 (p, α e λ, cada lado com os seus campos), sem ajuste de erro; o ajuste manual entra depois, conforme os testes e a conversa com a mesa.</td><td>Esperar uma calibração por dados antes de publicar uma versão; começar já com margem em R$.</td><td>A calibração não é possível com 5 períodos independentes, e uma margem fixa em R$ não escala com o SE; melhor começar simples e iterar com a mesa.</td><td>A cotação da v1 é só variabilidade climática e perde com frequência no passado; a página mostra isso ao lado da cotação.</td></tr>
+        <tr><td>D047</td><td>O erro do modelo entra como parcela separada da margem, calibrada só com alvos já encerrados na data do deck.</td><td>Embutir o erro nos parâmetros p e λ.</td><td>Deixa visível o que vem do clima, do erro do modelo e da margem da mesa.</td><td>Feito na fase 2; até lá a cotação não inclui o erro do modelo.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- como será testado -->
+  <section id="teste" aria-labelledby="t-teste">
+    <h2 id="t-teste">Como será testado (pré-registro)</h2>
+    <p class="texto">O critério abaixo é <strong>proposta, a confirmar antes de rodar</strong>; é escrito antes de ver qualquer resultado.</p>
+    <ul class="lista">
+      <li><span class="tag">Dados</span><span>Backtest da v2.2 com os mesmos decks e alvos da página de metodologia, SE realizado como insumo, só informação disponível na data do deck (corte em D−2). Fora da amostra, dentro da amostra e oráculo sempre rotulados.</span></li>
+      <li><span class="tag">Recorte</span><span>Casos em que a v2.2 já tinha treino (obrigatório). Casos sem treino ficam de fora, como no desempenho da v2.2.</span></li>
+      <li><span class="tag">Métricas</span><span>Por lado: ganho médio ao vencimento, frequência de perda, largura da curva (venda − compra) e ganho por trimestre do ano. Comparação com curvas construídas pela mesma regra sobre as alternativas simples (zero, repetir o ano anterior e climatologia estatística).</span></li>
+      <li><span class="tag">Critérios propostos</span><span>(1) A frequência de perda de cada lado fica a até 15 pontos percentuais do p; (2) o ganho médio de cada lado é maior ou igual a zero no recorte treinado; (3) a largura média não passa a da climatologia estatística. Se algum falhar, a política é revista com a mesa, e não ajustada para passar.</span></li>
+      <li><span class="tag">Limites do teste</span><span>Poucos casos (cerca de 19 trimestres treinados) e produtos que se sobrepõem entre decks: ler como indicação de direção, não como significância.</span></li>
+      <li><span class="tag">Fases</span><span>1: esta página (definições e pré-registro). 2: calibração do erro, backtest e cotação por produto. 3: swap. Cada fase termina em revisão; nada é publicado antes da aprovação.</span></li>
+    </ul>
+  </section>
+
+  <!-- o que o backtest mostrou -->
+  <section id="backtest" aria-labelledby="t-bt">
+    <h2 id="t-bt">O que o backtest mostrou até agora</h2>
+    <p class="texto">Resumo das fases 2a e 2a-bis (seções 41 e 42 do <code>metodologia.md</code>). Tudo com poucos períodos (5 trimestres, 3 semestres) e decks que se sobrepõem: indicação de direção, não significância.</p>
+    <ul class="lista">
+      <li><span class="tag">A cotação só climática perde com frequência</span><span>Com a política da v1 (p = 30%) e cada período com o mesmo peso, nos trimestres treinados: a venda do NE perdeu em cerca de 60% dos períodos e a compra do N em cerca de 73%. A variabilidade entre anos climáticos <strong>não representa o erro do modelo</strong>.</span></li>
+      <li><span class="tag">O erro é tudo ou nada por período</span><span>Todos os decks erram o mesmo período do mesmo jeito: a compra perde em 100% dos casos de um período e em 0% de outro. A probabilidade só se realiza entre períodos, e cada período pesa como uma moeda.</span></li>
+      <li><span class="tag">O sinal do erro muda com o trimestre</span><span>No NE, T1 e T3: o realizado ficou menos negativo que a faixa (a venda perde); T2: mais negativo (a compra perde); T4: sem perdas. Calibrar uma margem única em poucos períodos pode errar o sentido em outro trimestre.</span></li>
+      <li><span class="tag">Calibrar o resíduo funciona melhor</span><span>Cotar em volta do preço justo com o resíduo do modelo (em R$ ou em fração da folga) reduziu o erro de calibração de cerca de 0,26 para cerca de 0,06 (validação por período). A escala pela folga empatou com o R$ fixo; o dado não distingue.</span></li>
+      <li><span class="tag">Misturar anos</span><span>Misturar meses entre anos estreita a distribuição e não ajuda. Cruzar a hidrologia do N alarga a cauda da <strong>compra</strong> (perda de 23% para 7% em p = 30%) e não mexe na venda, cujo risco é de nível do modelo.</span></li>
+      <li><span class="tag">Venda ancorada no realizado</span><span>No NE (trimestres), compor a venda mês a mês com o maior descolamento já realizado naquele mês reduziu a perda da venda de 27% (modelo λ = 1) para 0% e alargou a cotação em 19%; no N, de 12% para 0%. A compra não muda (a do N perde 58% dos períodos, mas por R$ 0,3 a 1,4). Regra escolhida depois de ver dados, na mesma amostra de 5 períodos: não é garantia.</span></li>
+      <li><span class="tag">Critérios pré-registrados</span><span>Inconclusivos na fase 2a: só 4 dos 36 trimestres e nenhum semestre têm casos suficientes para calibrar a parcela de erro (as regras foram mantidas, não ajustadas).</span></li>
+    </ul>
+    <div class="nota">Por isso a versão 1 da página mostra, ao lado da cotação, como a política escolhida teria se saído no passado, e o ajuste manual de margem será acrescentado depois, com a mesa.</div>
+  </section>
+
+  <!-- glossário -->
+  <section id="glossario" aria-labelledby="t-glos">
+    <h2 id="t-glos">Glossário</h2>
+    <dl class="glossario">
+      <dt>Descolamento (d)</dt><dd>PLD do submercado (NE ou N) − PLD do SE, médio no período e ponderado por horas. Em R$/MWh.</dd>
+      <dt>Preço justo</dt><dd>Média do descolamento entre os anos climáticos, com a curva do SE da operação.</dd>
+      <dt>Cotação</dt><dd>O par de preços de compra e de venda do produto, com a margem de risco.</dd>
+      <dt>Compra / venda</dt><dd>Comprar a P é receber o descolamento e pagar P; vender a P é pagar o descolamento e receber P.</dd>
+      <dt>Ano climático</dt><dd>Um ano histórico usado como cenário de vento, sol e chuva.</dd>
+      <dt>p</dt><dd>Probabilidade de perda tolerada em cada lado; define o quantil da compra e da venda.</dd>
+      <dt>α e λ</dt><dd>α é a fatia dos piores cenários observada; λ é a fração da perda média nessa fatia descontada do preço.</dd>
+      <dt>Contribuição para o ano</dt><dd>O valor de um semestre ou trimestre na cotação do ano, de modo que os pedaços reproduzam o preço do ano. Não é a cotação do pedaço negociado sozinho.</dd>
+      <dt>Largura</dt><dd>Distância entre a venda e a compra.</dd>
+      <dt>Perna</dt><dd>Um lado do swap: submercado, período, curva de SE e volume.</dd>
+      <dt>Swap</dt><dd>Troca de duas pernas, entre submercados ou entre períodos.</dd>
+      <dt>Política de risco</dt><dd>O conjunto de parâmetros que define o conservadorismo da cotação. É decisão da mesa.</dd>
+    </dl>
+  </section>
+</main>
+
+<script src="../padrao/graficos.js"></script>
+<script>
+(async function () {
+let CV;
+try {
+  const r = await fetch("/dados/pricing_descolamento/cv_exemplo.json", { cache: "no-cache" });
+  if (!r.ok) throw new Error(r.status);
+  CV = await r.json();
+} catch (e) { console.error("cv_exemplo indisponível:", e); return; }
+const dn = (v, c = 1) => (v == null || !isFinite(v) ? "—" : (v < -0.5 * 10 ** -c ? "−" : "") + n(Math.abs(v), c));
+const rotP = p => p.replace("-T", " T").replace("-S", " S");
+const per = rotP(CV.meta.periodo);
+document.getElementById("c-versao").textContent = CV.meta.versao;
+document.getElementById("c-deck").textContent = rot(CV.meta.deck);
+document.getElementById("c-se").textContent = n(CV.meta.se);
+document.getElementById("c-ncen").textContent = CV.meta.n_cenarios;
+document.getElementById("c-ntri").textContent = Object.values(CV.meta.n_cenarios_trimestres).join(", ");
+["t-ex1", "t-ex2", "t-ex3"].forEach(id => { document.getElementById(id).textContent = `Exemplo: ${per} do NE`; });
+document.getElementById("t-ex3").textContent = `Exemplo: swap NE × N no ${per}`;
+const C = CV.cotacao, v = CV.cenarios.map(c => c.NE), mn = Math.min(...v), mx = Math.max(...v);
+// ganhos de quem compra e de quem vende, para três descolamentos realizados
+const casos = [["o pior ano da amostra", mn], ["o preço justo", C.justo], ["o melhor ano da amostra", mx]];
+document.getElementById("c-ganhos").innerHTML = casos.map(([t, x]) =>
+  `<tr><td>${t}</td><td class="n">${dn(x)}</td><td class="n"><b>${sn(x - C.compra, 1)}</b></td><td class="n"><b>${sn(C.venda - x, 1)}</b></td></tr>`).join("");
+document.getElementById("c-ganhos-leg").textContent = `Comprando a ${dn(C.compra)} e vendendo a ${dn(C.venda)} (cotação combinada, política da v1). Ganho em R$/MWh por unidade de energia do período.`;
+document.getElementById("c-cen").innerHTML = CV.cenarios.map(c => `<tr><td>${c.ano}</td><td class="n">${dn(c.NE)}</td></tr>`).join("") +
+  `<tr class="dest"><td>Preço justo (média)</td><td class="n">${dn(C.justo)}</td></tr>`;
+const NOME = { quantil: "Quantil (p = 0,30)", cauda: "Cauda (α = 10%, λ = 0,30)", combinado: "Combinado (o mais conservador de cada lado)" };
+document.getElementById("c-met").innerHTML = ["quantil", "cauda", "combinado"].map(m => { const r = CV.por_metodo[m];
+  return `<tr class="${m === "combinado" ? "dest" : ""}"><td>${NOME[m]}</td><td class="n">${dn(r.compra)}</td><td class="n">${dn(r.justo)}</td><td class="n">${dn(r.venda)}</td><td class="n">${n(r.venda - r.compra, 1)}</td></tr>`; }).join("");
+const LEIT = { "0.2|0.3": "p menor: lados mais próximos dos extremos", "0.3|0.3": "política da v1 (ponto de partida)", "0.4|0.3": "p maior: lados mais perto do justo",
+  "0.3|0.15": "λ menor: compra perto do justo", "0.3|0.5": "λ maior: compra mais baixa", "0.3|1": "λ = 1: compra no pior ano" };
+const vistos = new Set();
+document.getElementById("c-sens").innerHTML = CV.sensibilidade.filter(r => { const k = `${r.p}|${r.lam}`; if (vistos.has(k)) return false; vistos.add(k); return true; }).map(r => {
+  const k = `${r.p}|${r.lam}`; return `<tr class="${k === "0.3|0.3" ? "dest" : ""}"><td>${n(r.p, 2)}</td><td>${n(r.lam, 2)}</td><td class="n">${dn(r.compra)}</td><td class="n">${dn(r.venda)}</td><td>${LEIT[k] || ""}</td></tr>`; }).join("");
+const S_ = CV.swap_ne_n;
+document.getElementById("c-swap").innerHTML = CV.cenarios.map(c => `<tr><td>${c.ano}</td><td class="n">${dn(c.NE)}</td><td class="n">${dn(c.N)}</td><td class="n"><b>${dn(c["NE-N"], 2)}</b></td></tr>`).join("") +
+  `<tr class="dest"><td>Preço justo (média)</td><td class="n">${dn(v.reduce((a, b) => a + b, 0) / v.length)}</td><td class="n">${dn(CV.cenarios.reduce((a, c) => a + c.N, 0) / CV.cenarios.length)}</td><td class="n">${dn(S_.cotacao.justo, 2)}</td></tr>`;
+document.getElementById("c-swap-leg").textContent = `NE e N descolam juntos no 1º semestre: em quase todos os anos a diferença é perto de zero, e só um ano a separa (${dn(S_.max, 2)}). ` +
+  `Com a política da v1, o swap NE × N sairia entre ${dn(S_.cotacao.compra, 2)} e ${dn(S_.cotacao.venda, 2)} para um preço justo de ${dn(S_.cotacao.justo, 2)}. É um exemplo de como poucos anos pesam: um único ano define a cauda.`;
+})();
+</script>
+</body>
+</html>

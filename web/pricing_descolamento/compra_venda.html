@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Descolamento: Compra e venda</title>
+<!-- Padrão visual Quant Energia · v1.3.1 · 2026-10 · compra e venda do descolamento (NE e N × SE), portada de
+     pricing-descolamento-analytics (promocao-quant-v5; D041 a D055). Política Conservador (λ = 1) com a âncora no realizado como chave.
+     Dados: serving/pricing_descolamento/<chave>.json (modelo exato no navegador: descolamento_conta.js; cotação: compra_venda_conta.js,
+     com paridade contra qe_pricing_descolamento.compra_venda). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../padrao/base.css">
+<link rel="stylesheet" href="../padrao/painel.css">
+<style>
+  main { grid-template-columns: minmax(0, 1fr); }  /* tabelas largas rolam dentro do bloco, não a página */
+  /* curva do SE: tabela de entrada */
+  .curva { width: 100%; min-width: 760px; }
+  .curva th, .curva td { padding: 6px 6px; border-bottom: 1px solid var(--rule); text-align: center; }
+  .curva th:first-child, .curva td:first-child { white-space: nowrap; text-align: left; position: sticky; left: 0; background: var(--surface); }
+  .curva td.ano-col { border-right: 1px solid var(--rule); }
+  .curva td.sem-col:last-of-type { border-right: 1px solid var(--rule); }
+  .curva input { width: 100%; min-width: 58px; font: 500 0.88rem var(--f-data); text-align: right; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; }
+  .curva input::placeholder { color: var(--ink-3); font-weight: 400; opacity: 1; }
+  .curva input:focus { outline: 2px solid var(--accent); outline-offset: 0; background: var(--surface); }
+  .curva input.digitado { border-color: var(--accent); background: var(--surface); }
+  .curva input.alerta { border-color: var(--v1); }
+  .curva input:disabled { visibility: hidden; }
+  .curva .meses-row td { background: var(--bg); }
+  .curva .meses-row .mlbl { display: block; font: 400 0.68rem var(--f-data); color: var(--ink-3); text-transform: lowercase; margin-bottom: 2px; }
+  .curva button.exp { white-space: nowrap; font: 500 0.8rem var(--f-data); color: var(--accent); background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; font-size: 0.88rem; color: var(--ink-2); }
+  .controles input[type=text] { width: 80px; font: 500 0.88rem var(--f-data); text-align: right; border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; background: var(--bg); color: var(--ink); }
+  .btn { font: 500 0.85rem var(--f-body); color: var(--ink-2); background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .btn.prim { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .controles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .avisos-curva { font-size: 0.82rem; color: var(--v1); display: grid; gap: 2px; }
+  .avisos-curva:empty { display: none; }
+  /* resultado: mesma grade da entrada, só leitura */
+  .curva.leitura .cel { font: 500 0.88rem var(--f-data); font-variant-numeric: tabular-nums; text-align: right; padding: 5px 6px; border: 1px solid transparent; border-radius: 4px; min-width: 58px; }
+  .curva.leitura .cel b { font-weight: 600; }
+  .curva.leitura .cel .fx { display: block; font-size: 0.68rem; color: var(--ink-3); white-space: nowrap; }
+  .curva.leitura td.ano-res .cel { background: var(--accent-soft); }
+  .curva.leitura .cel.vazio { color: var(--ink-3); }
+  .curva.leitura button.cel.clic { width: 100%; background: none; color: var(--ink); cursor: pointer; border-color: transparent; }
+  .curva.leitura button.cel.clic:hover { border-color: var(--rule); }
+  .curva.leitura button.cel.clic.ativo { border-color: var(--accent); background: var(--surface); }
+  .curva.leitura td.ano-res button.cel.clic { background: var(--accent-soft); }
+  .curva.leitura button.cel.clic:focus-visible { outline: 2px solid var(--accent); }
+  .curva.leitura .cmp-par { display: flex; justify-content: center; align-items: center; gap: 2px; }
+  .curva.leitura .cmp-par .barra { color: var(--ink-3); }
+  .curva.leitura button.cel.cmp { width: auto; min-width: 0; padding: 4px 3px; }
+  #tab-compacta td .fx { text-align: center; }
+  #hist-real .cel .fx, #hist-meses .cel .fx { text-align: right; }
+  #tab-cot { table-layout: fixed; }  /* colunas na mesma posição em mês, trimestre, semestre e ano */
+  .curva .gp { border-left: 1px solid var(--rule); }
+  #det-conf { border-top: 0; padding-top: 0; }  /* a linha da última linha da tabela já separa; uma só */
+  #det-conf > summary { font-size: 0.8rem; color: var(--ink-3); }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-2); cursor: pointer; }
+  .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle .trilho { width: 34px; height: 20px; border-radius: 999px; background: var(--rule); position: relative; flex: none; transition: background 0.15s; }
+  .toggle .trilho::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink-3); transition: transform 0.15s, background 0.15s; }
+  .toggle input:checked + .trilho { background: var(--accent); }
+  .toggle input:checked + .trilho::after { transform: translateX(14px); background: var(--surface); }
+  .toggle input:focus-visible + .trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .curva.leitura .cel.ref-venda { outline: 1px solid var(--rule); outline-offset: -1px; }
+  /* resultado */
+  .tile .v.neg { color: var(--ink); }
+  .tile .f { font: 400 0.78rem var(--f-data); color: var(--ink-3); }
+  td .fx { display: block; white-space: nowrap; font-size: 0.72rem; color: var(--ink-3); }
+  tr.parcial td:first-child::after { content: "*"; color: var(--ink-3); }
+  details.fund > summary { font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+  details.fund[open] > summary { margin-bottom: 10px; }
+  /* o choque fica dentro da seção de resultado (espaço de 10px); a margem iguala ao espaço entre seções (34px), como nos fundamentos */
+  #det-choque { margin-block: 24px; }
+  .hist-in { display: grid; gap: 8px; }
+  .marca-cel { font-size: 0.7rem; color: var(--ink-3); }
+  .dica { max-width: 480px; white-space: normal; }  /* base.css define nowrap; aqui o tooltip tem várias linhas */
+  td.vazio-msg { text-align: center !important; color: var(--ink-3); padding-block: 18px; font-size: 0.9rem; }
+  /* deltas do choque em destaque (fundo), antes das colunas de referência */
+  #det-choque td.delta, #det-choque th.delta { background: var(--accent-soft); }
+  .mini svg { width: 100%; height: auto; }
+  /* só desta página */
+  table.par { min-width: 0; width: auto; }
+  table.par th, table.par td { padding: 6px 14px 6px 0; text-align: left; border-bottom: 1px solid var(--rule); }
+  table.par th { text-transform: none; }  /* p, α e λ não podem virar maiúsculas */
+  table.par select { font: 500 0.88rem var(--f-data); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; background: var(--bg); color: var(--ink); }
+  #sw-pernas input { width: 96px; }
+  table.par input { width: 72px; font: 500 0.88rem var(--f-data); text-align: right; border: 1px solid var(--rule); border-radius: 4px; padding: 5px 6px; background: var(--bg); color: var(--ink); }
+  table.cot td.n, table.cot th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.cot td.alvo { background: var(--accent-soft); font-weight: 600; }
+  table.cot button.exp { white-space: nowrap; font: 500 0.8rem var(--f-data); color: var(--accent); background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+  .det td, .det th { padding: 3px 10px 3px 0; border: 0; font-size: 0.85rem; }
+  .det { width: auto; min-width: 0; }
+  .alto { color: var(--v1); font-weight: 600; }
+  .det .ref { color: var(--ink-3); font-size: 0.78rem; font-weight: 400; padding-left: 18px; }  /* referência realizada: discreta, à direita */
+  .hero { position: relative; }
+  .barra-avisos { position: absolute; top: -3px; left: 0; right: 0; display: flex; justify-content: flex-end; gap: 8px 22px; z-index: 20; pointer-events: none; }
+  .barra-avisos > details { position: relative; border: 0; padding: 0; margin: 0; flex: none; pointer-events: auto; }
+  .barra-avisos > details > summary { white-space: nowrap; }
+  .barra-avisos .painel-av { position: absolute; top: calc(100% + 6px); right: 0; width: 760px; max-width: calc(100vw - 32px); min-width: 0; box-sizing: border-box; margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3); }
+  .barra-avisos .painel-av.nota { border-left: 3px solid var(--v1); }
+  @media (max-width: 900px) { .barra-avisos { position: static; margin-top: 6px; flex-wrap: wrap; } .barra-avisos .painel-av { position: static; width: auto; margin-top: 6px; box-shadow: none; } }
+  #det-politica .controles { font-size: 0.86rem; }
+  .aviso > summary { font: 400 0.86rem var(--f-body); color: var(--ink-2); cursor: pointer; }
+  .aviso > summary b { color: var(--ink); font-weight: 600; }
+  .nota-v1 { border-left: 3px solid var(--v1); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Páginas">
+    <a class="marca" href="/">Quant Energia</a>
+    <a href="compra_venda.html" aria-current="page">Compra e venda NE e N</a>
+    <a href="./">Descolamento NE e N</a>
+    <a href="fundamentos.html">Fundamentos</a>
+    <a href="metodologia.html">Metodologia</a>
+  </nav>
+
+  <section class="hero" aria-labelledby="titulo">
+    <span class="rotulo">Versão 2 · política Conservador com âncora no realizado, sem ajuste de erro do modelo</span>
+    <h1 id="titulo">Compra e venda do descolamento do NE e do N</h1>
+    <div class="meta" id="meta"></div>
+    <p class="leg" id="erro" hidden></p>
+    <div class="barra-avisos">
+    <details class="aviso" id="det-aviso">
+      <summary><b>Leia antes de usar</b></summary>
+      <div class="nota nota-v1 painel-av">A compra fica no pior ano climático do modelo (λ = 1). A venda, com a âncora ligada, fica no maior valor entre o melhor ano do modelo e o <b>maior descolamento já realizado naquele mês</b>
+      (em proporção da folga do SE informado), mês a mês. A cotação <strong>não inclui o erro do modelo</strong> nem o risco do SE. No backtest (5 períodos), sem a âncora a venda do NE perdeu em 27% dos períodos; com a âncora, em 0%, mas a regra foi
+      escolhida depois de ver os dados, a amostra é pequena e o histórico vem de poucos anos. Use como ponto de partida para discussão. <a href="compra_venda_metodologia.html">Metodologia, decisões e limites</a>.</div>
+    </details>
+
+      <details class="aviso" id="det-politica">
+        <summary id="s-ap"><b>Política de cotação</b></summary>
+        <div class="bloco painel-av">
+        <p class="leg" id="ap-desc"></p>
+        <div class="controles">
+          <label><input type="checkbox" id="anc"> Ancorar a venda no maior descolamento já realizado no mês (em proporção da folga)</label>
+          <button type="button" class="btn" id="btn-restaurar" hidden>Voltar ao Conservador</button>
+        </div>
+        <details class="aviso" id="det-avancado" style="margin-top:8px">
+          <summary>Avançado: parâmetros de cada lado</summary>
+          <div class="hist-in">
+            <div class="rolagem"><table class="par">
+              <thead><tr><th></th><th>p (%)</th><th>α (%)</th><th>λ (0 a 1)</th></tr></thead>
+              <tbody>
+                <tr><td><b>Compra</b></td><td><input type="text" inputmode="decimal" id="pc" aria-label="p da compra, em %"></td><td><input type="text" inputmode="decimal" id="ac" aria-label="alfa da compra, em %"></td><td><input type="text" inputmode="decimal" id="lc" aria-label="lambda da compra"></td></tr>
+                <tr><td><b>Venda</b></td><td><input type="text" inputmode="decimal" id="pv" aria-label="p da venda, em %"></td><td><input type="text" inputmode="decimal" id="av" aria-label="alfa da venda, em %"></td><td><input type="text" inputmode="decimal" id="lv" aria-label="lambda da venda"></td></tr>
+              </tbody>
+            </table></div>
+            <p class="leg"><b>p</b> = probabilidade de perda tolerada; <b>α</b> = fatia dos piores anos observada; <b>λ</b> = fração da perda média nessa fatia descontada do preço (λ = 1 leva a compra ao pior ano).
+              A cotação usa o mais conservador dos dois critérios em cada lado. Só o λ = 1 com a âncora foi testado como política; outros valores são por sua conta. <a href="compra_venda_metodologia.html#risco">Como funcionam</a>.</p>
+          </div>
+        </details>
+      </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 1. entrada -->
+  <section aria-labelledby="s-curva">
+    <h2 id="s-curva">Curva do Sudeste</h2>
+    <p class="leg">Informe o PLD médio do SE (R$/MWh) no nível em que tiver preço: ano, semestre, trimestre ou mês. Vale o
+      nível mais específico; os demais períodos do mesmo ano são derivados (em cinza) para fechar a média ponderada
+      por horas. Pode colar uma linha do Excel em qualquer campo.</p>
+    <div class="controles">
+      <span>Preencher todos os anos com <input type="text" id="valor-todos" inputmode="decimal" value="" placeholder="R$" aria-label="Valor do SE para todos os anos"> R$/MWh</span>
+      <button type="button" class="btn prim" id="btn-todos">Aplicar</button>
+      <button type="button" class="btn" id="btn-limpar">Limpar curva</button>
+      <span>Dentro do período:</span>
+      <label><input type="radio" name="saz" value="plana" checked> plana</label>
+      <label><input type="radio" name="saz" value="hist"> sazonalidade histórica do SE</label>
+    </div>
+    <div class="bloco">
+      <div class="rolagem">
+        <table class="curva" id="curva"></table>
+      </div>
+      <div class="avisos-curva" id="avisos-curva"></div>
+      <p class="leg" id="leg-curva"></p>
+    </div>
+  </section>
+
+
+  <!-- 2. política de cotação -->
+
+  <!-- 3a. cotação por produto (principal): uma linha por ano, compra / venda na mesma célula -->
+  <section aria-labelledby="s-compacta">
+    <h2 id="s-compacta">Cotação por produto</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-compacta"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+          <div class="abas" id="abas-c-sub" role="group" aria-label="Submercado">
+            <button type="button" data-v="NE" aria-pressed="true">NE</button>
+            <button type="button" data-v="N">N</button>
+          </div>
+          <div class="abas" id="abas-c-modo" role="group" aria-label="Medida">
+            <button type="button" data-v="d" aria-pressed="true">Descolamento</button>
+            <button type="button" data-v="pld">PLD implícito</button>
+          </div>
+          <div style="display:flex;gap:18px;align-items:center;margin-left:auto">
+            <label class="toggle" title="Mostra a contribuição de cada pedaço para o preço do ano, em vez do produto sozinho"><input type="checkbox" id="c-ref"><span class="trilho"></span><span>Fechar o ano</span></label>
+            <label class="toggle"><input type="checkbox" id="compacta-justo"><span class="trilho"></span><span>Mostrar justo</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="rolagem"><table class="curva leitura" id="tab-compacta"></table></div>
+      <details class="aviso" id="det-conf"><summary>Conferir o ano</summary>
+        <div class="leg" id="compacta-conf" style="display:grid;gap:2px;margin-top:4px"></div>
+        <p class="leg" style="margin-top:6px">A compra de um semestre, trimestre ou mês sozinho pode diferir da sua contribuição para o ano porque o pior ano muda de período. O backtest cobre só trimestres e semestres: ano e mês não foram validados como cotação. Se o SE foi informado só em semestre, trimestre ou mês, os produtos completos aparecem pela cotação deles sozinhos.</p>
+      </details>
+      <p class="leg">Compra / venda de cada período e, em cinza, o SE. Clique em um valor para ver o descritivo. Por padrão cada célula é o produto sozinho; &ldquo;Fechar o ano&rdquo; mostra a contribuição de cada pedaço para o preço do ano.</p>
+    </div>
+  </section>
+
+  <!-- 3b. resumo por produto: NE, N, descolamento e PLD implícito -->
+  <section aria-labelledby="s-cot">
+    <h2 id="s-cot">Resumo por produto</h2>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-cot">Compra e venda por produto: descolamento e PLD implícito do NE e do N, R$/MWh</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+          <div class="abas" id="abas-prod" role="group" aria-label="Produto">
+            <button type="button" data-v="mes">Mês</button>
+            <button type="button" data-v="tri">Trimestre</button>
+            <button type="button" data-v="sem">Semestre</button>
+            <button type="button" data-v="ano" aria-pressed="true">Ano</button>
+          </div>
+          <button type="button" class="btn" id="btn-csv" style="margin-left:auto">Copiar tabela</button><span class="leg" id="copiado" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="rolagem">
+        <table class="curva leitura" id="tab-cot"></table>
+      </div>
+      <p class="leg">Compra: preço a que se aceita comprar o descolamento (recebe o descolamento, paga P). Venda: preço a que se aceita vender (paga o descolamento, recebe P). Justo (opcional): média dos anos climáticos, a mesma da página principal. PLD implícito = SE + descolamento. Clique em um descolamento para ver o descritivo do produto. Segue os toggles &ldquo;Fechar o ano&rdquo; e &ldquo;Mostrar justo&rdquo; da Cotação por produto. * Período parcial: só parte dos meses está no horizonte.
+        Nada aqui considera custos, liquidez nem saída antes do vencimento.</p>
+    </div>
+  </section>
+
+  <!-- 3d. gráfico do descolamento por mês -->
+  <section aria-labelledby="s-gf">
+    <h2 id="s-gf">Descolamento por mês</h2>
+    <div class="legenda-mini" id="leg-gf"></div>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-gf">Descolamento do NE por mês, R$/MWh</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="abas" id="abas-gf-sub" role="group" aria-label="Submercado do gráfico">
+            <button type="button" data-v="NE" aria-pressed="true">NE</button>
+            <button type="button" data-v="N">N</button>
+          </div>
+          <div class="abas" id="abas-gf-modo" role="group" aria-label="Medida do gráfico">
+            <button type="button" data-v="d" aria-pressed="true">Descolamento</button>
+            <button type="button" data-v="pld">PLD implícito</button>
+          </div>
+        </div>
+      </div>
+      <svg id="g-mes" viewBox="0 0 1040 280" role="img" aria-label="Descolamento previsto por mês"></svg>
+      <p class="leg" id="leg-gf2"></p>
+    </div>
+  </section>
+
+  <!-- 3e. fundamentos do deck -->
+  <section aria-labelledby="s-fund">
+    <details class="fund" id="det-fund">
+      <summary id="s-fund">Fundamentos do deck</summary>
+      <div style="display:grid;gap:12px">
+        <p class="leg">Insumos que entram no modelo, por mês (média dos cenários): projeção do deck (linha) e último realizado do
+          mesmo mês do calendário (pontos). Explicam o comportamento do descolamento e não dependem da curva do SE.</p>
+        <div class="mini6" id="mult"></div>
+        <div class="bloco">
+          <div class="barra-abas">
+            <div class="ttl">Fundamentos por produto, GW (trava em % das horas)</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div class="abas" id="abas-fund" role="group" aria-label="Produto">
+                <button type="button" data-v="mes">Mês</button>
+                <button type="button" data-v="tri">Trimestre</button>
+                <button type="button" data-v="sem">Semestre</button>
+                <button type="button" data-v="ano" aria-pressed="true">Ano</button>
+              </div>
+              <button type="button" class="btn" id="btn-fund">Copiar tabela</button><span class="leg" id="copiado-fund" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="rolagem"><table>
+            <thead><tr><th>Período</th><th class="n">Renov. NE</th><th class="n">Carga NE</th><th class="n">Carga N</th>
+              <th class="n">Hidr. N</th><th class="n">Hidr. NE</th><th class="n">Sobra NE</th><th class="n">Lim. exp. NE</th>
+              <th class="n">Folga lim.</th><th class="n">Trava NE</th><th class="n">k NE</th></tr></thead>
+            <tbody id="tab-fund"></tbody>
+          </table></div>
+          <p class="leg">Em negrito, o valor que entra no modelo (projeção do deck; hidráulica do N = média dos cenários). Embaixo, em cinza,
+            o último realizado dos mesmos meses do calendário (para 2027 em diante a referência continua sendo o último ano realizado).
+            Sobra NE = renovável − carga do NE; folga lim. = limite de exportação do NE − sobra: quanto menor, mais o NE trava.
+            k = fração de (SE − piso) perdida nas horas em que trava. * Período parcial: só parte dos meses está no horizonte.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- 3d2. descolamento realizado -->
+  <section aria-labelledby="s-hist">
+    <details class="fund" id="det-hist">
+      <summary id="s-hist">Descolamento realizado (histórico)</summary>
+      <div class="bloco">
+        <div class="barra-abas">
+          <div class="ttl" id="tt-hist">Descolamento realizado do NE, R$/MWh</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div class="abas" id="abas-h-sub" role="group" aria-label="Submercado do histórico">
+              <button type="button" data-v="NE" aria-pressed="true">NE</button>
+              <button type="button" data-v="N">N</button>
+            </div>
+            <div class="abas" id="abas-h-modo" role="group" aria-label="Medida do histórico">
+              <button type="button" data-v="d" aria-pressed="true">Descolamento</button>
+              <button type="button" data-v="pld">PLD implícito</button>
+            </div>
+          </div>
+        </div>
+        <div class="rolagem"><table class="curva leitura" id="hist-real"></table></div>
+        <div class="rolagem"><table class="curva leitura" id="hist-meses"></table></div>
+        <p class="leg">Realizado desde 2021 (PLD da CCEE; física do DESSEM): períodos agregados em cima e meses embaixo, com o SE médio de cada período em cinza. Quanto mais forte o fundo, mais descolado o período (escala: percentil 90 dos meses). Passe o mouse para ver o período contra a média dos mesmos meses nos outros anos. Nos meses, o contorno cinza destaca o <b>ano de referência</b> da venda ancorada: o ano em que aquele mês do calendário consumiu a menor fração da folga (SE − piso), que sustenta a venda pelo histórico. * Ano parcial.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- 3c. swap: fora da página por enquanto (embrionário); o código segue ativo. Para reativar, tire o atributo hidden da seção e o card "Swap" de Próximos passos. -->
+  <section aria-labelledby="s-swap" hidden>
+    <details class="fund" id="det-swap">
+      <summary id="s-swap">Swap</summary>
+    <div class="bloco">
+      <div class="ttl">Swap entre duas pernas: recebe uma, paga a outra</div>
+      <div class="rolagem"><table class="par" id="sw-pernas">
+        <thead><tr><th></th><th>Submercado</th><th>Produto</th><th>Período</th><th>SE da perna (R$/MWh)</th><th>Volume (MWm)</th></tr></thead>
+        <tbody>
+          <tr><td><b>Recebe</b></td>
+            <td><select id="sw-rec-sub" aria-label="Submercado da perna que recebe"><option>SE</option><option selected>NE</option><option>N</option></select></td>
+            <td><select id="sw-rec-tipo" aria-label="Produto da perna que recebe"><option value="mes">Mês</option><option value="tri">Trimestre</option><option value="sem">Semestre</option><option value="ano" selected>Ano</option></select></td>
+            <td><select id="sw-rec-per" aria-label="Período da perna que recebe"></select></td>
+            <td><input type="text" inputmode="decimal" id="sw-rec-se" placeholder="da curva" aria-label="SE da perna que recebe"></td>
+            <td><input type="text" inputmode="decimal" id="sw-rec-vol" value="1" aria-label="Volume da perna que recebe, em MWm"></td></tr>
+          <tr><td><b>Paga</b></td>
+            <td><select id="sw-pag-sub" aria-label="Submercado da perna que paga"><option selected>SE</option><option>NE</option><option>N</option></select></td>
+            <td><select id="sw-pag-tipo" aria-label="Produto da perna que paga"><option value="mes">Mês</option><option value="tri">Trimestre</option><option value="sem">Semestre</option><option value="ano" selected>Ano</option></select></td>
+            <td><select id="sw-pag-per" aria-label="Período da perna que paga"></select></td>
+            <td><input type="text" inputmode="decimal" id="sw-pag-se" placeholder="da curva" aria-label="SE da perna que paga"></td>
+            <td><input type="text" inputmode="decimal" id="sw-pag-vol" value="1" aria-label="Volume da perna que paga, em MWm"></td></tr>
+        </tbody>
+      </table></div>
+      <div id="sw-aviso" class="avisos-curva"></div>
+      <div class="rolagem"><table class="cot" id="sw-res"></table></div>
+      <p class="leg" id="sw-leg"></p>
+    </div>
+    </details>
+  </section>
+
+  <!-- 4. backtest -->
+  <section aria-labelledby="s-bt">
+    <details class="fund" id="det-bt">
+      <summary id="s-bt">Como essa cotação se saiu no passado</summary>
+    <div class="bloco">
+      <div class="barra-abas">
+        <div class="ttl" id="tt-bt"></div>
+        <div class="abas" id="abas-bt-sub" role="group" aria-label="Submercado do backtest">
+          <button type="button" data-v="NE" aria-pressed="true">NE</button>
+          <button type="button" data-v="N">N</button>
+        </div>
+      </div>
+      <div class="rolagem"><table class="cot" id="tab-bt"></table></div>
+      <p class="leg" id="leg-bt"></p>
+    </div>
+    </details>
+  </section>
+
+  <!-- 5. próximos passos -->
+  <section aria-labelledby="s-prox">
+    <h2 id="s-prox">Próximos passos</h2>
+    <div class="grid2">
+      <div class="bloco">
+        <div class="ttl">Descolamento do Sul</div>
+        <p class="leg">Física própria do Sul (descola para cima, no horário solar), com o mesmo desenho: entrada pela curva do SE e
+          faixa por cenário climático.</p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Cálculo do mês corrente</div>
+        <p class="leg">Precificar o mês corrente com informação do próprio mês (revisões do DECOMP/DESSEM, realizado parcial).</p>
+      </div>
+      <div class="bloco">
+        <div class="ttl">Swap</div>
+        <p class="leg">SE × NE e SE × N já têm o cálculo (cotação do descolamento deslocada pela diferença de SE, com curva e volume por perna); NE × N segue em teste. Ainda embrionário: voltar ao tema para fechar a estrutura do NE × N e validar o swap temporal.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="aviso">
+    <span>Para discussão. Só variabilidade entre anos climáticos, com a venda ancorada no realizado; sem erro do modelo, custos, liquidez nem saída antes do vencimento; o SE é a curva informada. <a href="compra_venda_metodologia.html">Metodologia de compra e venda</a>.</span>
+  </div>
+</main>
+
+<script src="../padrao/graficos.js"></script>
+<script src="descolamento_conta.js"></script>
+<script src="compra_venda_conta.js"></script>
+<script src="compra_venda.js"></script>
+</body>
+</html>

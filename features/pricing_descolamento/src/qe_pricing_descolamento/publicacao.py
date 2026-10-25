@@ -636,10 +636,22 @@ def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False
         reg.append(linha)
         gravar_registro(arm, reg)
     pagina = dados(arm, d, rodada, b, mod)
+    from qe_pricing_descolamento import compra_venda as cv
+
     if arm.existe(chaves.PROC_BACKTEST):  # metodologia: desempenho do backtest da página
         from qe_pricing_descolamento.desempenho import desempenho
 
-        pagina["desempenho"] = desempenho(b, ler_parquet(arm, chaves.PROC_BACKTEST))
+        x = ler_parquet(arm, chaves.PROC_BACKTEST)
+        pagina["desempenho"] = desempenho(b, x)
+        pagina["cv_backtest"] = cv.dados_backtest(
+            b, x
+        )  # compra e venda: casos do painel do passado
+    pagina["cv_historico"] = cv.dados_historico(
+        b, str(d)
+    )  # compra e venda: venda ancorada no realizado
+    pagina["cv_exemplo"] = cv.exemplo(
+        pagina["meses"], pagina["sazonal_se"]["fator"], str(d)
+    )  # compra e venda: exemplo da metodologia
     pagina["hist_marcos"] = marcos_historico(
         b, reg
     )  # metodologia: degrau do histórico de rodadas (D040)
