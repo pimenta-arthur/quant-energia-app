@@ -245,9 +245,16 @@ def valores_por_ano(conta: Conta, res: dict, periodo: str, sub: str) -> dict[int
 
 
 def exemplo(
-    meses: list[dict], saz: list[float], deck: str, se: float = 200.0, periodo: str | None = None
+    meses: list[dict],
+    saz: list[float],
+    deck: str,
+    cvh: dict,
+    se: float = 270.0,
+    periodo: str | None = None,
 ) -> dict:
-    """`cv_exemplo`: dados do exemplo trabalhado da metodologia (deck, SE plano, um produto, NE e swap NE × N)."""
+    """`cv_exemplo`: dados do exemplo trabalhado da metodologia: deck, SE plano, um produto (NE e N por ano climático, NE − N
+    do swap) e, mês a mês, os valores por ano climático e o histórico que sustenta a venda ancorada. As cotações de cada
+    política saem desses dados na própria página (`compra_venda_conta.js`). `cvh` = `cv_historico` do mesmo deck."""
     d = pd.Period(deck, "M")
     periodo = periodo or f"{d.year + 1}-T1"
     conta = Conta(meses, saz)
@@ -255,35 +262,40 @@ def exemplo(
     ne = valores_por_ano(conta, res, periodo, "NE")
     n = valores_por_ano(conta, res, periodo, "N")
     dif = valores_por_ano(conta, res, periodo, "NE-N")
-    par = POLITICA_EXEMPLO
-    cot = precificar(list(ne.values()), **par)
-    por_metodo = {
-        m: precificar(list(ne.values()), metodo=m, **par) for m in ("quantil", "cauda", "combinado")
-    }
-    sens = [
-        {"p": pp, "lam": ll, **precificar(list(ne.values()), p=pp, alfa=par["alfa"], lam=ll)}
-        for pp, ll in (
-            (0.20, 0.30),
-            (0.30, 0.30),
-            (0.40, 0.30),
-            (0.30, 0.15),
-            (0.30, 0.30),
-            (0.30, 0.50),
-            (0.30, 1.00),
-        )
-    ]
     n_cen = {
         t: len(valores_por_ano(conta, res, t, "NE"))
         for t in (f"{d.year + 1}-T{q}" for q in (1, 2, 3, 4))
     }
     r2 = lambda v: round(float(v), 2)
+    tipo = _tipo(periodo)
+    ms = []
+    for m in [m for m in res if _chave_periodo(m, tipo) == periodo]:
+        cen = sorted(res[m]["cen"], key=lambda c: int(str(c["id"]).split("|")[0]))
+        info = conta.M[conta.idx[m]]
+        folga = max(se - info["piso"], 0.0)
+        ref = {sub: ano_referencia(cvh, sub, m) for sub in ("NE", "N")}
+        ms.append(
+            {
+                "mes": m,
+                "h": int(info["horas"]),
+                "se": se,
+                "folga": r2(folga),
+                "anos": {sub: [round(float(c[sub]), 4) for c in cen] for sub in ("NE", "N")},
+                "hist": {
+                    sub: round(round(r[0], 4) * folga, 6) if r else None for sub, r in ref.items()
+                },
+                "ref": {
+                    sub: {"ano": r[1], "fracao": round(r[0], 4)} if r else None
+                    for sub, r in ref.items()
+                },
+            }
+        )
     return {
         "meta": {
             "deck": deck,
             "se": se,
             "periodo": periodo,
             "versao": M.MODELO.versao,
-            "politica": par,
             "n_cenarios": len(ne),
             "n_cenarios_trimestres": n_cen,
         },
@@ -296,17 +308,8 @@ def exemplo(
             }
             for a in ne
         ],
-        "cotacao": {k: r2(v) for k, v in cot.items()},
-        "por_metodo": {m: {k: r2(v) for k, v in r.items()} for m, r in por_metodo.items()},
-        "sensibilidade": [
-            {k: (r2(v) if k not in ("p", "lam") else v) for k, v in r.items()} for r in sens
-        ],
-        "swap_ne_n": {
-            "periodo": periodo,
-            "cotacao": {k: r2(v) for k, v in precificar(list(dif.values()), **par).items()},
-            "min": r2(min(dif.values())),
-            "max": r2(max(dif.values())),
-        },
+        "meses": ms,
+        "swap_ne_n": {"periodo": periodo, "min": r2(min(dif.values())), "max": r2(max(dif.values()))},
     }
 
 

@@ -8,6 +8,21 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-25] Pricing Descolamento: leva promocao-quant-v6 (metodologia de compra e venda como tab principal)
+
+Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v6` (seção 11, "v5 → v6"; D056 e D057). **Sem mudança de método, de
+modelo, de preço, de faixa nem de rodadas** (modelo v2.2): a metodologia de compra e venda foi reescrita para ser autossuficiente
+(trader e comitê) e passou a ser a tab principal. Conferido contra `reports/promocao/2026-10/`: `R13_cv_exemplo` (formato novo, regerada),
+`R14_cv_backtest`, `R15_cv_historico` e `R16_cv_cotacoes_se270` sem diferença; o `publicar` não registrou rodada.
+
+### Alterado
+- `compra_venda_metodologia.html`: processo do SE à cotação, instrumento, três políticas (Antes = v1 com λ 0,50; λ = 1 sem âncora;
+  Conservador), venda modelo × histórico, resultado do backtest das três políticas (NE e N, trimestres e semestres, calculado no navegador
+  a partir de `cv_backtest`), "Previsto e realizado, caso a caso" com gráficos, limites do backtest, decisões D041 a D057 e glossário.
+- **Menu e tabs:** o item "Metodologia" das páginas abre a metodologia de compra e venda; as tabs ficam "Compra e venda" (padrão) e "Descolamento".
+- `cv_exemplo` (`qe_pricing_descolamento.compra_venda.exemplo`): novo formato (SE de R$ 270, valores por ano climático e histórico mês a mês do
+  exemplo T1 do ano seguinte, em vez das cotações prontas); recebe o `cv_historico` do mesmo deck.
+
 ## [2026-10-25] Pricing Descolamento: leva promocao-quant-v5 (Compra e venda NE e N)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v5` (seção 11, "v4 → v5"; D041 a D055). **Sem mudança de método,

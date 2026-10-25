@@ -650,7 +650,7 @@ def publicar(arm: Armazenamento, motivo: str | None = None, forcar: bool = False
         b, str(d)
     )  # compra e venda: venda ancorada no realizado
     pagina["cv_exemplo"] = cv.exemplo(
-        pagina["meses"], pagina["sazonal_se"]["fator"], str(d)
+        pagina["meses"], pagina["sazonal_se"]["fator"], str(d), pagina["cv_historico"]
     )  # compra e venda: exemplo da metodologia
     pagina["hist_marcos"] = marcos_historico(
         b, reg

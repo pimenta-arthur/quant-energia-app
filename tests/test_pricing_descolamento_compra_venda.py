@@ -238,7 +238,7 @@ def test_cv_historico_publicado_so_acrescenta_a_r15():
 def test_cv_exemplo_publicado_reproduz_r13(pagina):
     meses, saz, meta = pagina
     pub = _json(SERVING / "cv_exemplo.json")
-    assert cv.exemplo(meses, saz, meta["deck"]) == pub
+    assert cv.exemplo(meses, saz, meta["deck"], _json(SERVING / "cv_historico.json")) == pub
     if meta["deck"] != "2026-10":
         pytest.skip("serving de outro deck: a referência congelada é do deck de out/2026")
     _igual(pub, _ref("R13_cv_exemplo.json"), tol=0.011)
@@ -258,7 +258,7 @@ def test_menu_igual_nas_paginas_com_compra_e_venda_primeiro():
         ("compra_venda.html", "Compra e venda NE e N"),
         ("./", "Descolamento NE e N"),
         ("fundamentos.html", "Fundamentos"),
-        ("metodologia.html", "Metodologia"),
+        ("compra_venda_metodologia.html", "Metodologia"),
     ]
     for arq in (
         "index.html",
@@ -270,12 +270,13 @@ def test_menu_igual_nas_paginas_com_compra_e_venda_primeiro():
         assert _menu(arq) == esperado, arq
 
 
-def test_tabs_da_metodologia_com_descolamento_como_padrao():
+def test_tabs_da_metodologia_com_compra_e_venda_como_padrao():
     d = (WEB / "metodologia.html").read_text(encoding="utf-8")
     c = (WEB / "compra_venda_metodologia.html").read_text(encoding="utf-8")
     assert re.search(r'href="metodologia.html" role="tab" aria-selected="true"', d)
     assert re.search(r'href="compra_venda_metodologia.html" role="tab" aria-selected="false"', d)
     assert re.search(r'href="compra_venda_metodologia.html" role="tab" aria-selected="true"', c)
+    assert re.search(r'href="metodologia.html" role="tab" aria-selected="false"', c)
 
 
 def test_pagina_de_compra_e_venda_carrega_os_arquivos_e_os_dados_que_existem():
@@ -286,6 +287,15 @@ def test_pagina_de_compra_e_venda_carrega_os_arquivos_e_os_dados_que_existem():
     chaves = re.search(r"const CHAVES = \[(.*?)\]", js).group(1)
     for k in re.findall(r'"(\w+)"', chaves):
         assert (SERVING / f"{k}.json").exists(), k
-    assert 'fetch("/dados/pricing_descolamento/cv_exemplo.json"' in (
-        WEB / "compra_venda_metodologia.html"
-    ).read_text(encoding="utf-8")
+    met = (WEB / "compra_venda_metodologia.html").read_text(encoding="utf-8")
+    assert "/dados/pricing_descolamento/${k}.json" in met and '["cv_exemplo", "cv_backtest"]' in met
+
+
+def test_paginas_com_dica_tem_o_elemento_do_tooltip():
+    """`dicaEm` (graficos.js) escreve em #dica; sem o elemento, o tooltip do histórico e do gráfico quebra."""
+    for arq in WEB.glob("*.html"):
+        s = arq.read_text(encoding="utf-8")
+        js = arq.with_suffix(".js")
+        usa = "dicaEm(" in s or (js.exists() and "dicaEm(" in js.read_text(encoding="utf-8"))
+        if "graficos.js" in s and usa:
+            assert 'id="dica"' in s, arq.name
