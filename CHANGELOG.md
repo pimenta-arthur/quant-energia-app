@@ -8,6 +8,16 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-25] Pricing Descolamento: metodologia de compra e venda, "Mostrar justo" no caso a caso
+
+Origem: `pricing-descolamento-analytics` (commit 34a86d6, sobre a leva `promocao-quant-v6`). Só página, **sem mudança de método, de dados
+nem de referências**.
+
+### Alterado
+- "Previsto e realizado, caso a caso": abre em semestres (1º sem/26); toggles "Só com perda" (antes "só casos com perda em alguma
+  política") e **"Mostrar justo"**, que acrescenta a coluna do preço justo (média dos anos climáticos do produto, igual nas três políticas)
+  com tooltip da conta: valores por ano climático, justo, realizado, erro e a faixa do Conservador com a distância até o justo.
+
 ## [2026-10-25] Pricing Descolamento: leva promocao-quant-v6 (metodologia de compra e venda como tab principal)
 
 Origem: `pricing-descolamento-analytics`, tag `promocao-quant-v6` (seção 11, "v5 → v6"; D056 e D057). **Sem mudança de método, de

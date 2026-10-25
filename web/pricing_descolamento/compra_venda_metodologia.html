@@ -33,6 +33,15 @@
   .filtros { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.88rem; color: var(--ink-2); }
   .filtros select { font: 0.85rem var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; margin-left: 4px; }
   .filtros label { display: inline-flex; align-items: center; gap: 6px; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-2); cursor: pointer; }
+  .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle .trilho { width: 34px; height: 20px; border-radius: 999px; background: var(--rule); position: relative; flex: none; transition: background 0.15s; }
+  .toggle .trilho::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink-3); transition: transform 0.15s, background 0.15s; }
+  .toggle input:checked + .trilho { background: var(--accent); }
+  .toggle input:checked + .trilho::after { transform: translateX(14px); background: var(--surface); }
+  .toggle input:focus-visible + .trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
+  table.casos td.justo { color: var(--ink-2); cursor: help; }
+  .dica { max-width: 420px; white-space: normal; }
   .selo, table.res th, table.casos th { text-transform: none; }
   :root { --pA: #b0703f; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pA: #d99a6c; } }
@@ -222,12 +231,13 @@
       </div>
       <label>Período <select id="k-per"></select></label>
       <label>Deck <select id="k-deck"></select></label>
-      <label><input type="checkbox" id="k-perda"> só casos com perda em alguma política</label>
+      <label class="toggle"><input type="checkbox" id="k-perda"><span class="trilho"></span>Só com perda</label>
+      <label class="toggle"><input type="checkbox" id="k-justo"><span class="trilho"></span>Mostrar justo</label>
       <span class="leg" id="k-n"></span>
     </div>
     <div class="rolagem"><table class="casos">
       <thead>
-        <tr><th rowspan="2">Deck</th><th rowspan="2">Período</th><th class="n" rowspan="2">Realizado</th><th class="grupo" colspan="2">Antes · v1 (λ 0,50)</th><th class="grupo" colspan="2">λ = 1, sem âncora</th><th class="grupo cab-cons" colspan="2">Conservador</th></tr>
+        <tr><th rowspan="2">Deck</th><th rowspan="2">Período</th><th class="n" rowspan="2">Realizado</th><th class="n" rowspan="2" id="k-th-justo" hidden>Justo</th><th class="grupo" colspan="2">Antes · v1 (λ 0,50)</th><th class="grupo" colspan="2">λ = 1, sem âncora</th><th class="grupo cab-cons" colspan="2">Conservador</th></tr>
         <tr><th class="n">Compra</th><th class="n">Venda</th><th class="n">Compra</th><th class="n">Venda</th><th class="n cab-cons">Compra</th><th class="n cab-cons">Venda</th></tr>
       </thead>
       <tbody id="k-tab"></tbody>
@@ -514,7 +524,7 @@ function opcoes(sel, vals, rotulo) {
   if (vals.includes(atual)) sel.value = atual;
 }
 function linhasCasos() {
-  return CASOS.filter(c => c.tipo === K_TIPO).map(c => ({ c, r: c.real[K_SUB], q: { A: cot(c, K_SUB, "A"), B: cot(c, K_SUB, "B"), C: cot(c, K_SUB, "C") } }));
+  return CASOS.filter(c => c.tipo === K_TIPO).map(c => ({ c, r: c.real[K_SUB], j: media(c.anos[K_SUB].filter(y => y != null && isFinite(y))), q: { A: cot(c, K_SUB, "A"), B: cot(c, K_SUB, "B"), C: cot(c, K_SUB, "C") } }));
 }
 function tabCasos() {
   const base = linhasCasos();
@@ -525,10 +535,26 @@ function tabCasos() {
   const perdeu = x => ["A", "B", "C"].some(k => x.r < x.q[k].compra || x.r > x.q[k].venda);
   const L = base.filter(x => (!fp || x.c.periodo === fp) && (!fd || x.c.deck === fd) && (!soPerda || perdeu(x))).sort((a, b) => (a.c.periodo + a.c.deck).localeCompare(b.c.periodo + b.c.deck));
   document.getElementById("k-n").textContent = `${L.length} de ${base.length} casos`;
-  document.getElementById("k-tab").innerHTML = L.map(x => `<tr><td>${rot(x.c.deck)}</td><td>${rotPer(x.c.periodo)}</td><td class="n"><b>${dn(x.r)}</b></td>` +
+  const J = document.getElementById("k-justo").checked;
+  document.getElementById("k-th-justo").hidden = !J;
+  document.getElementById("k-tab").innerHTML = L.map((x, i) => `<tr><td>${rot(x.c.deck)}</td><td>${rotPer(x.c.periodo)}</td><td class="n"><b>${dn(x.r)}</b></td>` +
+    (J ? `<td class="n justo" data-i="${i}">${dn(x.j)}</td>` : "") +
     ["A", "B", "C"].map(k => `<td class="n g ${k === "C" ? "neg" : ""} ${x.r < x.q[k].compra ? "perda" : ""}">${dn(x.q[k].compra)}</td><td class="n ${k === "C" ? "neg" : ""} ${x.r > x.q[k].venda ? "perda" : ""}">${dn(x.q[k].venda)}</td>`).join("") + `</tr>`).join("") ||
-    `<tr><td colspan="9" style="text-align:center;color:var(--ink-3)">Nenhum caso com esses filtros.</td></tr>`;
+    `<tr><td colspan="${J ? 10 : 9}" style="text-align:center;color:var(--ink-3)">Nenhum caso com esses filtros.</td></tr>`;
+  if (J) document.querySelectorAll("#k-tab td.justo").forEach(td => dicaEm(td, () => dicaJusto(L[+td.dataset.i])));
   paineis();
+}
+// tooltip do preço justo: a conta (média dos anos climáticos do produto), o erro contra o realizado e a faixa do Conservador
+function dicaJusto(x) {
+  const v = [...x.c.anos[K_SUB]].filter(y => y != null && isFinite(y)).sort((a, b) => a - b), C = x.q.C;
+  const lin = (a, b) => `<tr><td style="border:0;padding:1px 12px 1px 0">${a}</td><td style="border:0;padding:1px 0;text-align:right;font-family:var(--f-data)">${b}</td></tr>`;
+  return `<b>${rotPer(x.c.periodo)} · deck ${rot(x.c.deck)} · ${K_SUB}</b>` +
+    `<div style="margin-top:4px">Valores por ano climático do produto (do menor ao maior):<br><span style="font-family:var(--f-data)">${v.map(y => dn(y)).join(" · ")}</span></div>` +
+    `<table style="border-collapse:collapse;margin-top:6px;font:inherit;color:inherit;background:none">` +
+    lin(`<b>Justo</b> = média dos ${v.length} anos`, `<b>${dn(x.j)}</b>`) + lin("Realizado", dn(x.r)) + lin("Erro (realizado − justo)", sn(x.r - x.j, 1)) +
+    lin("Conservador: compra", `${dn(C.compra)} <span style="opacity:.7">(${n(x.j - C.compra, 1)} abaixo)</span>`) +
+    lin("Conservador: venda", `${dn(C.venda)} <span style="opacity:.7">(${n(C.venda - x.j, 1)} acima)</span>`) + `</table>` +
+    `<div style="opacity:.7;margin-top:4px">SE realizado como insumo (isola o erro do modelo do erro da curva do SE). Só entram os anos climáticos presentes em todos os meses do produto. O justo é o mesmo nas três políticas.</div>`;
 }
 function paineis() {
   document.getElementById("k-mult-t").textContent = `As faixas de compra e venda contra o realizado, por ${K_TIPO === "tri" ? "trimestre" : "semestre"}`;
@@ -563,7 +589,7 @@ document.getElementById("k-tipo").addEventListener("click", ev => { const b = ev
   document.querySelectorAll("#k-tipo button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); K_TIPO = b.dataset.v; document.getElementById("k-per").value = ""; tabCasos(); });
 document.getElementById("k-sub").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return;
   document.querySelectorAll("#k-sub button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); K_SUB = b.dataset.v; tabCasos(); });
-["k-per", "k-deck", "k-perda"].forEach(id => document.getElementById(id).addEventListener("change", tabCasos));
+["k-per", "k-deck", "k-perda", "k-justo"].forEach(id => document.getElementById(id).addEventListener("change", tabCasos));
 tabCasos();
 })();
 </script>
