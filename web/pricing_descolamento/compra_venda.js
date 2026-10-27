@@ -314,26 +314,35 @@ function linhaProduto(k, rot, ms, nivel, modo) {
   const base = modo === "ano" && contrib ? contrib : solo;
   return base ? { ...base, solo, contrib } : null;
 }
+// indicativo (D074): a compra do ano montada pelos trimestres cotados sozinhos (média por horas). Só para ano completo; não é a
+// cotação do ano (o backtest não mostrou ganho de risco em cotar o ano assim), é a conta de quem fecha trimestre a trimestre.
+function compraAnoPelosTri(ms) {
+  const a = PER.find(x => x.meses.length === 12 && x.meses.length === ms.length && x.meses.every(p => ms.includes(p))); if (!a) return null;
+  const cs = a.T.map(t => cotarProduto(t.meses)); if (cs.some(x => !x)) return null;
+  return a.T.reduce((t, x, i) => t + cs[i].compra * horas(x.meses), 0) / horas(a.meses);
+}
 function descritivoProduto(r, ld) {
   const pld = MODO === "pld", f = (v, se) => pld ? n(v + se, 1) : dn(v), c = cotarProduto(r.ms); if (!c) return "";
   const sozinho = c[ld], contrib = r.contrib ? r.contrib[ld] : null, dif = contrib != null && Math.abs(sozinho - contrib) > 0.05;
-  return `<div class="leg" style="margin:4px 0"><b>${ld === "compra" ? "Compra" : "Venda"} de ${r.rot}</b> · cotação do produto sozinho: <b>${f(sozinho, c.se)}</b>` +
-    (contrib == null ? "" : dif ? ` · contribuição para fechar o ano: <b>${f(contrib, r.contrib.se)}</b>` : ` · igual à contribuição para fechar o ano`) + `</div>${detalheCotacao(c)}`;
+  const pt = ld === "compra" ? compraAnoPelosTri(r.ms) : null;
+  return `<div class="leg" style="margin:4px 0"><b>${ld === "compra" ? "Compra" : "Venda"} de ${r.rot}</b> · sozinho <b>${f(sozinho, c.se)}</b>` +
+    (dif ? ` · fechando o ano <b>${f(contrib, r.contrib.se)}</b>` : "") + (pt == null ? "" : ` · pelos trimestres <b>${f(pt, c.se)}</b>`) + `</div>${detalheCotacao(c)}`;
 }
 let CSUB = "NE", CMODO = "d", CREF = "sozinho", COMPACTA_JUSTO = false, COMPACTA_DET = null; const COMPACTA_ABERTOS = new Set();
 function gradeCompacta() { comFiltro(CSUB, CMODO, gradeCompacta_); }
 function gradeCompacta_() {
-  // média ponderada por horas dos semestres e dos trimestres × o preço do ano (a conferência de "Fechar o ano")
+  // conferência do ano (uma linha da tabela "Conferir o ano"): compra do ano sozinho × média por horas dos semestres e dos trimestres
+  // sozinhos; venda (igual nas três contas)
   const conferir = (a, k, cols) => {
-    if (!k || !cols[0]) return "";
-    const pld = MODO === "pld", f = (v, se) => pld ? n(v + se, 1) : dn(v), y = cols[0];
-    const med = (rs, l) => { rs = rs.filter(Boolean); const W = rs.reduce((t, r) => t + r.w, 0); return rs.length ? rs.reduce((t, r) => t + r.w * r[l], 0) / W : null; };
-    const S = cols.slice(1, 3), T = cols.slice(3), ok = (rs, l) => rs.filter(Boolean).length && Math.abs(med(rs, l) - y[l]) < 0.06;
-    if (S.filter(Boolean).length < 2) return "";
-    const par = rs => `compra ${f(med(rs, "compra"), y.se)} / venda ${f(med(rs, "venda"), y.se)}`, ano = `compra ${f(y.compra, y.se)} / venda ${f(y.venda, y.se)}`;
-    if (CREF === "ano") return `<b>${a.rot}</b>: a média ponderada por horas dos semestres (${par(S)}) e a dos trimestres reproduzem o preço do ano (${ano}) ${[S, T].every(rs => ok(rs, "compra") && ok(rs, "venda")) ? "✓" : "✗"}.`;
-    const dc = med(S, "compra") - y.compra;
-    return `<b>${a.rot}</b>: média ponderada dos semestres sozinhos: ${par(S)}; preço do ano: ${ano}.` + (Math.abs(dc) > 0.05 ? ` A compra do ano é ${dc < 0 ? "menos" : "mais"} conservadora que a dos semestres sozinhos porque o pior ano muda de semestre.` : "");
+    if (!k || !cols[0]) return null;
+    const pld = MODO === "pld", f = (v, se) => pld ? n(v + se, 1) : dn(v), y = cols[0], solo = y.solo || y;
+    if (cols.slice(1, 3).filter(Boolean).length < 2) return null;
+    const media = (rs, l) => { const W = rs.reduce((t, r) => t + r.w, 0); return rs.reduce((t, r) => t + r.w * r[l], 0) / W; };
+    const S = cols.slice(1, 3).map(r => ({ ...(r.solo || r), w: r.w })), T = cols.slice(3).filter(Boolean).map(r => ({ ...(r.solo || r), w: r.w }));
+    const pt = compraAnoPelosTri(a.meses), vS = media(S, "venda"), vT = T.length === 4 ? media(T, "venda") : null;
+    const vendas = [solo.venda, vS, vT].filter(v => v != null), vIgual = vendas.every(v => Math.abs(v - solo.venda) < 0.06);
+    return `<tr><td><b>${a.rot}</b></td><td class="n"><b>${f(solo.compra, y.se)}</b></td><td class="n">${f(media(S, "compra"), y.se)}</td><td class="n">${pt == null ? "—" : f(pt, y.se)}</td>` +
+      `<td class="n">${vIgual ? f(solo.venda, y.se) : `${f(solo.venda, y.se)} · ${f(vS, y.se)} · ${vT == null ? "—" : f(vT, y.se)}`}</td></tr>`;
   };
 
   const tab = document.getElementById("tab-compacta"), pld = MODO === "pld", f = (v, se) => pld ? n(v + se, 1) : dn(v);
@@ -364,7 +373,9 @@ function gradeCompacta_() {
     if (COMPACTA_DET && COMPACTA_DET.y === a.y && COMPACTA_DET.col != null) { const r = cols[COMPACTA_DET.col];
       if (r) h += `<tr class="meses-row"><td></td><td colspan="8" style="text-align:left">${descritivoProduto(r, COMPACTA_DET.lado)}</td></tr>`; }
   });
-  document.getElementById("compacta-conf").innerHTML = confs.filter(Boolean).map(x => `<div>${x}</div>`).join("");
+  const lin = confs.filter(Boolean);
+  document.getElementById("compacta-conf").innerHTML = lin.length ? `<table class="det"><thead><tr><th rowspan="2">Ano</th><th class="grupo" colspan="3">Compra</th><th class="n" rowspan="2">Venda</th></tr>` +
+    `<tr><th class="n">Pelo ano</th><th class="n">Pelos semestres</th><th class="n">Pelos trimestres</th></tr></thead><tbody>${lin.join("")}</tbody></table>` : "";
   tab.innerHTML = h + "</tbody>";
   tab.querySelectorAll(".exp").forEach(b => b.addEventListener("click", () => { const y = +b.dataset.a; COMPACTA_ABERTOS.has(y) ? COMPACTA_ABERTOS.delete(y) : COMPACTA_ABERTOS.add(y); gradeCompacta(); }));
   tab.querySelectorAll(".clic").forEach(b => b.addEventListener("click", () => {

@@ -57,7 +57,13 @@
   #tab-cot { table-layout: fixed; }  /* colunas na mesma posição em mês, trimestre, semestre e ano */
   .curva .gp { border-left: 1px solid var(--rule); }
   #det-conf { border-top: 0; padding-top: 0; }  /* a linha da última linha da tabela já separa; uma só */
-  #det-conf > summary { font-size: 0.8rem; color: var(--ink-3); }
+  #det-conf > summary { font-size: 0.8rem; }
+  #det-conf > summary { color: var(--ink); }
+  #compacta-conf table { width: auto !important; justify-self: start; }
+  #compacta-conf th, #compacta-conf td { padding: 3px 0 3px 28px; }
+  #compacta-conf thead tr:first-child th:first-child, #compacta-conf td:first-child { padding-left: 0; }
+  #compacta-conf th { text-transform: none; vertical-align: bottom; }
+  #compacta-conf th.grupo { text-align: center; box-shadow: inset 0 -1px 0 var(--rule); padding-bottom: 4px; }
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-2); cursor: pointer; }
   .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
   .toggle .trilho { width: 34px; height: 20px; border-radius: 999px; background: var(--rule); position: relative; flex: none; transition: background 0.15s; }
@@ -209,7 +215,7 @@
       <div class="rolagem"><table class="curva leitura" id="tab-compacta"></table></div>
       <details class="aviso" id="det-conf"><summary>Conferir o ano</summary>
         <div class="leg" id="compacta-conf" style="display:grid;gap:2px;margin-top:4px"></div>
-        <p class="leg" style="margin-top:6px">A compra de um semestre, trimestre ou mês sozinho pode diferir da sua contribuição para o ano porque o pior ano muda de período. O backtest cobre só trimestres e semestres: ano e mês não foram validados como cotação. Se o SE foi informado só em semestre, trimestre ou mês, os produtos completos aparecem pela cotação deles sozinhos.</p>
+        <p class="leg" style="margin-top:6px">Compra pelo ano = o ano cotado sozinho; pelos semestres / trimestres = média por horas dos produtos cotados sozinhos, mais conservadora porque o pior ano muda de período. A venda é a mesma nas três contas. Backtest só de trimestres e semestres.</p>
       </details>
       <p class="leg">Compra / venda de cada período e, em cinza, o SE. Clique em um valor para ver o descritivo. Por padrão cada célula é o produto sozinho; &ldquo;Fechar o ano&rdquo; mostra a contribuição de cada pedaço para o preço do ano.</p>
     </div>

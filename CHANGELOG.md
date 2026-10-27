@@ -8,6 +8,17 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-26] Pricing Descolamento: compra do ano pelos trimestres como indicativo (D074)
+
+Origem: `pricing-descolamento-analytics`, commit 9702f5f (D074). Só página, **sem mudança de método, de preço, de dados nem de referências**:
+a cotação do ano continua a do produto sozinho.
+
+### Alterado
+- Compra e venda, "Conferir o ano": tabela por ano com a compra pelo ano, pelos semestres e pelos trimestres (média por horas dos produtos
+  cotados sozinhos) e a venda; o indicativo "pelos trimestres" é a conta de quem fecha trimestre a trimestre. Título "Conferir o ano" em destaque.
+- Descritivo de um produto mais curto: "sozinho · fechando o ano · pelos trimestres" (este último só na compra do ano).
+- Metodologia de compra e venda: parágrafo do indicativo e decisão D074 (seletor com modo "tri" testado e descartado; checagem do backtest).
+
 ## [2026-10-25] Pricing Descolamento: metodologia de compra e venda, "Mostrar justo" no caso a caso
 
 Origem: `pricing-descolamento-analytics` (commit 34a86d6, sobre a leva `promocao-quant-v6`). Só página, **sem mudança de método, de dados
