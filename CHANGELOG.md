@@ -8,6 +8,14 @@ Toda entrada que vem de uma pesquisa cita a tag de origem (`promocao-quant-vN` n
 decisões (Dxxx) registradas lá. Atualizar a cada promoção. Entradas anteriores a 2026-10-19 foram reconstruídas do
 histórico do git.
 
+## [2026-10-27] Pricing Descolamento: coluna Justo no "Conferir o ano"
+
+Origem: `pricing-descolamento-analytics`, commit 7265e54. Só página, sem mudança de método, de dados nem de referências.
+
+### Alterado
+- Compra e venda, "Conferir o ano": com "Mostrar justo" ligado, a tabela ganha a coluna Justo entre a compra e a venda. O justo e a venda
+  são os mesmos nas três contas (pelo ano, pelos semestres, pelos trimestres); só a compra muda com o produto.
+
 ## [2026-10-26] Pricing Descolamento: compra do ano pelos trimestres como indicativo (D074)
 
 Origem: `pricing-descolamento-analytics`, commit 9702f5f (D074). Só página, **sem mudança de método, de preço, de dados nem de referências**:

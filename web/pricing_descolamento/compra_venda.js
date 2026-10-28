@@ -342,7 +342,7 @@ function gradeCompacta_() {
     const pt = compraAnoPelosTri(a.meses), vS = media(S, "venda"), vT = T.length === 4 ? media(T, "venda") : null;
     const vendas = [solo.venda, vS, vT].filter(v => v != null), vIgual = vendas.every(v => Math.abs(v - solo.venda) < 0.06);
     return `<tr><td><b>${a.rot}</b></td><td class="n"><b>${f(solo.compra, y.se)}</b></td><td class="n">${f(media(S, "compra"), y.se)}</td><td class="n">${pt == null ? "—" : f(pt, y.se)}</td>` +
-      `<td class="n">${vIgual ? f(solo.venda, y.se) : `${f(solo.venda, y.se)} · ${f(vS, y.se)} · ${vT == null ? "—" : f(vT, y.se)}`}</td></tr>`;
+      (COMPACTA_JUSTO ? `<td class="n">${f(solo.justo, y.se)}</td>` : "") + `<td class="n">${vIgual ? f(solo.venda, y.se) : `${f(solo.venda, y.se)} · ${f(vS, y.se)} · ${vT == null ? "—" : f(vT, y.se)}`}</td></tr>`;
   };
 
   const tab = document.getElementById("tab-compacta"), pld = MODO === "pld", f = (v, se) => pld ? n(v + se, 1) : dn(v);
@@ -374,7 +374,7 @@ function gradeCompacta_() {
       if (r) h += `<tr class="meses-row"><td></td><td colspan="8" style="text-align:left">${descritivoProduto(r, COMPACTA_DET.lado)}</td></tr>`; }
   });
   const lin = confs.filter(Boolean);
-  document.getElementById("compacta-conf").innerHTML = lin.length ? `<table class="det"><thead><tr><th rowspan="2">Ano</th><th class="grupo" colspan="3">Compra</th><th class="n" rowspan="2">Venda</th></tr>` +
+  document.getElementById("compacta-conf").innerHTML = lin.length ? `<table class="det"><thead><tr><th rowspan="2">Ano</th><th class="grupo" colspan="3">Compra</th>${COMPACTA_JUSTO ? `<th class="n" rowspan="2">Justo</th>` : ""}<th class="n" rowspan="2">Venda</th></tr>` +
     `<tr><th class="n">Pelo ano</th><th class="n">Pelos semestres</th><th class="n">Pelos trimestres</th></tr></thead><tbody>${lin.join("")}</tbody></table>` : "";
   tab.innerHTML = h + "</tbody>";
   tab.querySelectorAll(".exp").forEach(b => b.addEventListener("click", () => { const y = +b.dataset.a; COMPACTA_ABERTOS.has(y) ? COMPACTA_ABERTOS.delete(y) : COMPACTA_ABERTOS.add(y); gradeCompacta(); }));
